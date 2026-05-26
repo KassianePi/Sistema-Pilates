@@ -1,0 +1,103 @@
+# ==============================================================================
+# DOCKER COMPOSE — Studio de Pilates
+# ==============================================================================
+# Desenvolvimento: docker compose up -d
+# Parar: docker compose down
+# Parar com limpeza: docker compose down -v
+# ==============================================================================
+
+services:
+  # ============================================================================
+  # MySQL 8.0 Database
+  # ============================================================================
+  mysql:
+    image: mysql:8.0
+    container_name: pilates_mysql
+    
+    # Carrega variáveis do .env
+    env_file: .env
+    
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    
+    ports:
+      - "${MYSQL_PORT}:3306"
+    
+    volumes:
+      # Persistência de dados (volume nomeado)
+      - mysql_data:/var/lib/mysql
+      
+      # Script de inicialização (criar tabelas)
+      # Path relativo ao docker-compose.yml
+      - ../database/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+      
+      # Configuração MySQL customizada
+      - ./config/mysql.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    
+    networks:
+      - pilates_network
+    
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    
+    restart: unless-stopped
+    
+    # Logs
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================================
+  # Adminer — Interface Web para Gerenciar MySQL
+  # Acesso: http://localhost:8080
+  # ============================================================================
+  adminer:
+    image: adminer:latest
+    container_name: pilates_adminer
+    
+    ports:
+      - "${ADMINER_PORT}:8080"
+    
+    depends_on:
+      mysql:
+        condition: service_healthy
+    
+    networks:
+      - pilates_network
+    
+    restart: unless-stopped
+    
+    # Variáveis para auto-login (opcional)
+    environment:
+      ADMINER_DEFAULT_SERVER: mysql
+
+# ==============================================================================
+# VOLUMES (Persistência de Dados)
+# ==============================================================================
+volumes:
+  mysql_data:
+    driver: local
+    # Para usar diretório específico no host:
+    # driver_opts:
+    #   type: none
+    #   o: bind
+    #   device: ./data/mysql
+
+# ==============================================================================
+# NETWORKS (Comunicação Entre Containers)
+# ==============================================================================
+networks:
+  pilates_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

@@ -1,0 +1,367 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║          🎉 SISTEMA PILATES — COMO EXECUTAR EM DOCKER 🐳                  ║
+║                                                                            ║
+║  Status: ✅ PRONTO PARA RODAR                                             ║
+║  Data: 26 de Maio de 2026                                                 ║
+║  Tempo: ~3-5 minutos para tudo estar rodando                             ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+─────────────────────────────────────────────────────────────────────────────
+ VERIFICAÇÃO PRÉ-REQUISITOS
+─────────────────────────────────────────────────────────────────────────────
+
+Você já tem instalado?
+
+  [ ] Docker Desktop — https://www.docker.com/products/docker-desktop
+  [ ] Docker Compose (vem junto com Docker)
+
+Verificar:
+  $ docker --version
+  $ docker compose version
+
+
+─────────────────────────────────────────────────────────────────────────────
+ PASSO 1: ENTRAR NO DIRETÓRIO
+─────────────────────────────────────────────────────────────────────────────
+
+$ cd ~/caminho/para/Sistema-pilates
+
+Windows (Git Bash):
+  $ cd c:/Users/aalec/OneDrive/Documentos/Meus\ apps/Projetos/Pilates/Sistema-pilates
+
+Windows (PowerShell):
+  > cd "C:\Users\aalec\OneDrive\Documentos\Meus apps\Projetos\Pilates\Sistema-pilates"
+
+Mac/Linux:
+  $ cd ~/Documents/Projetos/Pilates/Sistema-pilates
+
+
+─────────────────────────────────────────────────────────────────────────────
+ PASSO 2: CONFIGURAR AMBIENTE (OPCIONAL)
+─────────────────────────────────────────────────────────────────────────────
+
+Copiar template de ambiente:
+
+  $ cp .env.example .env
+
+Se quiser editar (opcional para desenvolvimento):
+
+  Windows (Notepad):
+    > notepad .env
+
+  Mac/Linux (nano):
+    $ nano .env
+
+✅ Deixar com valores padrão é OK para desenvolvimento
+
+
+─────────────────────────────────────────────────────────────────────────────
+ PASSO 3: INICIAR OS CONTAINERS
+─────────────────────────────────────────────────────────────────────────────
+
+PRIMEIRA VEZ (faz build + start):
+
+  $ docker compose up --build -d
+
+PRÓXIMAS VEZES (apenas inicia):
+
+  $ docker compose up -d
+
+
+Isso vai:
+
+  1. ✅ Baixar imagens Docker (MySQL, Node, Nginx, etc)
+  2. ✅ Compilar backend e frontend
+  3. ✅ Criar volumes para dados persistentes
+  4. ✅ Iniciar 4 containers:
+       - MySQL (banco de dados)
+       - Backend (API Fastify)
+       - Frontend (React + Vite)
+       - Nginx (proxy reverso)
+
+
+─────────────────────────────────────────────────────────────────────────────
+ PASSO 4: VERIFICAR STATUS
+─────────────────────────────────────────────────────────────────────────────
+
+$ docker compose ps
+
+Resultado esperado:
+
+  NAME              STATUS          PORTS
+  ───────────────────────────────────────────────
+  pilates_mysql     Up (healthy)    3306/tcp
+  pilates_backend   Up (healthy)    0.0.0.0:3000->3000/tcp
+  pilates_frontend  Up              0.0.0.0:5173->5173/tcp
+  pilates_nginx     Up              0.0.0.0:80->80/tcp
+
+
+Aguarde MySQL ficar "healthy" (leva ~10-20s):
+
+  $ docker compose ps
+  # Repita até ver "healthy" em mysql e backend
+
+
+─────────────────────────────────────────────────────────────────────────────
+ PASSO 5: VERIFICAR SAÚDE
+─────────────────────────────────────────────────────────────────────────────
+
+Testar health check do backend:
+
+  $ curl http://localhost:3000/api/v1/health
+
+Resultado esperado:
+
+  {"success":true,"data":{"status":"ok","timestamp":"...","uptime":...}}
+
+
+Se não funcionar:
+
+  # Ver logs do backend
+  $ docker compose logs backend -f
+
+  # Ver logs do MySQL
+  $ docker compose logs mysql -f
+
+
+─────────────────────────────────────────────────────────────────────────────
+ ACESSAR A APLICAÇÃO
+─────────────────────────────────────────────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ FRONTEND (React)                                                        │
+│                                                                         │
+│  URL: http://localhost:5173                                            │
+│  O quê: Interface do usuário                                           │
+│  Tecnologia: React + Vite + Tailwind CSS                              │
+│  Redirecionará para login (não há componentes ainda)                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ API REST (Backend)                                                      │
+│                                                                         │
+│  URL: http://localhost:3000/api/v1/                                    │
+│  O quê: Endpoints da API                                               │
+│  Tecnologia: Fastify + TypeScript                                      │
+│  Docs: http://localhost:3000/documentation (Swagger)                   │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ BANCO DE DADOS (MySQL)                                                  │
+│                                                                         │
+│  Host: localhost                                                        │
+│  Porta: 3306                                                            │
+│  Usuário: pilates_user                                                 │
+│  Senha: pilates_pass                                                   │
+│  Banco: pilates_db                                                     │
+│                                                                         │
+│  Acessar via DBeaver ou MySQL Workbench                               │
+└─────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│ NGINX (Proxy Reverso)                                                   │
+│                                                                         │
+│  URL: http://localhost:80 (mesmo que localhost)                        │
+│  O quê: Roteia requisições para frontend/backend                       │
+│  Rota interna: frontend rodando em 5173                                │
+│  Rota /api: backend rodando em 3000                                    │
+└─────────────────────────────────────────────────────────────────────────┘
+
+
+─────────────────────────────────────────────────────────────────────────────
+ COMANDOS ÚTEIS
+─────────────────────────────────────────────────────────────────────────────
+
+VER LOGS:
+
+  # Backend (API)
+  $ docker compose logs backend -f
+
+  # Frontend (React)
+  $ docker compose logs frontend -f
+
+  # MySQL (Banco)
+  $ docker compose logs mysql -f
+
+  # Todos (CTRL+C para parar)
+  $ docker compose logs -f
+
+
+PARAR CONTAINERS:
+
+  # Parar (mantém dados)
+  $ docker compose down
+
+  # Parar E remover volumes (LIMPA TUDO - CUIDADO!)
+  $ docker compose down -v
+
+
+REINICIAR:
+
+  # Um serviço específico
+  $ docker compose restart backend
+
+  # Todos
+  $ docker compose restart
+
+
+REBUILD:
+
+  # Rebuild de uma imagem (sem cache)
+  $ docker compose build --no-cache backend
+
+  # Build + restart
+  $ docker compose up -d --build backend
+
+
+ENTRAR NO CONTAINER:
+
+  # No backend (Node.js shell)
+  $ docker compose exec backend sh
+
+  # No MySQL (MySQL CLI)
+  $ docker compose exec mysql mysql -u pilates_user -p
+
+  # No frontend (Node.js shell)
+  $ docker compose exec frontend sh
+
+
+VER TAMANHO DAS IMAGENS:
+
+  $ docker images | grep pilates
+
+
+EXECUTAR COMANDO EM CONTAINER:
+
+  # Exemplo: instalar pacote no backend
+  $ docker compose exec backend npm install novo-pacote
+
+
+─────────────────────────────────────────────────────────────────────────────
+ STRUCTURE CRIADA
+─────────────────────────────────────────────────────────────────────────────
+
+✅ Criado: docker-compose.yml
+   └─ Orquestração de 4 containers (mysql, backend, frontend, nginx)
+
+✅ Criado: backend/Dockerfile
+   └─ Build de imagem Node.js 20 Alpine
+
+✅ Criado: frontend/Dockerfile
+   └─ Build de imagem React + Nginx
+
+✅ Criado: nginx/nginx.conf + nginx/conf.d/default.conf
+   └─ Configuração do proxy reverso
+
+✅ Criado: .env + .env.example
+   └─ Variáveis de ambiente (database_url, jwt_secret, etc)
+
+✅ Criado: .gitignore (atualizado)
+   └─ Ignora node_modules, .env, dist, etc
+
+✅ Criado: DOCKER_SETUP.md
+   └─ Guia completo de Docker (11 seções)
+
+✅ Criado: QUICKSTART.md
+   └─ Quick start em 5 passos
+
+✅ Criado: STATUS_PROJETO.md
+   └─ Status de desenvolvimento + checklist
+
+✅ Criado: COMO_RODAR.txt
+   └─ Este arquivo
+
+
+─────────────────────────────────────────────────────────────────────────────
+ TROUBLESHOOTING
+─────────────────────────────────────────────────────────────────────────────
+
+❌ "Docker command not found"
+   → Instalar Docker Desktop
+   → Reiniciar terminal/PowerShell
+
+❌ "Porta 3000 em uso"
+   → Mudar em docker-compose.yml: ports: - "3001:3000"
+
+❌ "MySQL not ready"
+   → Aguardar 30s: sleep 30 && docker compose ps
+   → Ver logs: docker compose logs mysql
+
+❌ "Frontend em branco"
+   → Abrir DevTools (F12 no navegador)
+   → Ver console para erros de CORS/Network
+
+❌ "API retorna 500"
+   → Ver logs: docker compose logs backend -f
+   → Verificar variáveis de ambiente: docker compose config
+
+❌ "Build failed"
+   → Limpeza: docker compose down -v
+   → Rebuild: docker compose build --no-cache
+
+❌ "Containers não iniciam"
+   → Verificar: docker compose logs
+   → Checar portas: lsof -i :3000 (Mac/Linux)
+   → Checar portas: netstat -ano | findstr :3000 (Windows)
+
+
+─────────────────────────────────────────────────────────────────────────────
+ PRÓXIMA FASE (DESENVOLVIMENTO)
+─────────────────────────────────────────────────────────────────────────────
+
+✅ DONE: Docker setup completo
+
+⏳ TODO: Implementar Fase 2 (Backend Fastify + Auth)
+   → Seguir: PLANO_EXECUCAO_FASE_2.md
+   → Tempo: ~19 horas
+
+⏳ TODO: Implementar Fase 3 (Frontend React)
+   → Tempo: ~15 horas
+
+⏳ TODO: Deploy em produção
+   → Seguir: DOCKER_SETUP.md (seção Deploy)
+
+
+─────────────────────────────────────────────────────────────────────────────
+ RESUMO: 3 PASSOS RÁPIDOS
+─────────────────────────────────────────────────────────────────────────────
+
+1. Entre na pasta:
+   $ cd ~/Sistema-pilates
+
+2. Inicie os containers:
+   $ docker compose up --build -d
+
+3. Aguarde 30s e acesse:
+   → Frontend: http://localhost:5173
+   → API: http://localhost:3000/api/v1/health
+   → Swagger: http://localhost:3000/documentation
+
+
+─────────────────────────────────────────────────────────────────────────────
+ INFORMAÇÕES DE CONTATO
+─────────────────────────────────────────────────────────────────────────────
+
+Documentação completa:
+  → DOCKER_SETUP.md (guia em detalhes)
+  → STATUS_PROJETO.md (status de desenvolvimento)
+  → PLANO_EXECUCAO_FASE_2.md (próxima implementação)
+
+GitHub:
+  → Pull requests com implementações da Fase 2
+
+Referências:
+  → Docker: https://docs.docker.com/
+  → Fastify: https://www.fastify.io/
+  → React: https://react.dev/
+
+
+═════════════════════════════════════════════════════════════════════════════
+
+✅ TUDO PRONTO! EXECUTE:
+
+   docker compose up --build -d && sleep 30 && docker compose ps
+
+🎉 Seu sistema estará rodando em http://localhost em poucos minutos!
+
+═════════════════════════════════════════════════════════════════════════════

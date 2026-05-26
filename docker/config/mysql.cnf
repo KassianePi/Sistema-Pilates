@@ -1,0 +1,82 @@
+# ============================================================================
+# MySQL 8.0 — Configurações Customizadas
+# ============================================================================
+# Este arquivo é montado em /etc/mysql/conf.d/custom.cnf dentro do container
+#
+# ============================================================================
+
+[mysqld]
+
+# --- CHARACTER SET (UTF-8) ---
+character-set-server=utf8mb4
+collation-server=utf8mb4_unicode_ci
+default-character-set=utf8mb4
+
+# --- CONNECTION LIMITS ---
+max_connections=1000
+max_allowed_packet=256M
+connect_timeout=10
+
+# --- TABLE CACHE ---
+table_open_cache=4000
+table_definition_cache=2000
+
+# --- QUERY CACHE (desabilitado em MySQL 8.0+) ---
+# query_cache_type=0
+# query_cache_size=0
+
+# --- SLOW QUERY LOG ---
+slow_query_log=1
+slow_query_log_file=/var/log/mysql/slow-query.log
+long_query_time=2
+
+# --- GENERAL LOG (desabilitado por padrão) ---
+general_log=0
+general_log_file=/var/log/mysql/general-query.log
+
+# --- BINLOG (para replicação/backup) ---
+log_bin=/var/log/mysql/mysql-bin.log
+binlog_format=ROW
+expire_logs_days=7
+
+# --- PERFORMANCE SCHEMA ---
+performance_schema=ON
+performance_schema_max_table_instances=12500
+
+# --- INNODB SETTINGS ---
+default_storage_engine=InnoDB
+innodb_buffer_pool_size=1G
+innodb_log_file_size=256M
+innodb_flush_log_at_trx_commit=2
+innodb_flush_method=O_DIRECT
+innodb_file_per_table=1
+
+# --- TRANSACTION SETTINGS ---
+transaction_isolation=READ-COMMITTED
+
+# --- FOREIGN KEYS ---
+foreign_key_checks=1
+
+# --- TIMEZONE ---
+default-time-zone='-03:00'
+
+# --- SQL MODE ---
+sql_mode='STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'
+
+# --- EXPLICIT_DEFAULTS_FOR_TIMESTAMP ---
+explicit_defaults_for_timestamp=ON
+
+[client]
+default-character-set=utf8mb4
+
+[mysql]
+default-character-set=utf8mb4
+
+# ============================================================================
+# NOTAS:
+# ============================================================================
+# - Estas configurações são otimizadas para desenvolvimento
+# - Em produção, ajuste conforme capacidade do servidor
+# - innodb_buffer_pool_size: 60-80% da RAM disponível
+# - max_connections: ajuste conforme carga esperada
+# ============================================================================

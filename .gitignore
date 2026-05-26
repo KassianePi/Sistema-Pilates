@@ -1,0 +1,60 @@
+# ====== ENVIRONMENT ======
+.env
+.env.local
+.env.*.local
+.env.production.local
+
+# ====== NODE ======
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# ====== BUILD ======
+dist/
+build/
+*.tsbuildinfo
+
+# ====== IDE ======
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# ====== TESTING ======
+coverage/
+.nyc_output/
+*.lcov
+
+# ====== DOCKER ======
+.dockerignore
+
+# ====== RUNTIME ======
+tmp/
+temp/
+*.log
+logs/
+
+# ====== PRISMA ======
+prisma/migrations/
+.prisma/
+
+# ====== CACHE ======
+.cache/
+.eslintcache
+.parcel-cache/
+
+# ====== OS ======
+Thumbs.db
+*.pem
+
+# ====== VSCODE WORKSPACE ======
+*.code-workspace

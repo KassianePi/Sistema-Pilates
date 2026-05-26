@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "lib": ["ES2022"],
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../packages/shared/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@shared/errors/*": ["./src/shared/errors/*"],
+      "@shared/middlewares/*": ["./src/shared/middlewares/*"],
+      "@shared/utils/*": ["./src/shared/utils/*"],
+      "@shared/constants/*": ["./src/shared/constants/*"],
+      "@shared/types/*": ["./src/shared/types/*"]
+    },
+    "types": ["node", "vitest/globals"]
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "**/*.spec.ts"]
+}

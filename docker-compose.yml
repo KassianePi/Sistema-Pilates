@@ -1,0 +1,103 @@
+services:
+  # ====== BANCO DE DADOS ======
+  mysql:
+    image: mysql:8.0
+    container_name: pilates_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-pilates_db}
+      MYSQL_USER: ${MYSQL_USER:-pilates_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-pilates_pass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - pilates_network
+
+  # ====== BACKEND FASTIFY ======
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: builder
+    container_name: pilates_backend
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: mysql://${MYSQL_USER:-pilates_user}:${MYSQL_PASSWORD:-pilates_pass}@mysql:3306/${MYSQL_DATABASE:-pilates_db}
+      JWT_SECRET: ${JWT_SECRET:-seu_secret_super_seguro_aqui_32_caracteres_minimo_2024}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-seu_refresh_secret_super_seguro_32_caracteres_2024}
+      PORT: 3000
+    ports:
+      - "3000:3000"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - pilates_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ====== FRONTEND REACT ======
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: builder
+      args:
+        VITE_API_URL: http://backend:3000/api/v1
+    container_name: pilates_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://backend:3000/api/v1
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: npm run dev
+    networks:
+      - pilates_network
+
+  # ====== NGINX (PROXY REVERSO) ======
+  nginx:
+    image: nginx:alpine
+    container_name: pilates_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - pilates_network
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  pilates_network:
+    driver: bridge
