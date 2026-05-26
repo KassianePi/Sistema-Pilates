@@ -17,6 +17,7 @@ import fastifyRateLimit from '@fastify/rate-limit'
 
 import { logger, logInfo, logError, logFatal } from './shared/utils'
 import { AppError, ValidationError, UnauthorizedError } from './shared/errors'
+import { authRoutes } from './modules/auth/auth.routes'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 
@@ -153,7 +154,14 @@ export async function createApp() {
     })
 
     // ========================================
-    // 5. ERROR HANDLING GLOBAL
+    // 5. ROTAS DE APLICAÇÃO
+    // ========================================
+
+    // Módulo: Autenticação
+    await app.register(authRoutes)
+
+    // ========================================
+    // 6. ERROR HANDLING GLOBAL
     // ========================================
 
     app.setErrorHandler(async (error, request, reply) => {
@@ -235,3 +243,8 @@ export async function createApp() {
     throw error
   }
 }
+
+/**
+ * Alias para createApp (usado em testes)
+ */
+export const build = createApp

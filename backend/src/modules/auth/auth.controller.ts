@@ -1,0 +1,344 @@
+/**
+ * Controller de Autenticação
+ *
+ * Responsável por:
+ * - Receber e validar requests HTTP
+ * - Chamar métodos do AuthService
+ * - Retornar respostas padronizadas
+ *
+ * Padrão: Request → Validação (Zod) → Service → Response
+ */
+
+import type { FastifyRequest, FastifyReply } from 'fastify'
+import { authService } from './auth.service'
+import { ValidationError, UnauthorizedError } from '../../shared/errors'
+import { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema } from '../../shared/schemas'
+import { logInfo, logDebug, logWarn } from '../../shared/utils'
+
+/**
+ * POST /api/v1/auth/login
+ *
+ * Autentica usuário com email e senha
+ *
+ * @example
+ * Request body:
+ * {
+ *   "email": "user@pilates.local",
+ *   "senha": "senha123"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "usuarioId": "uuid",
+ *     "email": "user@pilates.local",
+ *     "nome": "João Silva",
+ *     "funcao": "ADMIN",
+ *     "accessToken": "jwt...",
+ *     "refreshToken": "jwt...",
+ *     "expiresIn": 900
+ *   }
+ * }
+ */
+export async function login(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // Validar entrada
+    const { email, senha } = loginSchema.parse(request.body)
+
+    logDebug('Controller: login iniciado', { email })
+
+    // Chamar service
+    const resultado = await authService.login(email, senha)
+
+    logInfo('✅ Controller: login bem-sucedido', { usuarioId: resultado.usuarioId })
+
+    // Retornar resposta
+    return reply.code(200).send({
+      success: true,
+      data: resultado,
+    })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      logWarn('Controller: validação falhou no login', { error: error.message })
+      return reply.code(400).send({
+        success: false,
+        message: error.message,
+        code: error.code,
+      })
+    }
+
+    if (error instanceof UnauthorizedError) {
+      logWarn('Controller: credenciais inválidas', { error: error.message })
+      return reply.code(error.statusCode || 401).send({
+        success: false,
+        message: error.message,
+        code: error.code,
+      })
+    }
+
+    logWarn('Controller: erro inesperado no login', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+
+    return reply.code(500).send({
+      success: false,
+      message: 'Erro interno do servidor',
+      code: 'INTERNAL_ERROR',
+    })
+  }
+}
+
+/**
+ * POST /api/v1/auth/register
+ *
+ * Registra novo usuário
+ *
+ * @example
+ * Request body:
+ * {
+ *   "email": "novo@pilates.local",
+ *   "nome": "João Silva",
+ *   "cpf": "12345678901",
+ *   "telefone": "11999999999",
+ *   "senha": "senha123",
+ *   "senhaConfirmacao": "senha123"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "usuarioId": "uuid",
+ *     "email": "novo@pilates.local",
+ *     "nome": "João Silva",
+ *     "funcao": "RECEPCIONISTA",
+ *     "accessToken": "jwt...",
+ *     "refreshToken": "jwt...",
+ *     "expiresIn": 900
+ *   }
+ * }
+ */
+export async function register(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // Validar entrada
+    const { email, nome, cpf, telefone, senha, senhaConfirmacao } = registerSchema.parse(request.body)
+
+    logDebug('Controller: registro iniciado', { email, cpf })
+
+    // Chamar service
+    const resultado = await authService.register(email, nome, cpf, senha, senhaConfirmacao, telefone)
+
+    logInfo('✅ Controller: registro bem-sucedido', { usuarioId: resultado.usuarioId })
+
+    // Retornar resposta
+    return reply.code(201).send({
+      success: true,
+      data: resultado,
+    })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      logWarn('Controller: validação falhou no registro', { error: error.message })
+      return reply.code(400).send({
+        success: false,
+        message: error.message,
+        code: error.code,
+      })
+    }
+
+    logWarn('Controller: erro no registro', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+
+    return reply.code(500).send({
+      success: false,
+      message: 'Erro ao registrar usuário',
+      code: 'REGISTRATION_ERROR',
+    })
+  }
+}
+
+/**
+ * POST /api/v1/auth/refresh
+ *
+ * Renova access token usando refresh token
+ * Implementa rotação de refresh token
+ *
+ * @example
+ * Request body:
+ * {
+ *   "refreshToken": "jwt..."
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {
+ *     "accessToken": "jwt...",
+ *     "refreshToken": "jwt...",
+ *     "expiresIn": 900
+ *   }
+ * }
+ */
+export async function refresh(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // Validar entrada
+    const { refreshToken } = refreshTokenSchema.parse(request.body)
+
+    logDebug('Controller: refresh token iniciado')
+
+    // Chamar service
+    const resultado = await authService.refreshToken(refreshToken)
+
+    logInfo('✅ Controller: token renovado com sucesso')
+
+    // Retornar resposta
+    return reply.code(200).send({
+      success: true,
+      data: resultado,
+    })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      logWarn('Controller: validação falhou no refresh', { error: error.message })
+      return reply.code(400).send({
+        success: false,
+        message: error.message,
+        code: error.code,
+      })
+    }
+
+    if (error instanceof UnauthorizedError) {
+      logWarn('Controller: refresh token inválido ou expirado')
+      return reply.code(401).send({
+        success: false,
+        message: error.message,
+        code: error.code,
+      })
+    }
+
+    logWarn('Controller: erro no refresh', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+
+    return reply.code(500).send({
+      success: false,
+      message: 'Erro ao renovar token',
+      code: 'REFRESH_ERROR',
+    })
+  }
+}
+
+/**
+ * POST /api/v1/auth/logout
+ *
+ * Realiza logout (apenas log, JWT é stateless)
+ * ⚠️ PROTEGIDO - requer authentication
+ *
+ * @example
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {}
+ * }
+ */
+export async function logout(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // Dados do usuário vêm do middleware de autenticação
+    const usuarioId = request.usuarioId as string
+    const email = request.email as string
+
+    logDebug('Controller: logout iniciado', { usuarioId })
+
+    // Chamar service
+    await authService.logout(usuarioId, email)
+
+    logInfo('✅ Controller: logout bem-sucedido', { usuarioId })
+
+    // Retornar resposta
+    return reply.code(200).send({
+      success: true,
+      data: {},
+    })
+  } catch (error) {
+    logWarn('Controller: erro no logout', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+
+    return reply.code(500).send({
+      success: false,
+      message: 'Erro ao fazer logout',
+      code: 'LOGOUT_ERROR',
+    })
+  }
+}
+
+/**
+ * POST /api/v1/auth/change-password
+ *
+ * Muda senha do usuário autenticado
+ * ⚠️ PROTEGIDO - requer authentication
+ *
+ * @example
+ * Request body:
+ * {
+ *   "senhaAtual": "senha123",
+ *   "novaSenha": "novaSenha456",
+ *   "novaSenhaConfirmacao": "novaSenha456"
+ * }
+ *
+ * Response:
+ * {
+ *   "success": true,
+ *   "data": {}
+ * }
+ */
+export async function changePassword(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    // Dados do usuário vêm do middleware de autenticação
+    const usuarioId = request.usuarioId as string
+
+    // Validar entrada
+    const { senhaAtual, novaSenha, novaSenhaConfirmacao } = changePasswordSchema.parse(request.body)
+
+    logDebug('Controller: mudança de senha iniciada', { usuarioId })
+
+    // Chamar service
+    await authService.changePassword(usuarioId, senhaAtual, novaSenha)
+
+    logInfo('✅ Controller: senha alterada com sucesso', { usuarioId })
+
+    // Retornar resposta
+    return reply.code(200).send({
+      success: true,
+      data: {},
+    })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      logWarn('Controller: validação falhou na mudança de senha', { error: error.message })
+      return reply.code(400).send({
+        success: false,
+        message: error.message,
+        code: error.code,
+      })
+    }
+
+    if (error instanceof UnauthorizedError) {
+      logWarn('Controller: senha atual incorreta')
+      return reply.code(401).send({
+        success: false,
+        message: error.message,
+        code: error.code,
+      })
+    }
+
+    logWarn('Controller: erro na mudança de senha', {
+      error: error instanceof Error ? error.message : String(error),
+    })
+
+    return reply.code(500).send({
+      success: false,
+      message: 'Erro ao alterar senha',
+      code: 'PASSWORD_CHANGE_ERROR',
+    })
+  }
+}
