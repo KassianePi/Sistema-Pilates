@@ -20,13 +20,22 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar apenas dependências de produção
+# Instalar apenas dependências de produção + ferramentas utilitárias
 COPY package*.json ./
 
-RUN npm ci --only=production
+RUN npm ci --only=production && \
+    apk add --no-cache netcat-openbsd && \
+    rm -rf /var/cache/apk/*
 
 # Copiar código compilado do builder
 COPY --from=builder /app/dist ./dist
+
+# Copiar pasta prisma (necessário para migrations)
+COPY prisma ./prisma
+
+# Copiar script de inicialização
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 # Expor porta
 EXPOSE 3000
@@ -35,5 +44,10 @@ EXPOSE 3000
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
   CMD node -e "require('http').get('http://localhost:3000/api/v1/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Comando padrão
-CMD ["node", "dist/server.js"]
+# Variáveis de ambiente padrão
+ENV NODE_ENV=production
+ENV DB_HOST=mysql
+ENV DB_PORT=3306
+
+# Usar entrypoint script para migrations automáticas
+ENTRYPOINT ["/app/entrypoint.sh"]

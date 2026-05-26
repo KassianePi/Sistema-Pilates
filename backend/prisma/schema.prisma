@@ -1,3 +1,6 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
@@ -48,371 +51,385 @@ model Usuario {
   @@index([email])
   @@index([cpf])
   @@index([status])
-  @@index([funcao])
   @@map("usuarios")
 }
 
 // ============================================================================
-// 👨‍🎓 MÓDULO ALUNOS — Gestão de Alunos e Planos
+// 👥 MÓDULO ALUNOS — Gerenciamento de Alunos
 // ============================================================================
 
-enum Genero {
-  M
-  F
-  OUTRO
+enum StatusAluno {
+  ATIVO
+  INATIVO
+  SUSPENSO
+  FORMADO
 }
 
 model Aluno {
-  id                        String             @id @default(uuid()) @db.VarChar(36)
-  usuarioId                 String             @unique @map("usuario_id") @db.VarChar(36)
-  dataNascimento            DateTime?          @map("data_nascimento") @db.Date
-  genero                    Genero?
-  endereco                  String?            @db.VarChar(255)
-  cidade                    String?            @db.VarChar(100)
-  estado                    String?            @db.VarChar(2)
-  cep                       String?            @db.VarChar(10)
-  contatoEmergenciaNome     String?            @map("contato_emergencia_nome") @db.VarChar(255)
-  contatoEmergenciaTelefone String?            @map("contato_emergencia_telefone") @db.VarChar(20)
-  restricoesMedicas         String?            @map("restricoes_medicas") @db.Text
-  ativo                     Boolean            @default(true)
-  criadoEm                  DateTime           @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm              DateTime           @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  id              String       @id @default(uuid()) @db.VarChar(36)
+  usuarioId       String       @unique @db.VarChar(36)
+  dataInicio      DateTime     @map("data_inicio") @db.DateTime
+  ultimoAcesso    DateTime?    @map("ultimo_acesso") @db.DateTime
+  observacoes     String?      @db.LongText
+  status          StatusAluno  @default(ATIVO)
+  criadoEm        DateTime     @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime     @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
-  usuario                   Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  planos                    PlanoAluno[]
-  progressos                ProgressoAluno[]
-  presencas                 Presenca[]
-  mensalidades              Mensalidade[]
+  usuario         Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  aulas           Aula[]
+  presencas       Presenca[]
+  mensalidades    Mensalidade[]
+  reposicoes      Reposicao[]
 
-  @@index([ativo])
+  @@index([usuarioId])
+  @@index([status])
   @@map("alunos")
 }
 
-enum TipoPlano {
-  BASICO_4
-  BASICO_8
-  PREMIUM
-  CUSTOMIZADO
-}
+// ============================================================================
+// 🎓 MÓDULO PROFESSORES — Gerenciamento de Professores
+// ============================================================================
 
-enum StatusPlano {
+enum StatusProfessor {
   ATIVO
-  PAUSADO
-  CONCLUIDO
+  INATIVO
+  LICENCA
 }
-
-model PlanoAluno {
-  id             String      @id @default(uuid()) @db.VarChar(36)
-  alunoId        String      @map("aluno_id") @db.VarChar(36)
-  tipoPlano      TipoPlano   @map("tipo_plano")
-  dataInicio     DateTime    @map("data_inicio") @db.Date
-  dataFim        DateTime?   @map("data_fim") @db.Date
-  custoMensal    Decimal     @map("custo_mensal") @db.Decimal(10, 2)
-  aulasPorSemana Int?        @map("aulas_por_semana")
-  status         StatusPlano @default(ATIVO)
-  observacoes    String?     @db.Text
-  criadoEm       DateTime    @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm   DateTime    @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
-
-  aluno          Aluno       @relation(fields: [alunoId], references: [id], onDelete: Cascade)
-
-  @@index([alunoId])
-  @@index([status])
-  @@index([dataInicio])
-  @@index([dataFim])
-  @@map("planos_alunos")
-}
-
-model ProgressoAluno {
-  id                String   @id @default(uuid()) @db.VarChar(36)
-  alunoId           String   @map("aluno_id") @db.VarChar(36)
-  aulaId            String   @map("aula_id") @db.VarChar(36)
-  dataAvaliacao     DateTime @map("data_avaliacao") @db.Date
-  notaFlexibilidade Int?     @map("nota_flexibilidade")
-  notaForca         Int?     @map("nota_forca")
-  notaEquilibrio    Int?     @map("nota_equilibrio")
-  notaResistencia   Int?     @map("nota_resistencia")
-  observacoes       String?  @db.Text
-  criadoEm          DateTime @default(now()) @map("criado_em") @db.DateTime
-
-  aluno             Aluno    @relation(fields: [alunoId], references: [id], onDelete: Cascade)
-  aula              Aula     @relation(fields: [aulaId], references: [id])
-
-  @@index([alunoId])
-  @@index([aulaId])
-  @@index([dataAvaliacao])
-  @@map("progresso_alunos")
-}
-
-// ============================================================================
-// 👨‍🏫 MÓDULO PROFESSORES — Gestão de Professores
-// ============================================================================
 
 model Professor {
-  id                String         @id @default(uuid()) @db.VarChar(36)
-  usuarioId         String         @unique @map("usuario_id") @db.VarChar(36)
-  especializacao    String?        @db.VarChar(255)
-  numeroCertificado String?        @map("numero_certificado") @db.VarChar(50)
-  taxaHoraria       Decimal?       @map("taxa_horaria") @db.Decimal(10, 2)
-  biografia         String?        @db.Text
-  ativo             Boolean        @default(true)
-  criadoEm          DateTime       @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm      DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  id              String         @id @default(uuid()) @db.VarChar(36)
+  usuarioId       String         @unique @db.VarChar(36)
+  especialidade   String?        @db.VarChar(255)
+  bio             String?        @db.LongText
+  status          StatusProfessor @default(ATIVO)
+  criadoEm        DateTime       @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
-  usuario           Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  horarios          HorarioAula[]
-  aulas             Aula[]
+  usuario         Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  aulas           Aula[]
+  relatorios      Relatorio[]
 
-  @@index([ativo])
+  @@index([usuarioId])
+  @@index([status])
   @@map("professores")
 }
 
 // ============================================================================
-// 📅 MÓDULO AGENDA — Aulas, Horários e Presenças
+// 💰 MÓDULO PLANOS — Planos de Pilates
 // ============================================================================
 
-enum DiaSemana {
-  SEG
-  TER
-  QUA
-  QUI
-  SEX
-  SAB
-  DOM
+enum TipoPlano {
+  MENSAL
+  TRIMESTRAL
+  SEMESTRAL
+  ANUAL
 }
 
-enum StatusHorario {
-  ATIVO
-  ARQUIVADO
+model Plano {
+  id              String      @id @default(uuid()) @db.VarChar(36)
+  nome            String      @db.VarChar(255)
+  descricao       String?     @db.LongText
+  tipo            TipoPlano   @default(MENSAL)
+  aulas           Int         @default(4)
+  preco           Decimal     @db.Decimal(10, 2)
+  ativo           Boolean     @default(true)
+  criadoEm        DateTime    @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime    @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+
+  mensalidades    Mensalidade[]
+
+  @@index([ativo])
+  @@map("planos")
 }
 
-model HorarioAula {
-  id           String        @id @default(uuid()) @db.VarChar(36)
-  professorId  String        @map("professor_id") @db.VarChar(36)
-  diaSemana    DiaSemana     @map("dia_semana")
-  horaInicio   String        @map("hora_inicio") @db.VarChar(5)
-  horaFim      String        @map("hora_fim") @db.VarChar(5)
-  sala         String?       @db.VarChar(50)
-  capacidade   Int           @default(15)
-  status       StatusHorario @default(ATIVO)
-  criadoEm     DateTime      @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm DateTime      @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
-
-  professor    Professor     @relation(fields: [professorId], references: [id], onDelete: Cascade)
-  aulas        Aula[]
-
-  @@index([professorId])
-  @@index([diaSemana])
-  @@index([status])
-  @@map("horarios_aulas")
-}
+// ============================================================================
+// 📅 MÓDULO AGENDA — Aulas e Presença
+// ============================================================================
 
 enum StatusAula {
   AGENDADA
-  EM_ANDAMENTO
-  CONCLUIDA
+  REALIZADA
   CANCELADA
+  ADIADA
 }
 
 model Aula {
-  id            String           @id @default(uuid()) @db.VarChar(36)
-  horarioAulaId String           @map("horario_aula_id") @db.VarChar(36)
-  professorId   String           @map("professor_id") @db.VarChar(36)
-  dataAula      DateTime         @map("data_aula") @db.Date
-  horaInicio    String           @map("hora_inicio") @db.VarChar(5)
-  horaFim       String           @map("hora_fim") @db.VarChar(5)
-  sala          String?          @db.VarChar(50)
-  capacidade    Int              @default(15)
-  status        StatusAula       @default(AGENDADA)
-  observacoes   String?          @db.Text
-  criadoEm      DateTime         @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm  DateTime         @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  id              String       @id @default(uuid()) @db.VarChar(36)
+  professorId     String       @db.VarChar(36)
+  dataHoraInicio  DateTime     @map("data_hora_inicio") @db.DateTime
+  duracao         Int          @default(50)
+  capacidade      Int          @default(10)
+  sala            String       @db.VarChar(100)
+  observacoes     String?      @db.LongText
+  status          StatusAula   @default(AGENDADA)
+  criadoEm        DateTime     @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime     @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
-  horario       HorarioAula      @relation(fields: [horarioAulaId], references: [id])
-  professor     Professor        @relation(fields: [professorId], references: [id])
-  presencas     Presenca[]
-  progressos    ProgressoAluno[]
+  professor       Professor    @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  presencas       Presenca[]
+  reposicoes      Reposicao[]
 
-  @@unique([horarioAulaId, dataAula], name: "uk_horario_aula_data")
   @@index([professorId])
-  @@index([dataAula])
+  @@index([dataHoraInicio])
   @@index([status])
   @@map("aulas")
 }
 
+// ============================================================================
+// 📍 MÓDULO PRESENÇA — Controle de Presença
+// ============================================================================
+
 enum StatusPresenca {
   PRESENTE
   AUSENTE
-  JUSTIFICADO
+  FALTA_JUSTIFICADA
 }
 
 model Presenca {
-  id           String         @id @default(uuid()) @db.VarChar(36)
-  alunoId      String         @map("aluno_id") @db.VarChar(36)
-  aulaId       String         @map("aula_id") @db.VarChar(36)
-  status       StatusPresenca @default(AUSENTE)
-  registradoEm DateTime?      @map("registrado_em") @db.DateTime
-  observacoes  String?        @db.Text
-  criadoEm     DateTime       @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  id              String         @id @default(uuid()) @db.VarChar(36)
+  alunoId         String         @db.VarChar(36)
+  aulaId          String         @db.VarChar(36)
+  status          StatusPresenca @default(PRESENTE)
+  dataRegistro    DateTime       @map("data_registro") @db.DateTime
+  criadoEm        DateTime       @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
-  aluno        Aluno          @relation(fields: [alunoId], references: [id], onDelete: Cascade)
-  aula         Aula           @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  aluno           Aluno          @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  aula            Aula           @relation(fields: [aulaId], references: [id], onDelete: Cascade)
 
-  @@unique([alunoId, aulaId], name: "uk_aluno_aula")
+  @@unique([alunoId, aulaId])
   @@index([alunoId])
   @@index([aulaId])
-  @@index([status])
   @@map("presencas")
 }
 
 // ============================================================================
-// 💰 MÓDULO FINANCEIRO — Gestão Financeira
+// 🔄 MÓDULO REPOSIÇÃO — Controle de Reposições
+// ============================================================================
+
+enum StatusReposicao {
+  PENDENTE
+  AGENDADA
+  REALIZADA
+  CANCELADA
+}
+
+model Reposicao {
+  id              String            @id @default(uuid()) @db.VarChar(36)
+  alunoId         String            @db.VarChar(36)
+  aulaOriginalId  String            @db.VarChar(36)
+  aulaReposicaoId String?           @db.VarChar(36)
+  motivo          String            @db.VarChar(255)
+  status          StatusReposicao   @default(PENDENTE)
+  dataSolicitacao DateTime          @map("data_solicitacao") @db.DateTime
+  criadoEm        DateTime          @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime          @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+
+  aluno           Aluno             @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  aulaOriginal    Aula              @relation(fields: [aulaOriginalId], references: [id], onDelete: Cascade)
+  aulaReposicao   Aula?             @relation(name: "ReposicaoAula", fields: [aulaReposicaoId], references: [id], onDelete: SetNull)
+
+  @@index([alunoId])
+  @@index([aulaOriginalId])
+  @@index([status])
+  @@map("reposicoes")
+}
+
+// ============================================================================
+// 💳 MÓDULO FINANCEIRO — Caixa e Movimentação
+// ============================================================================
+
+enum TipoMovimentacao {
+  ENTRADA
+  SAIDA
+}
+
+enum MetodoPagamento {
+  DINHEIRO
+  PIX
+  CARTAO_CREDITO
+  CARTAO_DEBITO
+  CHEQUE
+  TRANSFERENCIA
+}
+
+model Caixa {
+  id                String              @id @default(uuid()) @db.VarChar(36)
+  usuarioAbreId     String              @db.VarChar(36)
+  usuarioFechaId    String?             @db.VarChar(36)
+  dataAbertura      DateTime            @map("data_abertura") @db.DateTime
+  dataFechamento    DateTime?           @map("data_fechamento") @db.DateTime
+  saldoAbertura     Decimal             @map("saldo_abertura") @db.Decimal(10, 2)
+  saldoFechamento   Decimal?            @map("saldo_fechamento") @db.Decimal(10, 2)
+  observacoes       String?             @db.LongText
+  criadoEm          DateTime            @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm      DateTime            @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+
+  usuarioAbre       Usuario             @relation("CaixasAbertos", fields: [usuarioAbreId], references: [id])
+  usuarioFecha      Usuario?            @relation("CaixasFechados", fields: [usuarioFechaId], references: [id])
+  pagamentos        Pagamento[]
+
+  @@index([usuarioAbreId])
+  @@index([dataAbertura])
+  @@map("caixas")
+}
+
+// ============================================================================
+// 💰 MÓDULO MENSALIDADES — Mensalidades e Pagamentos
 // ============================================================================
 
 enum StatusMensalidade {
   PENDENTE
+  PARCIAL
   PAGO
   VENCIDO
   CANCELADO
 }
 
 model Mensalidade {
-  id             String            @id @default(uuid()) @db.VarChar(36)
-  alunoId        String            @map("aluno_id") @db.VarChar(36)
-  mes            Int               @db.TinyInt
-  ano            Int
-  valor          Decimal           @db.Decimal(10, 2)
-  status         StatusMensalidade @default(PENDENTE)
-  dataVencimento DateTime          @map("data_vencimento") @db.Date
-  dataPagamento  DateTime?         @map("data_pagamento") @db.Date
-  observacoes    String?           @db.Text
-  criadoEm       DateTime          @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm   DateTime          @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  id              String             @id @default(uuid()) @db.VarChar(36)
+  alunoId         String             @db.VarChar(36)
+  planoId         String             @db.VarChar(36)
+  mesReferencia   DateTime           @map("mes_referencia") @db.DateTime
+  dataVencimento  DateTime           @map("data_vencimento") @db.DateTime
+  valor           Decimal            @db.Decimal(10, 2)
+  desconto        Decimal            @default(0) @db.Decimal(10, 2)
+  status          StatusMensalidade  @default(PENDENTE)
+  observacoes     String?            @db.LongText
+  criadoEm        DateTime           @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime           @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
-  aluno          Aluno             @relation(fields: [alunoId], references: [id], onDelete: Cascade)
-  pagamentos     Pagamento[]
+  aluno           Aluno              @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  plano           Plano              @relation(fields: [planoId], references: [id])
+  pagamentos      Pagamento[]
 
-  @@unique([alunoId, mes, ano], name: "uk_aluno_mes_ano")
   @@index([alunoId])
   @@index([status])
   @@index([dataVencimento])
-  @@index([ano, mes])
   @@map("mensalidades")
 }
 
-enum MetodoPagamento {
-  DINHEIRO
-  CARTAO_CREDITO
-  CARTAO_DEBITO
-  TRANSFERENCIA_BANCARIA
-}
+// ============================================================================
+// 💳 MÓDULO PAGAMENTOS — Registro de Pagamentos
+// ============================================================================
 
 model Pagamento {
-  id                   String          @id @default(uuid()) @db.VarChar(36)
-  mensalidadeId        String          @map("mensalidade_id") @db.VarChar(36)
-  valor                Decimal         @db.Decimal(10, 2)
-  metodoPagamento      MetodoPagamento @map("metodo_pagamento")
-  referencia           String?         @db.VarChar(255)
-  pagoEm               DateTime        @default(now()) @map("pago_em") @db.DateTime
-  recebidoPorUsuarioId String          @map("recebido_por_usuario_id") @db.VarChar(36)
-  observacoes          String?         @db.Text
-  criadoEm             DateTime        @default(now()) @map("criado_em") @db.DateTime
+  id              String              @id @default(uuid()) @db.VarChar(36)
+  mensalidadeId   String              @db.VarChar(36)
+  caixaId         String              @db.VarChar(36)
+  usuarioId       String              @db.VarChar(36)
+  dataPagamento   DateTime            @map("data_pagamento") @db.DateTime
+  valor           Decimal             @db.Decimal(10, 2)
+  metodo          MetodoPagamento     @default(PIX)
+  referencia      String?             @db.VarChar(255)
+  observacoes     String?             @db.LongText
+  criadoEm        DateTime            @default(now()) @map("criado_em") @db.DateTime
 
-  mensalidade          Mensalidade     @relation(fields: [mensalidadeId], references: [id], onDelete: Cascade)
-  recebidoPor          Usuario         @relation(fields: [recebidoPorUsuarioId], references: [id])
+  mensalidade     Mensalidade         @relation(fields: [mensalidadeId], references: [id], onDelete: Cascade)
+  caixa           Caixa               @relation(fields: [caixaId], references: [id])
+  usuario         Usuario             @relation(fields: [usuarioId], references: [id])
 
   @@index([mensalidadeId])
-  @@index([pagoEm])
-  @@index([recebidoPorUsuarioId])
+  @@index([caixaId])
+  @@index([dataPagamento])
   @@map("pagamentos")
 }
 
-enum StatusCaixa {
-  ABERTO
-  FECHADO
+// ============================================================================
+// 📊 MÓDULO RELATÓRIOS — Geração de Relatórios
+// ============================================================================
+
+enum TipoRelatorio {
+  FREQUENCIA
+  FINANCEIRO
+  PRESENCA_ALUNO
+  RECEITA_MENSAL
+  PENDENCIAS_PAGAMENTO
 }
 
-model Caixa {
-  id                  String      @id @default(uuid()) @db.VarChar(36)
-  dataAbertura        DateTime    @unique @map("data_abertura") @db.Date
-  saldoAbertura       Decimal     @default(0) @map("saldo_abertura") @db.Decimal(15, 2)
-  totalEntrada        Decimal     @default(0) @map("total_entrada") @db.Decimal(15, 2)
-  totalSaida          Decimal     @default(0) @map("total_saida") @db.Decimal(15, 2)
-  saldoFechamento     Decimal?    @map("saldo_fechamento") @db.Decimal(15, 2)
-  abertoPorUsuarioId  String      @map("aberto_por_usuario_id") @db.VarChar(36)
-  fechadoPorUsuarioId String?     @map("fechado_por_usuario_id") @db.VarChar(36)
-  abertoEm            DateTime    @default(now()) @map("aberto_em") @db.DateTime
-  fechadoEm           DateTime?   @map("fechado_em") @db.DateTime
-  status              StatusCaixa @default(ABERTO)
-  observacoes         String?     @db.Text
-  criadoEm            DateTime    @default(now()) @map("criado_em") @db.DateTime
+model Relatorio {
+  id              String        @id @default(uuid()) @db.VarChar(36)
+  professorId     String        @db.VarChar(36)
+  tipo            TipoRelatorio
+  titulo          String        @db.VarChar(255)
+  descricao       String?       @db.LongText
+  dataPeriodoInicio DateTime    @map("data_periodo_inicio") @db.DateTime
+  dataPeriodoFim  DateTime      @map("data_periodo_fim") @db.DateTime
+  conteudo        String        @db.LongText
+  criadoEm        DateTime      @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime      @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
-  abertoPor           Usuario     @relation("CaixasAbertos", fields: [abertoPorUsuarioId], references: [id])
-  fechadoPor          Usuario?    @relation("CaixasFechados", fields: [fechadoPorUsuarioId], references: [id])
+  professor       Professor     @relation(fields: [professorId], references: [id], onDelete: Cascade)
 
-  @@index([dataAbertura])
-  @@index([status])
-  @@index([abertoPorUsuarioId])
-  @@index([fechadoPorUsuarioId])
-  @@map("caixa")
+  @@index([professorId])
+  @@index([tipo])
+  @@map("relatorios")
 }
 
 // ============================================================================
-// 🔔 MÓDULO NOTIFICAÇÕES
+// 🔔 MÓDULO NOTIFICAÇÕES — Notificações do Sistema
 // ============================================================================
 
 enum TipoNotificacao {
-  AULA_CANCELADA
-  MENSALIDADE_VENCIDA
-  BOAS_VINDAS
-  SISTEMA
+  AULA_AGENDADA
+  PAGAMENTO_VENCIDO
+  PRESENCA_REGISTRADA
+  REPOSICAO_OFERECIDA
+  MENSAGEM_ADMIN
+}
+
+enum StatusNotificacao {
+  NAO_LIDA
+  LIDA
+  ARQUIVADA
 }
 
 model Notificacao {
-  id                    String          @id @default(uuid()) @db.VarChar(36)
-  usuarioDestinatarioId String          @map("usuario_destinatario_id") @db.VarChar(36)
-  tipo                  TipoNotificacao
-  assunto               String          @db.VarChar(255)
-  mensagem              String          @db.Text
-  lidoEm                DateTime?       @map("lido_em") @db.DateTime
-  criadoEm              DateTime        @default(now()) @map("criado_em") @db.DateTime
+  id              String              @id @default(uuid()) @db.VarChar(36)
+  usuarioId       String              @db.VarChar(36)
+  tipo            TipoNotificacao
+  titulo          String              @db.VarChar(255)
+  mensagem        String              @db.LongText
+  status          StatusNotificacao   @default(NAO_LIDA)
+  dataLeitura     DateTime?           @map("data_leitura") @db.DateTime
+  criadoEm        DateTime            @default(now()) @map("criado_em") @db.DateTime
 
-  destinatario          Usuario         @relation(fields: [usuarioDestinatarioId], references: [id], onDelete: Cascade)
+  usuario         Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
-  @@index([usuarioDestinatarioId])
-  @@index([criadoEm])
-  @@index([lidoEm])
+  @@index([usuarioId])
+  @@index([status])
   @@map("notificacoes")
 }
 
 // ============================================================================
-// 📊 MÓDULO AUDITORIA
+// 🔐 MÓDULO AUDITORIA — Logs de Auditoria
 // ============================================================================
 
-enum AcaoAuditoria {
-  CRIAR
-  ATUALIZAR
-  DELETAR
-  LER
+enum TipoAcao {
+  CREATE
+  READ
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
 }
 
 model LogAuditoria {
-  id           String        @id @default(uuid()) @db.VarChar(36)
-  usuarioId    String        @map("usuario_id") @db.VarChar(36)
-  tipoEntidade String        @map("tipo_entidade") @db.VarChar(100)
-  idEntidade   String?       @map("id_entidade") @db.VarChar(36)
-  acao         AcaoAuditoria
-  valoresAntigos Json?       @map("valores_antigos")
-  valoresNovos   Json?       @map("valores_novos")
-  enderecoIp   String?       @map("endereco_ip") @db.VarChar(45)
-  userAgent    String?       @map("user_agent") @db.VarChar(255)
-  criadoEm     DateTime      @default(now()) @map("criado_em") @db.DateTime
+  id              String        @id @default(uuid()) @db.VarChar(36)
+  usuarioId       String        @db.VarChar(36)
+  acao            TipoAcao
+  entidade        String        @db.VarChar(255)
+  entidadeId      String        @db.VarChar(36)
+  dadosAntigos    String?       @map("dados_antigos") @db.LongText
+  dadosNovos      String?       @map("dados_novos") @db.LongText
+  enderecoIp      String?       @map("endereco_ip") @db.VarChar(45)
+  userAgent       String?       @map("user_agent") @db.LongText
+  criadoEm        DateTime      @default(now()) @map("criado_em") @db.DateTime
 
-  usuario      Usuario       @relation(fields: [usuarioId], references: [id])
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
-  @@index([tipoEntidade, idEntidade])
+  @@index([acao])
   @@index([criadoEm])
   @@map("logs_auditoria")
 }

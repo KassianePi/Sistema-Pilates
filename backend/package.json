@@ -12,7 +12,13 @@
     "test:watch": "vitest --watch",
     "test:coverage": "vitest --coverage",
     "lint": "eslint src --fix",
-    "format": "prettier --write \"src/**/*.ts\""
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prisma:generate": "prisma generate",
+    "prisma:db-push": "prisma db push",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:studio": "prisma studio",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "prisma:reset": "prisma migrate reset --force"
   },
   "keywords": ["pilates", "studio", "fastify", "prisma", "typescript"],
   "author": "Alex",
@@ -44,5 +50,8 @@
     "supertest": "^6.3.4",
     "tsx": "^4.7.2",
     "vitest": "^1.6.0"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

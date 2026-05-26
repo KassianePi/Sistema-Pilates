@@ -1,8 +1,8 @@
 # 📊 STATUS COMPLETO DO PROJETO — Sistema Pilates
 
 **Data:** 26 de Maio de 2026  
-**Análise:** Modelagem concluída com Prisma Schema e Client  
-**Progresso Geral:** **40% completo** ✅ Fase 0-1 | ⏳ Fase 2-7
+**Análise:** Parte 2 completa com Prisma + Auto-Migrations  
+**Progresso Geral:** **40% completo** ✅ Fase 0-1 + Parte 1-2 | ⏳ Parte 3-10
 
 ---
 
@@ -186,16 +186,23 @@ Preto/Branco:
 - ✅ config/env.ts existe (17 linhas)
 - ⏳ Faltam: shared/, events/, database/, modules/ estrutura completa
 
-#### Parte 2: Prisma + MySQL (1h)
+#### Parte 2: Prisma + MySQL (1h) ✅ COMPLETA
 
 ```
-⏳ backend/prisma/
-  ├─ schema.prisma (13 modelos) ✅ (criado e mapeado!)
-  ├─ migrations/
-  └─ prisma.client.ts ✅ (criado!)
+✅ backend/prisma/
+  ├─ schema.prisma (13 modelos + 15 enums) 
+  ├─ seed.ts (4 usuários padrão + 2 planos)
+  ├─ migration_lock.toml
+  ├─ migrations/20260526000000_init/migration.sql (13 tabelas)
+  └─ MIGRATIONS.md (documentação)
+
+✅ backend/entrypoint.sh (auto-migrations setup)
+✅ backend/Dockerfile (atualizado para migrations automáticas)
+✅ backend/tsconfig.json (corrigido, sem deprecated options)
+✅ AUTO_MIGRATIONS.md (guia completo)
 ```
 
-**Status:** Parcialmente concluído (Prisma Schema e Client configurados, aguardando migrate no host/container) ⏳)
+**Status:** 100% Concluído ✅ (Pronto para VPS)
 
 #### Parte 3: Utilitários Compartilhados (1.5-2h)
 
