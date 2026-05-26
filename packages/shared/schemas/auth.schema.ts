@@ -63,6 +63,18 @@ export const registerSchema = z
       .min(3, 'Nome deve ter no mínimo 3 caracteres')
       .max(255, 'Nome muito longo'),
 
+    cpf: z
+      .string({
+        required_error: 'CPF é obrigatório',
+      })
+      .regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
+
+    telefone: z
+      .string()
+      .regex(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos')
+      .optional()
+      .nullable(),
+
     senha: z
       .string({
         required_error: 'Senha é obrigatória',
@@ -73,18 +85,6 @@ export const registerSchema = z
     senhaConfirmacao: z.string({
       required_error: 'Confirmação de senha é obrigatória',
     }),
-
-    telefone: z
-      .string()
-      .regex(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos')
-      .optional()
-      .nullable(),
-
-    cpf: z
-      .string()
-      .regex(/^\d{11}$/, 'CPF deve ter 11 dígitos')
-      .optional()
-      .nullable(),
   })
   .refine((data) => data.senha === data.senhaConfirmacao, {
     message: 'Senhas não correspondem',
