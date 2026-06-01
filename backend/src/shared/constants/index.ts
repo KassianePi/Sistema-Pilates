@@ -1,0 +1,21 @@
+export const PAGINATION = {
+  DEFAULT_PAGE: 1,
+  DEFAULT_LIMIT: 20,
+  MAX_LIMIT: 100,
+} as const
+
+export const HTTP_STATUS = {
+  OK: 200,
+  CREATED: 201,
+  NO_CONTENT: 204,
+  BAD_REQUEST: 400,
+  UNAUTHORIZED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  INTERNAL_ERROR: 500,
+} as const
+
+export const FUNCOES_USUARIO = ['ADMIN', 'PROFESSOR', 'RECEPCIONISTA', 'FINANCEIRO'] as const
+
+export const STATUS_USUARIO = ['ATIVO', 'INATIVO', 'SUSPENSO'] as const

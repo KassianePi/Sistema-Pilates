@@ -23,7 +23,8 @@ export const ROLE_PERMISSIONS = {
     pagamentos: ['create', 'read', 'update', 'delete', 'refund'],
     relatorios: ['create', 'read', 'delete'],
     auditoria: ['read'],
-    sistema: ['config', 'logs', 'maintenance'],
+    presenca: ['create', 'read', 'update', 'delete'],
+    sistema: ['create', 'read', 'update', 'delete', 'config', 'logs', 'maintenance'],
   },
 
   PROFESSOR: {
@@ -47,6 +48,10 @@ export const ROLE_PERMISSIONS = {
     alunos: ['read'], // ler apenas
     relatorios: ['create', 'read'], // gerar e ver
     auditoria: ['read'], // para rastrear mudanças
+  },
+
+  ALUNO: {
+    // Alunos só acessam seus próprios dados via rotas sem RBAC
   },
 } as const
 

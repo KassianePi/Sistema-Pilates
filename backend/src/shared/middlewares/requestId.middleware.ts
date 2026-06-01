@@ -45,10 +45,10 @@ export async function requestIdMiddleware(request: FastifyRequest, reply: Fastif
   reply.header('X-Request-ID', requestId)
 
   // Cria logger child com contexto persistente
-  const logContext: Record<string, any> = {
+  const logContext: Record<string, unknown> = {
     requestId,
     method: request.method,
-    path: request.path,
+    path: request.url,
     ip: request.ip,
   }
 

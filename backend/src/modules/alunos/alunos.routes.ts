@@ -1,0 +1,12 @@
+import type { FastifyInstance } from 'fastify'
+import { criar, listar, buscarPorId, atualizar, excluir } from './alunos.controller'
+import { authenticateToken } from '../../shared/middlewares/auth.middleware'
+import { authorize } from '../../shared/middlewares/rbac.middleware'
+
+export async function alunosRoutes(fastify: FastifyInstance) {
+  fastify.get('/api/v1/alunos', { onRequest: [authenticateToken, authorize('alunos', 'read')] }, listar)
+  fastify.get('/api/v1/alunos/:id', { onRequest: [authenticateToken, authorize('alunos', 'read')] }, buscarPorId)
+  fastify.post('/api/v1/alunos', { onRequest: [authenticateToken, authorize('alunos', 'create')] }, criar)
+  fastify.put('/api/v1/alunos/:id', { onRequest: [authenticateToken, authorize('alunos', 'update')] }, atualizar)
+  fastify.delete('/api/v1/alunos/:id', { onRequest: [authenticateToken, authorize('users', 'delete')] }, excluir)
+}

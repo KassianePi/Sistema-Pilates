@@ -1,14 +1,3 @@
-/**
- * Configuração da aplicação Fastify
- *
- * Responsável por:
- * - Instanciar Fastify com plugins
- * - Registrar middlewares globais
- * - Configurar CORS, Helmet, Rate Limiting
- * - Registrar rotas
- * - Error handling global
- */
-
 import Fastify from 'fastify'
 import fastifyJwt from '@fastify/jwt'
 import fastifyCors from '@fastify/cors'
@@ -17,25 +6,32 @@ import fastifyRateLimit from '@fastify/rate-limit'
 
 import { logger, logInfo, logError, logFatal } from './shared/utils'
 import { AppError, ValidationError, UnauthorizedError } from './shared/errors'
+import { prisma } from './database/prisma.client'
+
 import { authRoutes } from './modules/auth/auth.routes'
+import { planosRoutes } from './modules/planos/planos.routes'
+import { professoresRoutes } from './modules/professores/professores.routes'
+import { alunosRoutes } from './modules/alunos/alunos.routes'
+import { agendaRoutes } from './modules/agenda/agenda.routes'
+import { presencaRoutes } from './modules/presenca/presenca.routes'
+import { financeiroRoutes } from './modules/financeiro/financeiro.routes'
+import { notificacoesRoutes } from './modules/notificacoes/notificacoes.routes'
+import { auditoriaRoutes } from './modules/auditoria/auditoria.routes'
+import { relatoriosRoutes } from './modules/relatorios/relatorios.routes'
+
+// Inicializa listeners de eventos dos módulos
+import './modules/notificacoes/notificacoes.service'
 
 const isDevelopment = process.env.NODE_ENV === 'development'
 
-/**
- * Cria instância da aplicação Fastify
- *
- * @returns Instância configurada do Fastify
- * @throws Error se JWT_SECRET não está configurado
- */
 export async function createApp() {
   const app = Fastify({
-    logger: false, // Desabilita logger nativo (usamos Pino customizado)
+    logger: false,
     requestIdHeader: 'x-request-id',
     requestIdLogLabel: 'requestId',
     disableRequestLogging: false,
   })
 
-  // Validar secrets obrigatórios
   if (!process.env.JWT_SECRET) {
     logFatal('JWT_SECRET não configurado')
     throw new Error('JWT_SECRET não configurado no .env')
@@ -51,7 +47,6 @@ export async function createApp() {
     // 1. SECURITY PLUGINS
     // ========================================
 
-    // Helmet — Proteção de headers HTTP
     await app.register(fastifyHelmet, {
       contentSecurityPolicy: {
         directives: {
@@ -63,21 +58,18 @@ export async function createApp() {
       },
     })
 
-    // CORS — Cross-Origin Resource Sharing
     await app.register(fastifyCors, {
       origin: isDevelopment ? true : process.env.CORS_ORIGIN || 'https://pilates.local',
       credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       allowedHeaders: ['Content-Type', 'Authorization'],
     })
 
-    // Rate Limiting — Proteção contra força bruta
     await app.register(fastifyRateLimit, {
-      max: isDevelopment ? 1000 : 100, // requests por 15 min
+      max: isDevelopment ? 1000 : 100,
       timeWindow: '15 minutes',
-      cache: 10000, // número máximo de registros
-      allowList: ['127.0.0.1'], // localhost sem limite
-      redis: undefined, // usar memória em dev, Redis em prod
+      cache: 10000,
+      allowList: ['127.0.0.1'],
       skipOnError: true,
     })
 
@@ -94,80 +86,94 @@ export async function createApp() {
     })
 
     // ========================================
-    // 3. HOOKS — Logging e contexto
+    // 3. HOOKS — Logging
     // ========================================
 
-    // Hook: Request iniciada
-    app.addHook('onRequest', async (request, reply) => {
-      const { method, url, ip } = request
-      logInfo(`→ ${method} ${url}`, {
-        requestId: request.id,
-        ip,
-      })
+    app.addHook('onRequest', async (request) => {
+      logInfo(`→ ${request.method} ${request.url}`, { requestId: request.id, ip: request.ip })
     })
 
-    // Hook: Response enviada
     app.addHook('onResponse', async (request, reply) => {
-      const { method, url } = request
-      const { statusCode } = reply
-      logInfo(`← ${statusCode} ${method} ${url}`, {
+      logInfo(`← ${reply.statusCode} ${request.method} ${request.url}`, {
         requestId: request.id,
-        statusCode,
+        statusCode: reply.statusCode,
         responseTime: reply.getResponseTime(),
       })
     })
 
-    // Hook: Erro não tratado
-    app.addHook('onError', async (request, reply, error) => {
-      logError(`❌ ${request.method} ${request.url}`, error, {
-        requestId: request.id,
-      })
+    app.addHook('onError', async (request, _reply, error) => {
+      logError(`❌ ${request.method} ${request.url}`, error, { requestId: request.id })
     })
 
     // ========================================
     // 4. ROTAS DE SAÚDE
     // ========================================
 
-    app.get('/health', async (request, reply) => {
+    app.get('/health', async (_request, _reply) => ({
+      success: true,
+      data: { status: 'ok', timestamp: new Date().toISOString(), uptime: process.uptime() },
+    }))
+
+    app.get('/api/v1/health', async (_request, reply) => {
+      let dbStatus = 'connected'
+      try {
+        await prisma.$queryRaw`SELECT 1`
+      } catch {
+        dbStatus = 'disconnected'
+        reply.code(503)
+      }
       return {
-        success: true,
+        success: dbStatus === 'connected',
         data: {
-          status: 'ok',
+          status: dbStatus === 'connected' ? 'ok' : 'degraded',
+          service: 'studio-pilates-api',
+          version: '1.0.0',
+          database: dbStatus,
           timestamp: new Date().toISOString(),
-          environment: process.env.NODE_ENV,
           uptime: process.uptime(),
         },
       }
     })
 
-    app.get('/api/v1/health', async (request, reply) => {
-      return {
-        success: true,
-        data: {
-          status: 'ok',
-          service: 'studio-pilates-api',
-          version: '1.0.0',
-          database: 'connected', // TODO: verificar conexão com banco
-          timestamp: new Date().toISOString(),
-        },
-      }
+    // ========================================
+    // 5. RATE LIMIT ESPECÍFICO — Auth
+    // ========================================
+
+    app.register(async (instance) => {
+      await instance.register(fastifyRateLimit, {
+        max: 10,
+        timeWindow: '15 minutes',
+        keyGenerator: (request) => `${request.ip}-auth`,
+        errorResponseBuilder: () => ({
+          success: false,
+          message: 'Muitas tentativas. Aguarde 15 minutos.',
+          code: 'RATE_LIMIT_EXCEEDED',
+        }),
+      })
+      await instance.register(authRoutes)
     })
 
     // ========================================
-    // 5. ROTAS DE APLICAÇÃO
+    // 6. ROTAS DE APLICAÇÃO
     // ========================================
 
-    // Módulo: Autenticação
-    await app.register(authRoutes)
+    await app.register(planosRoutes)
+    await app.register(professoresRoutes)
+    await app.register(alunosRoutes)
+    await app.register(agendaRoutes)
+    await app.register(presencaRoutes)
+    await app.register(financeiroRoutes)
+    await app.register(notificacoesRoutes)
+    await app.register(auditoriaRoutes)
+    await app.register(relatoriosRoutes)
 
     // ========================================
-    // 6. ERROR HANDLING GLOBAL
+    // 7. ERROR HANDLING GLOBAL
     // ========================================
 
     app.setErrorHandler(async (error, request, reply) => {
       const requestId = request.id
 
-      // Erros conhecidos da aplicação
       if (error instanceof ValidationError) {
         logError(`Validação falhou: ${error.message}`, error, { requestId })
         return reply.status(error.statusCode).send(error.toJSON())
@@ -183,34 +189,16 @@ export async function createApp() {
         return reply.status(error.statusCode).send(error.toJSON())
       }
 
-      // Erro JWT
       if (error.name === 'UnauthorizedError' || error.name === 'JwtError') {
         logError(`JWT inválido: ${error.message}`, error, { requestId })
-        return reply.status(401).send({
-          success: false,
-          message: 'Token inválido ou expirado',
-          code: 'TOKEN_INVALID',
-          statusCode: 401,
-        })
+        return reply.status(401).send({ success: false, message: 'Token inválido ou expirado', code: 'TOKEN_INVALID', statusCode: 401 })
       }
 
-      // Erro 404
       if (error.statusCode === 404) {
-        return reply.status(404).send({
-          success: false,
-          message: 'Rota não encontrada',
-          code: 'NOT_FOUND',
-          statusCode: 404,
-        })
+        return reply.status(404).send({ success: false, message: 'Rota não encontrada', code: 'NOT_FOUND', statusCode: 404 })
       }
 
-      // Erros inesperados (500)
-      logError(`Erro inesperado: ${error.message}`, error, {
-        requestId,
-        stack: error.stack,
-      })
-
-      // Nunca exponha stack trace em produção
+      logError(`Erro inesperado: ${error.message}`, error, { requestId, stack: error.stack })
       const message = isDevelopment ? error.message : 'Erro interno do servidor'
       const details = isDevelopment ? { stack: error.stack } : undefined
 
@@ -224,7 +212,7 @@ export async function createApp() {
     })
 
     // ========================================
-    // 6. NOTFOUND HANDLER
+    // 8. NOT FOUND HANDLER
     // ========================================
 
     app.setNotFoundHandler((request, reply) => {
@@ -244,7 +232,4 @@ export async function createApp() {
   }
 }
 
-/**
- * Alias para createApp (usado em testes)
- */
 export const build = createApp

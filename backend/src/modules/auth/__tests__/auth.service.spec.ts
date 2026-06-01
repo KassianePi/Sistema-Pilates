@@ -1,28 +1,26 @@
-/**
- * Testes do Auth Service
- */
-
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach } from 'vitest'
 import { AuthService } from '../auth.service'
 import { UnauthorizedError, ValidationError } from '../../../shared/errors'
 import * as hashUtils from '../../../shared/utils/hash'
 import * as jwtUtils from '../../../shared/utils/jwt'
 
-/**
- * Mock do AuthRepository
- */
+const fakeSenhaHash = async () => hashUtils.hashPassword('senha123')
+
 class MockAuthRepository {
   async findByEmail(email: string) {
     if (email === 'existing@pilates.local') {
       return {
         id: 'user-123',
         email: 'existing@pilates.local',
-        nome: 'Existing User',
-        senhaHash: await hashUtils.hashPassword('senha123'),
+        nomeCompleto: 'Existing User',
+        cpf: '12345678901',
+        telefone: null,
+        senhaHash: await fakeSenhaHash(),
         funcao: 'ADMIN' as const,
-        ativo: true,
-        dataCriacao: new Date(),
-        dataAtualizacao: new Date(),
+        status: 'ATIVO' as const,
+        ultimoAcessoEm: null,
+        criadoEm: new Date(),
+        atualizadoEm: new Date(),
       }
     }
     return null
@@ -33,12 +31,15 @@ class MockAuthRepository {
       return {
         id: 'user-123',
         email: 'existing@pilates.local',
-        nome: 'Existing User',
-        senhaHash: await hashUtils.hashPassword('senha123'),
+        nomeCompleto: 'Existing User',
+        cpf: '12345678901',
+        telefone: null,
+        senhaHash: await fakeSenhaHash(),
         funcao: 'ADMIN' as const,
-        ativo: true,
-        dataCriacao: new Date(),
-        dataAtualizacao: new Date(),
+        status: 'ATIVO' as const,
+        ultimoAcessoEm: null,
+        criadoEm: new Date(),
+        atualizadoEm: new Date(),
       }
     }
     return null
@@ -48,12 +49,15 @@ class MockAuthRepository {
     return {
       id: 'new-user-id',
       email: data.email,
-      nome: data.nome,
+      nomeCompleto: data.nomeCompleto,
+      cpf: data.cpf,
+      telefone: data.telefone ?? null,
       senhaHash: data.senhaHash,
       funcao: data.funcao,
-      ativo: true,
-      dataCriacao: new Date(),
-      dataAtualizacao: new Date(),
+      status: 'ATIVO' as const,
+      ultimoAcessoEm: null,
+      criadoEm: new Date(),
+      atualizadoEm: new Date(),
     }
   }
 
@@ -61,12 +65,15 @@ class MockAuthRepository {
     return {
       id: usuarioId,
       email: 'existing@pilates.local',
-      nome: 'Existing User',
+      nomeCompleto: 'Existing User',
+      cpf: '12345678901',
+      telefone: null,
       senhaHash: novoSenhaHash,
       funcao: 'ADMIN' as const,
-      ativo: true,
-      dataCriacao: new Date(),
-      dataAtualizacao: new Date(),
+      status: 'ATIVO' as const,
+      ultimoAcessoEm: null,
+      criadoEm: new Date(),
+      atualizadoEm: new Date(),
     }
   }
 }
@@ -83,24 +90,19 @@ describe('AuthService', () => {
   describe('login', () => {
     it('deve fazer login com credenciais corretas', async () => {
       const result = await service.login('existing@pilates.local', 'senha123')
-
       expect(result.usuarioId).toBe('user-123')
       expect(result.email).toBe('existing@pilates.local')
       expect(result.accessToken).toBeDefined()
       expect(result.refreshToken).toBeDefined()
-      expect(result.expiresIn).toBe(900) // 15 minutos
+      expect(result.expiresIn).toBe(900)
     })
 
     it('deve lançar erro com senha incorreta', async () => {
-      await expect(service.login('existing@pilates.local', 'senhaErrada')).rejects.toThrow(
-        UnauthorizedError,
-      )
+      await expect(service.login('existing@pilates.local', 'senhaErrada')).rejects.toThrow(UnauthorizedError)
     })
 
     it('deve lançar erro com email não cadastrado', async () => {
-      await expect(service.login('notexisting@pilates.local', 'senha123')).rejects.toThrow(
-        UnauthorizedError,
-      )
+      await expect(service.login('notexisting@pilates.local', 'senha123')).rejects.toThrow(UnauthorizedError)
     })
 
     it('deve rejeitar email inválido', async () => {
@@ -122,10 +124,10 @@ describe('AuthService', () => {
       const result = await service.register(
         'novo@pilates.local',
         'Novo Usuário',
+        '98765432100',
         'senha123',
         'senha123',
       )
-
       expect(result.usuarioId).toBe('new-user-id')
       expect(result.email).toBe('novo@pilates.local')
       expect(result.nome).toBe('Novo Usuário')
@@ -136,31 +138,32 @@ describe('AuthService', () => {
 
     it('deve rejeitar email já cadastrado', async () => {
       await expect(
-        service.register('existing@pilates.local', 'Nome', 'senha123', 'senha123'),
+        service.register('existing@pilates.local', 'Nome', '11122233344', 'senha123', 'senha123'),
       ).rejects.toThrow(ValidationError)
     })
 
     it('deve rejeitar senhas não correspondentes', async () => {
-      await expect(service.register('novo@pilates.local', 'Nome', 'senha123', 'senha456')).rejects.toThrow(
-        ValidationError,
-      )
+      await expect(
+        service.register('novo@pilates.local', 'Nome', '11122233344', 'senha123', 'senha456'),
+      ).rejects.toThrow(ValidationError)
     })
 
     it('deve rejeitar nome muito curto', async () => {
-      await expect(service.register('novo@pilates.local', 'Na', 'senha123', 'senha123')).rejects.toThrow(
-        ValidationError,
-      )
+      await expect(
+        service.register('novo@pilates.local', 'Na', '11122233344', 'senha123', 'senha123'),
+      ).rejects.toThrow(ValidationError)
     })
 
     it('deve permitir funcao customizado', async () => {
       const result = await service.register(
         'novo@pilates.local',
         'Novo Prof',
+        '11122233344',
         'senha123',
         'senha123',
+        null,
         'PROFESSOR',
       )
-
       expect(result.funcao).toBe('PROFESSOR')
     })
   })
@@ -172,12 +175,10 @@ describe('AuthService', () => {
         email: 'existing@pilates.local',
         funcao: 'ADMIN',
       })
-
       const result = await service.refreshToken(validRefreshToken)
-
       expect(result.accessToken).toBeDefined()
       expect(result.refreshToken).toBeDefined()
-      expect(result.expiresIn).toBe(900) // 15 minutos
+      expect(result.expiresIn).toBe(900)
     })
 
     it('deve lançar erro com refresh token inválido', async () => {
@@ -190,10 +191,7 @@ describe('AuthService', () => {
         email: 'existing@pilates.local',
         funcao: 'ADMIN',
       })
-
       const resultado1 = await service.refreshToken(tokenAntigo)
-
-      // O novo token deve ser diferente do antigo
       expect(resultado1.refreshToken).not.toBe(tokenAntigo)
     })
   })
@@ -204,9 +202,7 @@ describe('AuthService', () => {
     })
 
     it('deve lançar erro com senha atual incorreta', async () => {
-      await expect(service.changePassword('user-123', 'senhaErrada', 'novaSenha456')).rejects.toThrow(
-        UnauthorizedError,
-      )
+      await expect(service.changePassword('user-123', 'senhaErrada', 'novaSenha456')).rejects.toThrow(UnauthorizedError)
     })
   })
 
@@ -219,7 +215,6 @@ describe('AuthService', () => {
   describe('generateTemporaryPassword', () => {
     it('deve gerar senha temporária válida', () => {
       const tempPassword = service.generateTemporaryPassword()
-
       expect(tempPassword).toBeDefined()
       expect(tempPassword.length).toBe(12)
       expect(/[A-Za-z0-9!@#$%&*]/.test(tempPassword)).toBe(true)

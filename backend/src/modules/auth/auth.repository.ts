@@ -144,7 +144,7 @@ export class AuthRepository {
 
       const usuario = await prisma.usuario.update({
         where: { id: usuarioId },
-        data: { ativo },
+        data: { status: ativo ? 'ATIVO' : 'INATIVO' },
       })
 
       logDebug('✅ Status alterado com sucesso', { usuarioId, ativo })

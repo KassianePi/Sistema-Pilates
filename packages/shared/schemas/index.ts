@@ -1,10 +1,10 @@
-/**
- * Exports centralizados de schemas Zod
- * 
- * Use: import { loginSchema, CreateAlunoDTO } from '@shared/schemas'
- */
-
 export * from './auth.schema'
 export * from './aluno.schema'
-export * from './pagamento.schema'
+export * from './professor.schema'
+export * from './plano.schema'
 export * from './agenda.schema'
+export * from './presenca.schema'
+export * from './financeiro.schema'
+export * from './notificacao.schema'
+export * from './auditoria.schema'
+export * from './relatorio.schema'

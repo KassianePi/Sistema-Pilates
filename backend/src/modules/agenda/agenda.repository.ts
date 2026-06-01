@@ -1,0 +1,98 @@
+import { prisma } from '../../database/prisma.client'
+import { AppError } from '../../shared/errors'
+import { logError } from '../../shared/utils'
+import type { Aula, CreateAulaData, UpdateAulaData } from './agenda.types'
+
+const includeRelations = {
+  professor: { include: { usuario: { select: { nomeCompleto: true, email: true } } } },
+  _count: { select: { presencas: true } },
+}
+
+export class AgendaRepository {
+  async findById(id: string): Promise<Aula | null> {
+    try {
+      return await prisma.aula.findUnique({ where: { id }, include: includeRelations }) as any
+    } catch (error) {
+      logError('Erro ao buscar aula por ID', error as Error, { id })
+      throw AppError.internal('Erro ao buscar aula')
+    }
+  }
+
+  async findAll(params: {
+    professorId?: string; status?: string; tipo?: string; modalidade?: string
+    dataInicio?: Date; dataFim?: Date; page: number; limit: number
+  }): Promise<{ aulas: Aula[]; total: number }> {
+    try {
+      const { professorId, status, tipo, modalidade, dataInicio, dataFim, page, limit } = params
+      const where: Record<string, unknown> = {}
+      if (professorId) where.professorId = professorId
+      if (status) where.status = status
+      if (tipo) where.tipo = tipo
+      if (modalidade) where.modalidade = modalidade
+      if (dataInicio || dataFim) {
+        where.dataHoraInicio = {
+          ...(dataInicio && { gte: dataInicio }),
+          ...(dataFim && { lte: dataFim }),
+        }
+      }
+
+      const [aulas, total] = await Promise.all([
+        prisma.aula.findMany({ where: where as any, include: includeRelations, skip: (page - 1) * limit, take: limit, orderBy: { dataHoraInicio: 'asc' } }),
+        prisma.aula.count({ where: where as any }),
+      ])
+
+      return { aulas: aulas as any, total }
+    } catch (error) {
+      logError('Erro ao listar aulas', error as Error)
+      throw AppError.internal('Erro ao listar aulas')
+    }
+  }
+
+  async findConflito(professorId: string, dataHoraInicio: Date, duracao: number, excludeId?: string): Promise<boolean> {
+    try {
+      const dataHoraFim = new Date(dataHoraInicio.getTime() + duracao * 60000)
+      const conflito = await prisma.aula.findFirst({
+        where: {
+          professorId,
+          status: { in: ['AGENDADA'] },
+          ...(excludeId && { id: { not: excludeId } }),
+          dataHoraInicio: { lt: dataHoraFim },
+          AND: [{ dataHoraInicio: { gte: new Date(dataHoraInicio.getTime() - duracao * 60000) } }],
+        } as any,
+      })
+      return !!conflito
+    } catch (error) {
+      logError('Erro ao verificar conflito de horário', error as Error)
+      throw AppError.internal('Erro ao verificar disponibilidade')
+    }
+  }
+
+  async create(data: CreateAulaData): Promise<Aula> {
+    try {
+      return await prisma.aula.create({ data: data as any, include: includeRelations }) as any
+    } catch (error) {
+      logError('Erro ao criar aula', error as Error)
+      throw AppError.internal('Erro ao criar aula')
+    }
+  }
+
+  async update(id: string, data: UpdateAulaData): Promise<Aula> {
+    try {
+      return await prisma.aula.update({ where: { id }, data: data as any, include: includeRelations }) as any
+    } catch (error) {
+      logError('Erro ao atualizar aula', error as Error, { id })
+      throw AppError.internal('Erro ao atualizar aula')
+    }
+  }
+
+  async delete(id: string): Promise<void> {
+    try {
+      await prisma.aula.delete({ where: { id } })
+    } catch (error) {
+      logError('Erro ao excluir aula', error as Error, { id })
+      throw AppError.internal('Erro ao excluir aula')
+    }
+  }
+}
+
+export const agendaRepository = new AgendaRepository()

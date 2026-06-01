@@ -10,7 +10,7 @@ import { generateTokens } from '../../utils/jwt'
 /**
  * Mock de FastifyRequest
  */
-function mockRequest(overrides = {}) {
+function mockRequest(overrides: Record<string, unknown> = {}): Record<string, any> {
   return {
     id: 'req-123',
     url: '/api/v1/test',

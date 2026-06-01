@@ -19,6 +19,7 @@ enum FuncaoUsuario {
   PROFESSOR
   RECEPCIONISTA
   FINANCEIRO
+  ALUNO
 }
 
 enum StatusUsuario {
@@ -68,21 +69,28 @@ enum StatusAluno {
 model Aluno {
   id              String       @id @default(uuid()) @db.VarChar(36)
   usuarioId       String       @unique @db.VarChar(36)
+  planoId         String?      @db.VarChar(36) @map("plano_id")
   dataInicio      DateTime     @map("data_inicio") @db.DateTime
+  dataNascimento  DateTime?    @map("data_nascimento") @db.DateTime
   ultimoAcesso    DateTime?    @map("ultimo_acesso") @db.DateTime
+  endereco        String?      @db.VarChar(255)
+  cidade          String?      @db.VarChar(100)
+  estado          String?      @db.VarChar(2)
+  cep             String?      @db.VarChar(9)
   observacoes     String?      @db.LongText
   status          StatusAluno  @default(ATIVO)
   criadoEm        DateTime     @default(now()) @map("criado_em") @db.DateTime
   atualizadoEm    DateTime     @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
-  usuario         Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  aulas           Aula[]
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  planoAtual      Plano?        @relation("PlanoAtualAluno", fields: [planoId], references: [id])
   presencas       Presenca[]
   mensalidades    Mensalidade[]
   reposicoes      Reposicao[]
 
   @@index([usuarioId])
   @@index([status])
+  @@index([planoId])
   @@map("alunos")
 }
 
@@ -127,7 +135,7 @@ enum TipoPlano {
 
 model Plano {
   id              String      @id @default(uuid()) @db.VarChar(36)
-  nome            String      @db.VarChar(255)
+  nome            String      @unique @db.VarChar(255)
   descricao       String?     @db.LongText
   tipo            TipoPlano   @default(MENSAL)
   aulas           Int         @default(4)
@@ -137,6 +145,7 @@ model Plano {
   atualizadoEm    DateTime    @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
   mensalidades    Mensalidade[]
+  alunosAtivos    Aluno[]      @relation("PlanoAtualAluno")
 
   @@index([ativo])
   @@map("planos")
@@ -153,21 +162,37 @@ enum StatusAula {
   ADIADA
 }
 
-model Aula {
-  id              String       @id @default(uuid()) @db.VarChar(36)
-  professorId     String       @db.VarChar(36)
-  dataHoraInicio  DateTime     @map("data_hora_inicio") @db.DateTime
-  duracao         Int          @default(50)
-  capacidade      Int          @default(10)
-  sala            String       @db.VarChar(100)
-  observacoes     String?      @db.LongText
-  status          StatusAula   @default(AGENDADA)
-  criadoEm        DateTime     @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime     @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+enum TipoAula {
+  INDIVIDUAL
+  DUPLA
+  GRUPO
+}
 
-  professor       Professor    @relation(fields: [professorId], references: [id], onDelete: Cascade)
-  presencas       Presenca[]
-  reposicoes      Reposicao[]
+enum ModalidadeAula {
+  MAT
+  APARELHOS
+  REFORMER
+  CADILLAC
+}
+
+model Aula {
+  id              String         @id @default(uuid()) @db.VarChar(36)
+  professorId     String         @db.VarChar(36)
+  dataHoraInicio  DateTime       @map("data_hora_inicio") @db.DateTime
+  duracao         Int            @default(50)
+  capacidade      Int            @default(10)
+  sala            String         @db.VarChar(100)
+  tipo            TipoAula       @default(GRUPO)
+  modalidade      ModalidadeAula @default(MAT)
+  observacoes     String?        @db.LongText
+  status          StatusAula     @default(AGENDADA)
+  criadoEm        DateTime       @default(now()) @map("criado_em") @db.DateTime
+  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+
+  professor        Professor    @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  presencas        Presenca[]
+  reposicoesOrigem Reposicao[] @relation("AulaOriginal")
+  reposicoesAlvo   Reposicao[] @relation("ReposicaoAula")
 
   @@index([professorId])
   @@index([dataHoraInicio])
@@ -226,8 +251,8 @@ model Reposicao {
   atualizadoEm    DateTime          @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
 
   aluno           Aluno             @relation(fields: [alunoId], references: [id], onDelete: Cascade)
-  aulaOriginal    Aula              @relation(fields: [aulaOriginalId], references: [id], onDelete: Cascade)
-  aulaReposicao   Aula?             @relation(name: "ReposicaoAula", fields: [aulaReposicaoId], references: [id], onDelete: SetNull)
+  aulaOriginal    Aula              @relation("AulaOriginal", fields: [aulaOriginalId], references: [id], onDelete: Cascade)
+  aulaReposicao   Aula?             @relation("ReposicaoAula", fields: [aulaReposicaoId], references: [id], onDelete: SetNull)
 
   @@index([alunoId])
   @@index([aulaOriginalId])

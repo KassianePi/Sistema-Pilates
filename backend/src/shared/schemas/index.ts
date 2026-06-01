@@ -1,11 +1,10 @@
-/**
- * Re-export de schemas compartilhados
- *
- * Permite que o backend importe schemas de packages/shared
- * sem sair do rootDir
- */
-
 export * from '../../../../packages/shared/schemas/auth.schema'
 export * from '../../../../packages/shared/schemas/aluno.schema'
-export * from '../../../../packages/shared/schemas/pagamento.schema'
+export * from '../../../../packages/shared/schemas/professor.schema'
+export * from '../../../../packages/shared/schemas/plano.schema'
 export * from '../../../../packages/shared/schemas/agenda.schema'
+export * from '../../../../packages/shared/schemas/presenca.schema'
+export * from '../../../../packages/shared/schemas/financeiro.schema'
+export * from '../../../../packages/shared/schemas/notificacao.schema'
+export * from '../../../../packages/shared/schemas/auditoria.schema'
+export * from '../../../../packages/shared/schemas/relatorio.schema'

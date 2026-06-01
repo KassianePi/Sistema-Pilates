@@ -5,7 +5,7 @@
  * Seguro contra rainbow tables e força bruta
  */
 
-import * as bcrypt from 'bcryptjs'
+import bcrypt from 'bcryptjs'
 
 const SALT_ROUNDS = 10
 

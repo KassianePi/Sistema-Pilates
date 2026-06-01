@@ -20,7 +20,13 @@
     "prisma:seed": "tsx prisma/seed.ts",
     "prisma:reset": "prisma migrate reset --force"
   },
-  "keywords": ["pilates", "studio", "fastify", "prisma", "typescript"],
+  "keywords": [
+    "pilates",
+    "studio",
+    "fastify",
+    "prisma",
+    "typescript"
+  ],
   "author": "Alex",
   "license": "MIT",
   "dependencies": {
@@ -39,8 +45,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/node": "^20.12.8",
+    "@types/node": "^20.19.41",
     "@typescript-eslint/eslint-plugin": "^7.9.0",
     "@typescript-eslint/parser": "^7.9.0",
     "@vitest/coverage-v8": "^1.6.0",
