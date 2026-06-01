@@ -1,5 +1,5 @@
 {
-  "name": "@shared",
+  "name": "@pilates/shared",
   "version": "1.0.0",
   "description": "Schemas e tipos compartilhados entre frontend e backend",
   "type": "module",
