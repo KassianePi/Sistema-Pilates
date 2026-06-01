@@ -13,7 +13,7 @@ import jwt from 'jsonwebtoken'
 export interface TokenPayload {
   usuarioId: string
   email: string
-  funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO'
+  funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO'
   iat?: number
   exp?: number
 }

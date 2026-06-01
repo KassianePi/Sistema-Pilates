@@ -5,6 +5,7 @@ import { hashPassword } from '../../shared/utils/hash'
 import { createAlunoSchema, updateAlunoSchema, listAlunosSchema } from '../../shared/schemas'
 import { ALUNOS_ERRORS } from './alunos.constants'
 import { prisma } from '../../database/prisma.client'
+import { registrarLog } from '../auditoria/auditoria.service'
 import type { Aluno, UpdateAlunoData } from './alunos.types'
 
 export class AlunosService {
@@ -15,7 +16,7 @@ export class AlunosService {
     senha: string; planoId?: string | null; dataInicio: string
     dataNascimento?: string | null; endereco?: string | null; cidade?: string | null
     estado?: string | null; cep?: string | null; observacoes?: string | null
-  }): Promise<Aluno> {
+  }, realizadoPorId?: string): Promise<Aluno> {
     const validado = createAlunoSchema.parse(data)
 
     const emailExistente = await prisma.usuario.findUnique({ where: { email: validado.email } })
@@ -47,6 +48,7 @@ export class AlunosService {
     })
 
     logInfo('Aluno criado', { id: aluno.id })
+    await registrarLog({ usuarioId: realizadoPorId ?? aluno.usuarioId, acao: 'CREATE', entidade: 'Aluno', entidadeId: aluno.id })
     return aluno
   }
 
@@ -68,7 +70,7 @@ export class AlunosService {
     return { alunos, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
   }
 
-  async atualizar(id: string, data: UpdateAlunoData): Promise<Aluno> {
+  async atualizar(id: string, data: UpdateAlunoData, realizadoPorId?: string): Promise<Aluno> {
     await this.buscarPorId(id)
     const validado = updateAlunoSchema.parse(data)
 
@@ -83,13 +85,15 @@ export class AlunosService {
       status: validado.status as any,
     })
     logInfo('Aluno atualizado', { id })
+    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'Aluno', entidadeId: id })
     return aluno
   }
 
-  async excluir(id: string): Promise<void> {
+  async excluir(id: string, realizadoPorId?: string): Promise<void> {
     await this.buscarPorId(id)
     await this.repository.delete(id)
     logInfo('Aluno excluído', { id })
+    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'DELETE', entidade: 'Aluno', entidadeId: id })
   }
 }
 

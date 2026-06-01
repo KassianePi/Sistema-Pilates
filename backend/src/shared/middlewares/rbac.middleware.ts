@@ -19,6 +19,7 @@ export const ROLE_PERMISSIONS = {
     // Acesso total
     users: ['create', 'read', 'update', 'delete'],
     alunos: ['create', 'read', 'update', 'delete', 'bulk_delete'],
+    professores: ['create', 'read', 'update', 'delete'],
     agenda: ['create', 'read', 'update', 'delete', 'manage'],
     pagamentos: ['create', 'read', 'update', 'delete', 'refund'],
     relatorios: ['create', 'read', 'delete'],
@@ -29,25 +30,28 @@ export const ROLE_PERMISSIONS = {
 
   PROFESSOR: {
     // Acesso limitado: apenas suas aulas e presença de alunos
-    alunos: ['read'], // ler dados públicos
-    agenda: ['read'], // ler suas aulas
-    presenca: ['create', 'read', 'update'], // marcar presença
+    alunos: ['read'],
+    professores: ['read'],
+    agenda: ['read'],
+    presenca: ['create', 'read', 'update'],
   },
 
   RECEPCIONISTA: {
     // Acesso: cadastro, presença, agenda
-    alunos: ['create', 'read', 'update'], // não deleta
-    agenda: ['read', 'create', 'update'], // gerenciar aulas
+    alunos: ['create', 'read', 'update'],
+    professores: ['read'],
+    agenda: ['read', 'create', 'update'],
     presenca: ['create', 'read', 'update'],
-    pagamentos: ['read'], // apenas visualizar
+    pagamentos: ['read'],
   },
 
   FINANCEIRO: {
     // Acesso: financeiro e relatórios
     pagamentos: ['create', 'read', 'update'],
-    alunos: ['read'], // ler apenas
-    relatorios: ['create', 'read'], // gerar e ver
-    auditoria: ['read'], // para rastrear mudanças
+    alunos: ['read'],
+    professores: ['read'],
+    relatorios: ['create', 'read'],
+    auditoria: ['read'],
   },
 
   ALUNO: {

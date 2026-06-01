@@ -9,6 +9,7 @@ import {
 import { FINANCEIRO_ERRORS } from './financeiro.constants'
 import { prisma } from '../../database/prisma.client'
 import { eventBus } from '../../events/event-bus'
+import { registrarLog } from '../auditoria/auditoria.service'
 import type { Caixa, Mensalidade, Pagamento } from './financeiro.types'
 
 export class FinanceiroService {
@@ -139,6 +140,7 @@ export class FinanceiroService {
 
     eventBus.emit('pagamento.realizado', { pagamentoId: pagamento.id, alunoId: mensalidade.alunoId, valor: validado.valor })
     logInfo('Pagamento registrado', { id: pagamento.id })
+    await registrarLog({ usuarioId, acao: 'CREATE', entidade: 'Pagamento', entidadeId: pagamento.id })
     return pagamento
   }
 

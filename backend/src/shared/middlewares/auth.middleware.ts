@@ -19,7 +19,7 @@ import { logDebug, logWarn } from '../utils/logger'
 declare module 'fastify' {
   interface FastifyRequest {
     usuarioId?: string
-    funcao?: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO'
+    funcao?: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO'
     email?: string
     payload?: TokenPayload
   }
@@ -174,7 +174,7 @@ export async function authenticate(request: FastifyRequest, reply: FastifyReply)
  *   handler
  * )
  */
-export function requireRole(...requiredRoles: Array<'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO'>) {
+export function requireRole(...requiredRoles: Array<'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO'>) {
   return async (request: FastifyRequest, reply: FastifyReply): Promise<void> => {
     // Garantir que autenticação foi realizada antes
     if (!request.usuarioId) {

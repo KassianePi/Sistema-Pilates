@@ -15,6 +15,7 @@ import { UnauthorizedError, ValidationError } from '../../shared/errors'
 import { logInfo, logWarn, logDebug } from '../../shared/utils'
 import { loginSchema, registerSchema } from '../../shared/schemas'
 import { AUTH_ERRORS } from './auth.constants'
+import { registrarLog } from '../auditoria/auditoria.service'
 import type { LoginResponse, RegisterResponse, RefreshTokenResult, CreateUsuarioData, Usuario } from './auth.types'
 
 /**
@@ -86,6 +87,8 @@ export class AuthService {
         email: usuario.email,
         funcao: usuario.funcao,
       })
+
+      await registrarLog({ usuarioId: usuario.id, acao: 'LOGIN', entidade: 'Usuario', entidadeId: usuario.id })
 
       return {
         usuarioId: usuario.id,
@@ -176,6 +179,8 @@ export class AuthService {
         email: usuario.email,
         funcao: usuario.funcao,
       })
+
+      await registrarLog({ usuarioId: usuario.id, acao: 'CREATE', entidade: 'Usuario', entidadeId: usuario.id })
 
       return {
         usuarioId: usuario.id,
@@ -283,6 +288,7 @@ export class AuthService {
       usuarioId,
       email,
     })
+    await registrarLog({ usuarioId, acao: 'LOGOUT', entidade: 'Usuario', entidadeId: usuarioId })
   }
 
   /**
@@ -335,6 +341,8 @@ export class AuthService {
         usuarioId,
         email: usuario.email,
       })
+
+      await registrarLog({ usuarioId, acao: 'UPDATE', entidade: 'Usuario', entidadeId: usuarioId })
     } catch (error) {
       if (error instanceof UnauthorizedError) {
         throw error

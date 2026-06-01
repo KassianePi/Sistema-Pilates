@@ -5,7 +5,7 @@ import { logWarn } from '../../shared/utils'
 
 export async function criar(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const aluno = await alunosService.criar(request.body as any)
+    const aluno = await alunosService.criar(request.body as any, request.usuarioId as string)
     return reply.code(201).send({ success: true, data: aluno })
   } catch (error: any) {
     if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
@@ -39,7 +39,7 @@ export async function buscarPorId(request: FastifyRequest, reply: FastifyReply) 
 export async function atualizar(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { id } = request.params as { id: string }
-    const aluno = await alunosService.atualizar(id, request.body as any)
+    const aluno = await alunosService.atualizar(id, request.body as any, request.usuarioId as string)
     return reply.code(200).send({ success: true, data: aluno })
   } catch (error: any) {
     if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
@@ -52,7 +52,7 @@ export async function atualizar(request: FastifyRequest, reply: FastifyReply) {
 export async function excluir(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { id } = request.params as { id: string }
-    await alunosService.excluir(id)
+    await alunosService.excluir(id, request.usuarioId as string)
     return reply.code(200).send({ success: true, data: {} })
   } catch (error: any) {
     if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })

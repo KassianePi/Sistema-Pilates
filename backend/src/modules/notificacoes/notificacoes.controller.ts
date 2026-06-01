@@ -1,6 +1,18 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { notificacoesService } from './notificacoes.service'
 import { logWarn } from '../../shared/utils'
+import type { CreateNotificacaoData } from './notificacoes.types'
+
+export async function criar(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const notificacao = await notificacoesService.criar(request.body as CreateNotificacaoData)
+    return reply.code(201).send({ success: true, data: notificacao })
+  } catch (error: any) {
+    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    logWarn('Erro ao criar notificação', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao criar notificação', code: 'INTERNAL_ERROR' })
+  }
+}
 
 export async function listar(request: FastifyRequest, reply: FastifyReply) {
   try {
