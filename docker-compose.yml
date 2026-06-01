@@ -4,6 +4,12 @@ services:
     image: mysql:8.0
     container_name: pilates_mysql
     restart: unless-stopped
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+      --explicit-defaults-for-timestamp=1
+      --default-time-zone=+00:00
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_password}
       MYSQL_DATABASE: ${MYSQL_DATABASE:-pilates_db}
@@ -13,7 +19,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./database/scripts/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -25,8 +30,8 @@ services:
   # ====== BACKEND FASTIFY ======
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .                        # raiz do projeto (acessa packages/shared)
+      dockerfile: backend/Dockerfile
       target: builder
     container_name: pilates_backend
     restart: unless-stopped
@@ -36,6 +41,8 @@ services:
       JWT_SECRET: ${JWT_SECRET:-seu_secret_super_seguro_aqui_32_caracteres_minimo_2024}
       JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-seu_refresh_secret_super_seguro_32_caracteres_2024}
       PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
     ports:
       - "3000:3000"
     depends_on:
@@ -43,8 +50,9 @@ services:
         condition: service_healthy
     volumes:
       - ./backend:/app
-      - /app/node_modules
-    command: npm run dev
+      - /app/node_modules               # preserva node_modules do container
+      - ./packages/shared:/packages/shared  # necessário para o symlink @pilates/shared
+    command: sh -c "npx prisma db push && npm run dev"
     networks:
       - pilates_network
     healthcheck:

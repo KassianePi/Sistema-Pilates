@@ -11,8 +11,8 @@
 
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { authService } from './auth.service'
-import { ValidationError, UnauthorizedError } from '../../shared/errors'
-import { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema } from '../../shared/schemas'
+import { ValidationError, UnauthorizedError, AppError } from '../../shared/errors'
+import { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema, setupSchema, criarUsuarioSchema } from '../../shared/schemas'
 import { logInfo, logDebug, logWarn } from '../../shared/utils'
 
 /**
@@ -121,40 +121,63 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
  */
 export async function register(request: FastifyRequest, reply: FastifyReply) {
   try {
-    // Validar entrada
     const { email, nome, cpf, telefone, senha, senhaConfirmacao } = registerSchema.parse(request.body)
-
     logDebug('Controller: registro iniciado', { email, cpf })
-
-    // Chamar service
     const resultado = await authService.register(email, nome, cpf, senha, senhaConfirmacao, telefone)
-
     logInfo('✅ Controller: registro bem-sucedido', { usuarioId: resultado.usuarioId })
-
-    // Retornar resposta
-    return reply.code(201).send({
-      success: true,
-      data: resultado,
-    })
+    return reply.code(201).send({ success: true, data: resultado })
   } catch (error) {
     if (error instanceof ValidationError) {
       logWarn('Controller: validação falhou no registro', { error: error.message })
-      return reply.code(400).send({
-        success: false,
-        message: error.message,
-        code: error.code,
-      })
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
     }
+    logWarn('Controller: erro no registro', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao registrar usuário', code: 'REGISTRATION_ERROR' })
+  }
+}
 
-    logWarn('Controller: erro no registro', {
-      error: error instanceof Error ? error.message : String(error),
-    })
+/**
+ * POST /api/v1/auth/setup
+ * Setup inicial — cria o primeiro admin quando o banco está vazio
+ * ⚠️ PÚBLICO — retorna 409 se já houver usuários cadastrados
+ */
+export async function setup(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { email, nome, cpf, telefone, senha, senhaConfirmacao } = setupSchema.parse(request.body)
+    logDebug('Controller: setup inicial iniciado', { email })
+    const resultado = await authService.setup(email, nome, cpf, senha, senhaConfirmacao, telefone)
+    logInfo('✅ Controller: setup inicial concluído', { usuarioId: resultado.usuarioId })
+    return reply.code(201).send({ success: true, data: resultado })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    }
+    if (error instanceof AppError && error.code === 'SETUP_ALREADY_DONE') {
+      return reply.code(409).send({ success: false, message: error.message, code: error.code })
+    }
+    logWarn('Controller: erro no setup', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro no setup inicial', code: 'SETUP_ERROR' })
+  }
+}
 
-    return reply.code(500).send({
-      success: false,
-      message: 'Erro ao registrar usuário',
-      code: 'REGISTRATION_ERROR',
-    })
+/**
+ * POST /api/v1/auth/register
+ * Cria usuário do sistema (admin, professor, recepcionista, financeiro)
+ * ⚠️ PROTEGIDO — requer token de ADMIN
+ */
+export async function criarUsuario(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { email, nome, cpf, telefone, senha, senhaConfirmacao, funcao } = criarUsuarioSchema.parse(request.body)
+    logDebug('Controller: criação de usuário pelo admin', { email, funcao })
+    const resultado = await authService.criarUsuario(email, nome, cpf, senha, senhaConfirmacao, funcao, telefone)
+    logInfo('✅ Controller: usuário criado pelo admin', { usuarioId: resultado.usuarioId, funcao })
+    return reply.code(201).send({ success: true, data: resultado })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    }
+    logWarn('Controller: erro ao criar usuário', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao criar usuário', code: 'CREATE_USER_ERROR' })
   }
 }
 

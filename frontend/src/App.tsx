@@ -1,122 +1,83 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { Toaster } from 'sonner'
+import { queryClient } from '@/lib/queryClient'
+import { AuthProvider } from '@/contexts/AuthContext'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { AdminLayout } from '@/layouts/AdminLayout'
+import { AlunoLayout } from '@/layouts/AlunoLayout'
+import { ProtectedAdminRoute } from '@/routes/ProtectedAdminRoute'
+import { ProtectedAlunoRoute } from '@/routes/ProtectedAlunoRoute'
+import { AdminLoginPage } from '@/pages/AdminLoginPage'
+import { AlunoLoginPage } from '@/pages/AlunoLoginPage'
+import { AdminDashboardPage } from '@/features/admin/dashboard/pages/AdminDashboardPage'
+import { AlunosPage } from '@/features/admin/alunos/pages/AlunosPage'
+import { ProfessoresPage } from '@/features/admin/professores/pages/ProfessoresPage'
+import { AgendaPage } from '@/features/admin/agenda/pages/AgendaPage'
+import { FinanceiroPage } from '@/features/admin/financeiro/pages/FinanceiroPage'
+import { PlanosPage } from '@/features/admin/planos/pages/PlanosPage'
+import { RelatoriosPage } from '@/features/admin/relatorios/pages/RelatoriosPage'
+import { NotificacoesPage } from '@/features/admin/notificacoes/pages/NotificacoesPage'
+import { AuditoriaPage } from '@/features/admin/auditoria/pages/AuditoriaPage'
+import { UsuariosPage } from '@/features/admin/usuarios/pages/UsuariosPage'
+import { AlunoDashboardPage } from '@/features/aluno/dashboard/pages/AlunoDashboardPage'
+import { AlunoAgendaPage } from '@/features/aluno/agenda/pages/AlunoAgendaPage'
+import { AlunoPresencaPage } from '@/features/aluno/presenca/pages/AlunoPresencaPage'
+import { AlunoFinanceiroPage } from '@/features/aluno/financeiro/pages/AlunoFinanceiroPage'
+import { AlunoPerfilPage } from '@/features/aluno/perfil/pages/AlunoPerfilPage'
 
-function App() {
-  const [count, setCount] = useState(0)
-
+export default function App() {
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <ErrorBoundary>
+            <Routes>
+              {/* Redirect raiz */}
+              <Route path="/" element={<Navigate to="/admin/login" replace />} />
 
-      <div className="ticks"></div>
+              {/* Login Admin */}
+              <Route path="/admin/login" element={<AdminLoginPage />} />
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+              {/* Login Aluno */}
+              <Route path="/aluno/login" element={<AlunoLoginPage />} />
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+              {/* Área protegida Admin */}
+              <Route element={<ProtectedAdminRoute />}>
+                <Route element={<AdminLayout />}>
+                  <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
+                  <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+                  <Route path="/admin/alunos" element={<AlunosPage />} />
+                  <Route path="/admin/professores" element={<ProfessoresPage />} />
+                  <Route path="/admin/agenda" element={<AgendaPage />} />
+                  <Route path="/admin/financeiro" element={<FinanceiroPage />} />
+                  <Route path="/admin/planos" element={<PlanosPage />} />
+                  <Route path="/admin/relatorios" element={<RelatoriosPage />} />
+                  <Route path="/admin/notificacoes" element={<NotificacoesPage />} />
+                  <Route path="/admin/auditoria" element={<AuditoriaPage />} />
+                  <Route path="/admin/usuarios" element={<UsuariosPage />} />
+                </Route>
+              </Route>
+
+              {/* Área protegida Aluno */}
+              <Route element={<ProtectedAlunoRoute />}>
+                <Route element={<AlunoLayout />}>
+                  <Route path="/aluno" element={<Navigate to="/aluno/dashboard" replace />} />
+                  <Route path="/aluno/dashboard" element={<AlunoDashboardPage />} />
+                  <Route path="/aluno/agenda" element={<AlunoAgendaPage />} />
+                  <Route path="/aluno/presenca" element={<AlunoPresencaPage />} />
+                  <Route path="/aluno/financeiro" element={<AlunoFinanceiroPage />} />
+                  <Route path="/aluno/perfil" element={<AlunoPerfilPage />} />
+                </Route>
+              </Route>
+
+              {/* 404 - redireciona para login */}
+              <Route path="*" element={<Navigate to="/admin/login" replace />} />
+            </Routes>
+          </ErrorBoundary>
+        </BrowserRouter>
+        <Toaster position="top-right" richColors />
+      </AuthProvider>
+    </QueryClientProvider>
   )
 }
-
-export default App

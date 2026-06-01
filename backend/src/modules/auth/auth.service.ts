@@ -13,9 +13,10 @@ import { hashPassword, verifyPassword, generateRandomPassword } from '../../shar
 import { generateAccessToken, generateRefreshToken, generateTokens, verifyRefreshToken } from '../../shared/utils/jwt'
 import { UnauthorizedError, ValidationError } from '../../shared/errors'
 import { logInfo, logWarn, logDebug } from '../../shared/utils'
-import { loginSchema, registerSchema } from '../../shared/schemas'
+import { loginSchema, registerSchema, setupSchema, criarUsuarioSchema } from '../../shared/schemas'
 import { AUTH_ERRORS } from './auth.constants'
 import { registrarLog } from '../auditoria/auditoria.service'
+import { AppError } from '../../shared/errors'
 import type { LoginResponse, RegisterResponse, RefreshTokenResult, CreateUsuarioData, Usuario } from './auth.types'
 
 /**
@@ -289,6 +290,92 @@ export class AuthService {
       email,
     })
     await registrarLog({ usuarioId, acao: 'LOGOUT', entidade: 'Usuario', entidadeId: usuarioId })
+  }
+
+  /**
+   * Setup inicial do sistema — cria o primeiro admin
+   * Só funciona quando não há nenhum usuário cadastrado
+   */
+  async setup(
+    email: string,
+    nome: string,
+    cpf: string,
+    senha: string,
+    senhaConfirmacao: string,
+    telefone?: string | null,
+  ): Promise<RegisterResponse> {
+    const total = await this.repository.count()
+    if (total > 0) {
+      throw new AppError('Sistema já foi configurado. Use o login de admin para criar novos usuários.', 'SETUP_ALREADY_DONE', 409)
+    }
+
+    const dados = setupSchema.parse({ email, nome, cpf, senha, senhaConfirmacao, telefone })
+    const senhaHash = await hashPassword(dados.senha)
+
+    const usuario = await this.repository.create({
+      email: dados.email,
+      nomeCompleto: dados.nome,
+      cpf: dados.cpf,
+      telefone: dados.telefone,
+      funcao: 'ADMIN',
+      senhaHash,
+      senha: dados.senha,
+    })
+
+    const { accessToken, refreshToken, expiresIn } = generateTokens({
+      usuarioId: usuario.id,
+      email: usuario.email,
+      funcao: usuario.funcao,
+    })
+
+    logInfo('✅ Setup inicial concluído — admin criado', { usuarioId: usuario.id, email: usuario.email })
+    await registrarLog({ usuarioId: usuario.id, acao: 'CREATE', entidade: 'Usuario', entidadeId: usuario.id })
+
+    return { usuarioId: usuario.id, email: usuario.email, nome: usuario.nomeCompleto, funcao: usuario.funcao, accessToken, refreshToken, expiresIn }
+  }
+
+  /**
+   * Cria usuário do sistema (admin, professor, recepcionista, financeiro)
+   * Requer autenticação de ADMIN
+   */
+  async criarUsuario(
+    email: string,
+    nome: string,
+    cpf: string,
+    senha: string,
+    senhaConfirmacao: string,
+    funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO',
+    telefone?: string | null,
+  ): Promise<RegisterResponse> {
+    const dados = criarUsuarioSchema.parse({ email, nome, cpf, senha, senhaConfirmacao, funcao, telefone })
+
+    const emailExistente = await this.repository.findByEmail(dados.email)
+    if (emailExistente) {
+      throw ValidationError.forField('email', AUTH_ERRORS.USER_ALREADY_EXISTS)
+    }
+
+    const senhaHash = await hashPassword(dados.senha)
+
+    const usuario = await this.repository.create({
+      email: dados.email,
+      nomeCompleto: dados.nome,
+      cpf: dados.cpf,
+      telefone: dados.telefone,
+      funcao: dados.funcao as any,
+      senhaHash,
+      senha: dados.senha,
+    })
+
+    const { accessToken, refreshToken, expiresIn } = generateTokens({
+      usuarioId: usuario.id,
+      email: usuario.email,
+      funcao: usuario.funcao,
+    })
+
+    logInfo('✅ Usuário criado pelo admin', { usuarioId: usuario.id, email: usuario.email, funcao: usuario.funcao })
+    await registrarLog({ usuarioId: usuario.id, acao: 'CREATE', entidade: 'Usuario', entidadeId: usuario.id })
+
+    return { usuarioId: usuario.id, email: usuario.email, nome: usuario.nomeCompleto, funcao: usuario.funcao, accessToken, refreshToken, expiresIn }
   }
 
   /**

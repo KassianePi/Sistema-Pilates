@@ -184,3 +184,40 @@ export const changePasswordSchema = z
   })
 
 export type ChangePasswordDTO = z.infer<typeof changePasswordSchema>
+
+/**
+ * Schema para setup inicial do sistema (cria primeiro admin)
+ * Só funciona quando o banco não tem nenhum usuário
+ */
+export const setupSchema = z
+  .object({
+    email: z.string({ required_error: 'Email é obrigatório' }).email('Email inválido').toLowerCase().trim(),
+    nome: z.string({ required_error: 'Nome é obrigatório' }).min(3, 'Nome deve ter no mínimo 3 caracteres'),
+    cpf: z.string({ required_error: 'CPF é obrigatório' }).regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
+    telefone: z.string().regex(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos').optional().nullable(),
+    senha: z.string({ required_error: 'Senha é obrigatória' }).min(8, 'Senha deve ter no mínimo 8 caracteres').max(128),
+    senhaConfirmacao: z.string({ required_error: 'Confirmação de senha é obrigatória' }),
+  })
+  .refine((d) => d.senha === d.senhaConfirmacao, { message: 'Senhas não correspondem', path: ['senhaConfirmacao'] })
+
+export type SetupDTO = z.infer<typeof setupSchema>
+
+/**
+ * Schema para admin criar usuários do sistema (com funcao)
+ */
+export const criarUsuarioSchema = z
+  .object({
+    email: z.string({ required_error: 'Email é obrigatório' }).email('Email inválido').toLowerCase().trim(),
+    nome: z.string({ required_error: 'Nome é obrigatório' }).min(3, 'Nome deve ter no mínimo 3 caracteres').max(255),
+    cpf: z.string({ required_error: 'CPF é obrigatório' }).regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
+    telefone: z.string().regex(/^\d{10,11}$/, 'Telefone deve ter 10 ou 11 dígitos').optional().nullable(),
+    senha: z.string({ required_error: 'Senha é obrigatória' }).min(6, 'Senha deve ter no mínimo 6 caracteres').max(128),
+    senhaConfirmacao: z.string({ required_error: 'Confirmação de senha é obrigatória' }),
+    funcao: z.enum(['ADMIN', 'PROFESSOR', 'RECEPCIONISTA', 'FINANCEIRO'], {
+      required_error: 'Função é obrigatória',
+      invalid_type_error: 'Função inválida. Use: ADMIN, PROFESSOR, RECEPCIONISTA ou FINANCEIRO',
+    }),
+  })
+  .refine((d) => d.senha === d.senhaConfirmacao, { message: 'Senhas não correspondem', path: ['senhaConfirmacao'] })
+
+export type CriarUsuarioDTO = z.infer<typeof criarUsuarioSchema>

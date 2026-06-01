@@ -3,16 +3,28 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copiar package files
-COPY package*.json ./
+# Copiar o pacote shared ANTES do npm ci para que @pilates/shared (file:../packages/shared)
+# possa ser resolvido em ../packages/shared → /packages/shared
+COPY packages/shared /packages/shared
 
-# Instalar dependências
+# Copiar package files do backend
+COPY backend/package*.json ./
+
+# Instalar OpenSSL (necessário para o Prisma engine no Alpine)
+RUN apk add --no-cache openssl
+
+# Instalar todas as dependências (incluindo devDeps como tsx e typescript)
 RUN npm ci
 
-# Copiar código fonte
-COPY . .
+# Copiar código-fonte do backend
+COPY backend/src ./src
+COPY backend/prisma ./prisma
+COPY backend/tsconfig.json ./
 
-# Build TypeScript
+# Gerar Prisma Client (obrigatório antes de qualquer import de @prisma/client)
+RUN npx prisma generate
+
+# Build TypeScript para produção
 RUN npm run build || true
 
 # ====== PRODUCTION STAGE ======
@@ -20,34 +32,32 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Instalar apenas dependências de produção + ferramentas utilitárias
-COPY package*.json ./
+# Copiar o pacote shared (necessário em runtime para o symlink @pilates/shared resolver)
+COPY packages/shared /packages/shared
 
-RUN npm ci --only=production && \
-    apk add --no-cache netcat-openbsd && \
+# Copiar package files e instalar somente dependências de produção
+COPY backend/package*.json ./
+
+RUN apk add --no-cache openssl netcat-openbsd && \
+    npm ci --only=production && \
     rm -rf /var/cache/apk/*
+
+# Copiar pasta prisma e gerar o client na imagem de produção
+COPY backend/prisma ./prisma
+RUN npx prisma generate
 
 # Copiar código compilado do builder
 COPY --from=builder /app/dist ./dist
 
-# Copiar pasta prisma (necessário para migrations)
-COPY prisma ./prisma
-
 # Copiar script de inicialização
-COPY entrypoint.sh /app/entrypoint.sh
+COPY backend/entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
 
-# Expor porta
 EXPOSE 3000
 
-# Health check
 HEALTHCHECK --interval=10s --timeout=5s --retries=5 \
   CMD node -e "require('http').get('http://localhost:3000/api/v1/health', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
 
-# Variáveis de ambiente padrão
 ENV NODE_ENV=production
-ENV DB_HOST=mysql
-ENV DB_PORT=3306
 
-# Usar entrypoint script para migrations automáticas
 ENTRYPOINT ["/app/entrypoint.sh"]

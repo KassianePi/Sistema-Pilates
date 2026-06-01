@@ -7,7 +7,8 @@ datasource db {
 }
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 // ============================================================================
@@ -37,9 +38,9 @@ model Usuario {
   cpf            String        @unique @db.VarChar(11)
   funcao         FuncaoUsuario @default(RECEPCIONISTA)
   status         StatusUsuario @default(ATIVO)
-  ultimoAcessoEm DateTime?     @map("ultimo_acesso_em") @db.DateTime
-  criadoEm       DateTime      @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm   DateTime      @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  ultimoAcessoEm DateTime?     @map("ultimo_acesso_em")
+  criadoEm       DateTime      @default(now()) @map("criado_em")
+  atualizadoEm   DateTime      @default(now()) @updatedAt @map("atualizado_em")
 
   aluno          Aluno?
   professor      Professor?
@@ -70,17 +71,17 @@ model Aluno {
   id              String       @id @default(uuid()) @db.VarChar(36)
   usuarioId       String       @unique @db.VarChar(36)
   planoId         String?      @db.VarChar(36) @map("plano_id")
-  dataInicio      DateTime     @map("data_inicio") @db.DateTime
-  dataNascimento  DateTime?    @map("data_nascimento") @db.DateTime
-  ultimoAcesso    DateTime?    @map("ultimo_acesso") @db.DateTime
+  dataInicio      DateTime     @map("data_inicio")
+  dataNascimento  DateTime?    @map("data_nascimento")
+  ultimoAcesso    DateTime?    @map("ultimo_acesso")
   endereco        String?      @db.VarChar(255)
   cidade          String?      @db.VarChar(100)
   estado          String?      @db.VarChar(2)
   cep             String?      @db.VarChar(9)
   observacoes     String?      @db.LongText
   status          StatusAluno  @default(ATIVO)
-  criadoEm        DateTime     @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime     @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  criadoEm        DateTime     @default(now()) @map("criado_em")
+  atualizadoEm    DateTime     @default(now()) @updatedAt @map("atualizado_em")
 
   usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   planoAtual      Plano?        @relation("PlanoAtualAluno", fields: [planoId], references: [id])
@@ -110,8 +111,8 @@ model Professor {
   especialidade   String?        @db.VarChar(255)
   bio             String?        @db.LongText
   status          StatusProfessor @default(ATIVO)
-  criadoEm        DateTime       @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  criadoEm        DateTime       @default(now()) @map("criado_em")
+  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em")
 
   usuario         Usuario        @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   aulas           Aula[]
@@ -141,8 +142,8 @@ model Plano {
   aulas           Int         @default(4)
   preco           Decimal     @db.Decimal(10, 2)
   ativo           Boolean     @default(true)
-  criadoEm        DateTime    @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime    @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  criadoEm        DateTime    @default(now()) @map("criado_em")
+  atualizadoEm    DateTime    @default(now()) @updatedAt @map("atualizado_em")
 
   mensalidades    Mensalidade[]
   alunosAtivos    Aluno[]      @relation("PlanoAtualAluno")
@@ -178,7 +179,7 @@ enum ModalidadeAula {
 model Aula {
   id              String         @id @default(uuid()) @db.VarChar(36)
   professorId     String         @db.VarChar(36)
-  dataHoraInicio  DateTime       @map("data_hora_inicio") @db.DateTime
+  dataHoraInicio  DateTime       @map("data_hora_inicio")
   duracao         Int            @default(50)
   capacidade      Int            @default(10)
   sala            String         @db.VarChar(100)
@@ -186,8 +187,8 @@ model Aula {
   modalidade      ModalidadeAula @default(MAT)
   observacoes     String?        @db.LongText
   status          StatusAula     @default(AGENDADA)
-  criadoEm        DateTime       @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  criadoEm        DateTime       @default(now()) @map("criado_em")
+  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em")
 
   professor        Professor    @relation(fields: [professorId], references: [id], onDelete: Cascade)
   presencas        Presenca[]
@@ -215,9 +216,9 @@ model Presenca {
   alunoId         String         @db.VarChar(36)
   aulaId          String         @db.VarChar(36)
   status          StatusPresenca @default(PRESENTE)
-  dataRegistro    DateTime       @map("data_registro") @db.DateTime
-  criadoEm        DateTime       @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  dataRegistro    DateTime       @map("data_registro")
+  criadoEm        DateTime       @default(now()) @map("criado_em")
+  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em")
 
   aluno           Aluno          @relation(fields: [alunoId], references: [id], onDelete: Cascade)
   aula            Aula           @relation(fields: [aulaId], references: [id], onDelete: Cascade)
@@ -246,9 +247,9 @@ model Reposicao {
   aulaReposicaoId String?           @db.VarChar(36)
   motivo          String            @db.VarChar(255)
   status          StatusReposicao   @default(PENDENTE)
-  dataSolicitacao DateTime          @map("data_solicitacao") @db.DateTime
-  criadoEm        DateTime          @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime          @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  dataSolicitacao DateTime          @map("data_solicitacao")
+  criadoEm        DateTime          @default(now()) @map("criado_em")
+  atualizadoEm    DateTime          @default(now()) @updatedAt @map("atualizado_em")
 
   aluno           Aluno             @relation(fields: [alunoId], references: [id], onDelete: Cascade)
   aulaOriginal    Aula              @relation("AulaOriginal", fields: [aulaOriginalId], references: [id], onDelete: Cascade)
@@ -282,13 +283,13 @@ model Caixa {
   id                String              @id @default(uuid()) @db.VarChar(36)
   usuarioAbreId     String              @db.VarChar(36)
   usuarioFechaId    String?             @db.VarChar(36)
-  dataAbertura      DateTime            @map("data_abertura") @db.DateTime
-  dataFechamento    DateTime?           @map("data_fechamento") @db.DateTime
+  dataAbertura      DateTime            @map("data_abertura")
+  dataFechamento    DateTime?           @map("data_fechamento")
   saldoAbertura     Decimal             @map("saldo_abertura") @db.Decimal(10, 2)
   saldoFechamento   Decimal?            @map("saldo_fechamento") @db.Decimal(10, 2)
   observacoes       String?             @db.LongText
-  criadoEm          DateTime            @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm      DateTime            @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  criadoEm          DateTime            @default(now()) @map("criado_em")
+  atualizadoEm      DateTime            @default(now()) @updatedAt @map("atualizado_em")
 
   usuarioAbre       Usuario             @relation("CaixasAbertos", fields: [usuarioAbreId], references: [id])
   usuarioFecha      Usuario?            @relation("CaixasFechados", fields: [usuarioFechaId], references: [id])
@@ -315,14 +316,14 @@ model Mensalidade {
   id              String             @id @default(uuid()) @db.VarChar(36)
   alunoId         String             @db.VarChar(36)
   planoId         String             @db.VarChar(36)
-  mesReferencia   DateTime           @map("mes_referencia") @db.DateTime
-  dataVencimento  DateTime           @map("data_vencimento") @db.DateTime
+  mesReferencia   DateTime           @map("mes_referencia")
+  dataVencimento  DateTime           @map("data_vencimento")
   valor           Decimal            @db.Decimal(10, 2)
   desconto        Decimal            @default(0) @db.Decimal(10, 2)
   status          StatusMensalidade  @default(PENDENTE)
   observacoes     String?            @db.LongText
-  criadoEm        DateTime           @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime           @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  criadoEm        DateTime           @default(now()) @map("criado_em")
+  atualizadoEm    DateTime           @default(now()) @updatedAt @map("atualizado_em")
 
   aluno           Aluno              @relation(fields: [alunoId], references: [id], onDelete: Cascade)
   plano           Plano              @relation(fields: [planoId], references: [id])
@@ -343,12 +344,12 @@ model Pagamento {
   mensalidadeId   String              @db.VarChar(36)
   caixaId         String              @db.VarChar(36)
   usuarioId       String              @db.VarChar(36)
-  dataPagamento   DateTime            @map("data_pagamento") @db.DateTime
+  dataPagamento   DateTime            @map("data_pagamento")
   valor           Decimal             @db.Decimal(10, 2)
   metodo          MetodoPagamento     @default(PIX)
   referencia      String?             @db.VarChar(255)
   observacoes     String?             @db.LongText
-  criadoEm        DateTime            @default(now()) @map("criado_em") @db.DateTime
+  criadoEm        DateTime            @default(now()) @map("criado_em")
 
   mensalidade     Mensalidade         @relation(fields: [mensalidadeId], references: [id], onDelete: Cascade)
   caixa           Caixa               @relation(fields: [caixaId], references: [id])
@@ -378,11 +379,11 @@ model Relatorio {
   tipo            TipoRelatorio
   titulo          String        @db.VarChar(255)
   descricao       String?       @db.LongText
-  dataPeriodoInicio DateTime    @map("data_periodo_inicio") @db.DateTime
-  dataPeriodoFim  DateTime      @map("data_periodo_fim") @db.DateTime
+  dataPeriodoInicio DateTime    @map("data_periodo_inicio")
+  dataPeriodoFim  DateTime      @map("data_periodo_fim")
   conteudo        String        @db.LongText
-  criadoEm        DateTime      @default(now()) @map("criado_em") @db.DateTime
-  atualizadoEm    DateTime      @default(now()) @updatedAt @map("atualizado_em") @db.DateTime
+  criadoEm        DateTime      @default(now()) @map("criado_em")
+  atualizadoEm    DateTime      @default(now()) @updatedAt @map("atualizado_em")
 
   professor       Professor     @relation(fields: [professorId], references: [id], onDelete: Cascade)
 
@@ -416,8 +417,8 @@ model Notificacao {
   titulo          String              @db.VarChar(255)
   mensagem        String              @db.LongText
   status          StatusNotificacao   @default(NAO_LIDA)
-  dataLeitura     DateTime?           @map("data_leitura") @db.DateTime
-  criadoEm        DateTime            @default(now()) @map("criado_em") @db.DateTime
+  dataLeitura     DateTime?           @map("data_leitura")
+  criadoEm        DateTime            @default(now()) @map("criado_em")
 
   usuario         Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
@@ -449,7 +450,7 @@ model LogAuditoria {
   dadosNovos      String?       @map("dados_novos") @db.LongText
   enderecoIp      String?       @map("endereco_ip") @db.VarChar(45)
   userAgent       String?       @map("user_agent") @db.LongText
-  criadoEm        DateTime      @default(now()) @map("criado_em") @db.DateTime
+  criadoEm        DateTime      @default(now()) @map("criado_em")
 
   usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 

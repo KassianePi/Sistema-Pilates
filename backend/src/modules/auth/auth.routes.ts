@@ -10,8 +10,8 @@
  */
 
 import type { FastifyInstance } from 'fastify'
-import { login, register, refresh, logout, changePassword } from './auth.controller'
-import { authenticateToken } from '../../shared/middlewares/auth.middleware'
+import { login, register, refresh, logout, changePassword, setup, criarUsuario } from './auth.controller'
+import { authenticateToken, requireRole } from '../../shared/middlewares/auth.middleware'
 import { logDebug } from '../../shared/utils'
 
 /**
@@ -65,8 +65,9 @@ export async function authRoutes(fastify: FastifyInstance) {
   }, login)
 
   /**
-   * POST /api/v1/auth/register
-   * Registra novo usuário
+   * POST /api/v1/auth/setup
+   * Setup inicial — cria o primeiro admin (apenas quando banco está vazio)
+   * ⚠️ PÚBLICO — retorna 409 se já houver usuários
    */
   fastify.post<{
     Body: {
@@ -77,7 +78,7 @@ export async function authRoutes(fastify: FastifyInstance) {
       senha: string
       senhaConfirmacao: string
     }
-  }>('/api/v1/auth/register', {
+  }>('/api/v1/auth/setup', {
     schema: {
       body: {
         type: 'object',
@@ -87,32 +88,46 @@ export async function authRoutes(fastify: FastifyInstance) {
           nome: { type: 'string', minLength: 3 },
           cpf: { type: 'string', pattern: '^\\d{11}$' },
           telefone: { type: 'string', pattern: '^\\d{10,11}$' },
-          senha: { type: 'string', minLength: 6 },
-          senhaConfirmacao: { type: 'string', minLength: 6 },
-        },
-      },
-      response: {
-        201: {
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            data: {
-              type: 'object',
-              properties: {
-                usuarioId: { type: 'string' },
-                email: { type: 'string' },
-                nome: { type: 'string' },
-                funcao: { type: 'string' },
-                accessToken: { type: 'string' },
-                refreshToken: { type: 'string' },
-                expiresIn: { type: 'number' },
-              },
-            },
-          },
+          senha: { type: 'string', minLength: 8 },
+          senhaConfirmacao: { type: 'string', minLength: 8 },
         },
       },
     },
-  }, register)
+  }, setup)
+
+  /**
+   * POST /api/v1/auth/register
+   * Cria usuário do sistema (admin, professor, recepcionista, financeiro)
+   * ⚠️ PROTEGIDO — apenas ADMIN
+   */
+  fastify.post<{
+    Body: {
+      email: string
+      nome: string
+      cpf: string
+      telefone?: string
+      senha: string
+      senhaConfirmacao: string
+      funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO'
+    }
+  }>('/api/v1/auth/register', {
+    onRequest: [authenticateToken, requireRole('ADMIN')],
+    schema: {
+      body: {
+        type: 'object',
+        required: ['email', 'nome', 'cpf', 'senha', 'senhaConfirmacao', 'funcao'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          nome: { type: 'string', minLength: 3 },
+          cpf: { type: 'string', pattern: '^\\d{11}$' },
+          telefone: { type: 'string', pattern: '^\\d{10,11}$' },
+          senha: { type: 'string', minLength: 6 },
+          senhaConfirmacao: { type: 'string', minLength: 6 },
+          funcao: { type: 'string', enum: ['ADMIN', 'PROFESSOR', 'RECEPCIONISTA', 'FINANCEIRO'] },
+        },
+      },
+    },
+  }, criarUsuario)
 
   /**
    * POST /api/v1/auth/refresh
