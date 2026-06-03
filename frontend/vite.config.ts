@@ -10,4 +10,14 @@ export default defineConfig({
       '@shared': resolve(__dirname, '../packages/shared'),
     },
   },
+  server: {
+    host: '0.0.0.0',
+    port: 5173,
+    proxy: {
+      '/api': {
+        target: 'http://backend:3000',
+        changeOrigin: true,
+      },
+    },
+  },
 })

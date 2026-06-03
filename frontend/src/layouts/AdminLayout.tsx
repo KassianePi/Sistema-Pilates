@@ -42,16 +42,44 @@ const navItems: NavItem[] = [
 export function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const adminUser = user as AdminUser | null
 
   async function handleLogout() {
+    setIsLoggingOut(true)
+    await new Promise((r) => setTimeout(r, 900))
     await logout()
     navigate('/admin/login')
   }
 
   return (
+    <>
+      {/* Overlay de saída */}
+      {isLoggingOut && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center animate-fade-in"
+          style={{ background: 'rgba(245, 239, 224, 0.97)' }}
+        >
+          <div className="flex flex-col items-center gap-5 animate-success-expand">
+            <img
+              src="/logo-clinica.png"
+              alt="Logo"
+              className="w-20 h-20 rounded-full object-cover border-2 border-ouro-clinica shadow-md opacity-90"
+            />
+            <div className="text-center">
+              <p className="text-preto-silhueta font-semibold text-lg tracking-wide">
+                Até logo!
+              </p>
+              <p className="text-cinza-silhueta text-sm mt-1">
+                Saindo com segurança...
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
     <div className="flex h-screen bg-creme-fundo overflow-hidden">
       {/* Overlay mobile */}
       {mobileOpen && (
@@ -160,5 +188,6 @@ export function AdminLayout() {
         </main>
       </div>
     </div>
+    </>
   )
 }

@@ -10,6 +10,13 @@
   --lilas-medio:         #A880FF;
   --azul-link:           #0000EE;
 
+  /* Cores da Clínica Performance e Saúde */
+  --ouro-clinica:        #C9A227;
+  --ouro-claro:          #E8C355;
+  --ouro-escuro:         #9C7A1A;
+  --cinza-silhueta:      #5C5C5C;
+  --preto-silhueta:      #1A1A1A;
+
   /* Neutros de Interface */
   --cinza-escuro-suave:  #1D1D1F;
   --creme-fundo:         #FBF8EC;
@@ -38,6 +45,17 @@
   --border:              var(--cinza-medio);
   --input:               var(--branco-puro);
   --ring:                var(--lilas-medio);
+}
+
+@keyframes check-draw {
+  from { stroke-dashoffset: 60; }
+  to   { stroke-dashoffset: 0;  }
+}
+
+.animate-check-draw {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 60;
+  animation: check-draw 0.45s ease-out 0.35s forwards;
 }
 
 * {

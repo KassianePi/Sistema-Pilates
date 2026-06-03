@@ -10,6 +10,7 @@ export const buttonVariants = cva(
         outline: 'border border-cinza-medio bg-branco-puro text-cinza-escuro-suave hover:bg-bege-suave',
         ghost: 'text-cinza-texto hover:bg-bege-suave hover:text-cinza-forte',
         destructive: 'bg-red-600 text-branco-puro hover:bg-red-700',
+        ouro: 'bg-ouro-clinica text-branco-puro hover:bg-ouro-escuro active:scale-[0.98] shadow-md',
       },
       size: {
         sm: 'h-8 px-3 text-xs',
