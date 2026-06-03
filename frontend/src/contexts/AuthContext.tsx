@@ -1,7 +1,7 @@
 import { createContext, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import type { AdminUser, AlunoUser } from '@/types/auth.types'
-import { setAccessToken } from '@/services/api'
+import { setAccessToken, setRefreshToken } from '@/services/api'
 import { api } from '@/services/api'
 
 interface AuthContextValue {
@@ -21,15 +21,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginAdmin = useCallback(async (email: string, senha: string) => {
     const { data } = await api.post('/auth/login', { email, senha })
-    setAccessToken(data.accessToken)
-    setUser(data.user)
+    const payload = data.data
+    setAccessToken(payload.accessToken)
+    setRefreshToken(payload.refreshToken)
+    setUser({ id: payload.usuarioId, nome: payload.nome, email: payload.email, role: payload.funcao })
     setUserType('admin')
   }, [])
 
   const loginAluno = useCallback(async (email: string, senha: string) => {
     const { data } = await api.post('/auth/aluno/login', { email, senha })
-    setAccessToken(data.accessToken)
-    setUser(data.user)
+    const payload = data.data
+    setAccessToken(payload.accessToken)
+    setRefreshToken(payload.refreshToken)
+    setUser({ id: payload.usuarioId, nome: payload.nome, email: payload.email })
     setUserType('aluno')
   }, [])
 
@@ -38,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await api.post('/auth/logout')
     } finally {
       setAccessToken(null)
+      setRefreshToken(null)
       setUser(null)
       setUserType(null)
     }

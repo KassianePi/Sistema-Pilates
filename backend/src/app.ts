@@ -69,7 +69,7 @@ export async function createApp() {
       max: isDevelopment ? 1000 : 100,
       timeWindow: '15 minutes',
       cache: 10000,
-      allowList: ['127.0.0.1'],
+      allowList: isDevelopment ? ['127.0.0.1', '::1', '::ffff:127.0.0.1', '172.19.0.1'] : ['127.0.0.1'],
       skipOnError: true,
     })
 
@@ -192,6 +192,10 @@ export async function createApp() {
       if (error.name === 'UnauthorizedError' || error.name === 'JwtError') {
         logError(`JWT inválido: ${error.message}`, error, { requestId })
         return reply.status(401).send({ success: false, message: 'Token inválido ou expirado', code: 'TOKEN_INVALID', statusCode: 401 })
+      }
+
+      if (error.statusCode === 429) {
+        return reply.status(429).send({ success: false, message: 'Muitas tentativas. Aguarde 15 minutos.', code: 'RATE_LIMIT_EXCEEDED' })
       }
 
       if (error.statusCode === 404) {

@@ -8,6 +8,7 @@ export const api = axios.create({
 })
 
 let accessToken: string | null = null
+let refreshToken: string | null = null
 
 export function setAccessToken(token: string | null) {
   accessToken = token
@@ -15,6 +16,10 @@ export function setAccessToken(token: string | null) {
 
 export function getAccessToken() {
   return accessToken
+}
+
+export function setRefreshToken(token: string | null) {
+  refreshToken = token
 }
 
 api.interceptors.request.use((config) => {
@@ -32,17 +37,24 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
 
+      if (!refreshToken) {
+        window.location.href = '/admin/login'
+        return Promise.reject(error)
+      }
+
       try {
         const { data } = await axios.post(
           `${BASE_URL}/auth/refresh`,
-          {},
+          { refreshToken },
           { withCredentials: true },
         )
-        accessToken = data.accessToken
+        accessToken = data.data.accessToken
+        refreshToken = data.data.refreshToken
         original.headers.Authorization = `Bearer ${accessToken}`
         return api(original)
       } catch {
         accessToken = null
+        refreshToken = null
         window.location.href = '/admin/login'
       }
     }
