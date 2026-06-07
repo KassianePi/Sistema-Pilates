@@ -49,6 +49,8 @@ export interface CreateAlunoData {
 
 export interface UpdateAlunoData {
   nomeCompleto?: string
+  email?: string
+  senhaHash?: string
   telefone?: string | null
   planoId?: string | null
   dataNascimento?: Date | null

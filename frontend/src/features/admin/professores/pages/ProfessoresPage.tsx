@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Pencil, Trash2, UserCheck } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, UserCheck, PowerOff, Power } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +11,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { ProfessorFormModal } from '../components/ProfessorFormModal'
-import { useProfessores, useDeleteProfessor } from '../hooks/useProfessores'
+import { useProfessores, useDeleteProfessor, useAlterarStatusProfessor } from '../hooks/useProfessores'
 import { useDebounce } from '@/hooks/useDebounce'
 import type { Professor } from '@/types/domain.types'
 
@@ -21,10 +21,12 @@ export function ProfessoresPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [professorEditando, setProfessorEditando] = useState<Professor | null>(null)
   const [professorExcluindo, setProfessorExcluindo] = useState<Professor | null>(null)
+  const [professorAlterandoStatus, setProfessorAlterandoStatus] = useState<Professor | null>(null)
 
   const buscaDebounced = useDebounce(busca, 400)
   const { data, isLoading } = useProfessores({ busca: buscaDebounced, pagina, limite: 15 })
   const deleteProfessor = useDeleteProfessor()
+  const alterarStatus = useAlterarStatusProfessor()
 
   const professores = data?.data ?? []
   const totalPaginas = data?.totalPaginas ?? 1
@@ -38,6 +40,12 @@ export function ProfessoresPage() {
     if (!professorExcluindo) return
     await deleteProfessor.mutateAsync(professorExcluindo.id)
     setProfessorExcluindo(null)
+  }
+
+  async function confirmarAlterarStatus() {
+    if (!professorAlterandoStatus) return
+    await alterarStatus.mutateAsync({ id: professorAlterandoStatus.id, ativo: professorAlterandoStatus.status !== 'ATIVO' })
+    setProfessorAlterandoStatus(null)
   }
 
   return (
@@ -110,6 +118,18 @@ export function ProfessoresPage() {
                         <Button size="icon" variant="ghost" onClick={() => { setProfessorEditando(professor); setModalOpen(true) }} title="Editar">
                           <Pencil className="w-4 h-4" />
                         </Button>
+                        <Button
+                          size="icon" variant="ghost"
+                          onClick={() => setProfessorAlterandoStatus(professor)}
+                          title={professor.status === 'ATIVO' ? 'Inativar professor' : 'Reativar professor'}
+                          className={professor.status === 'ATIVO'
+                            ? 'hover:text-amber-600 hover:bg-amber-50'
+                            : 'hover:text-emerald-600 hover:bg-emerald-50'}
+                        >
+                          {professor.status === 'ATIVO'
+                            ? <PowerOff className="w-4 h-4" />
+                            : <Power className="w-4 h-4" />}
+                        </Button>
                         <Button size="icon" variant="ghost" onClick={() => setProfessorExcluindo(professor)} title="Excluir"
                           className="hover:text-red-600 hover:bg-red-50">
                           <Trash2 className="w-4 h-4" />
@@ -137,6 +157,36 @@ export function ProfessoresPage() {
         onClose={() => setModalOpen(false)}
         professor={professorEditando}
       />
+
+      <AlertDialog open={!!professorAlterandoStatus} onOpenChange={(v) => !v && setProfessorAlterandoStatus(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {professorAlterandoStatus?.status === 'ATIVO' ? 'Inativar professor?' : 'Reativar professor?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {professorAlterandoStatus?.status === 'ATIVO'
+                ? <>O professor <strong>{professorAlterandoStatus?.usuario.nomeCompleto}</strong> não poderá mais acessar o painel. Você pode reativá-lo a qualquer momento.</>
+                : <>O professor <strong>{professorAlterandoStatus?.usuario.nomeCompleto}</strong> voltará a ter acesso ao painel.</>
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarAlterarStatus}
+              disabled={alterarStatus.isPending}
+              className={professorAlterandoStatus?.status === 'ATIVO'
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'bg-emerald-600 hover:bg-emerald-700'}
+            >
+              {alterarStatus.isPending
+                ? 'Aguarde...'
+                : professorAlterandoStatus?.status === 'ATIVO' ? 'Inativar' : 'Reativar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!professorExcluindo} onOpenChange={(v) => !v && setProfessorExcluindo(null)}>
         <AlertDialogContent>

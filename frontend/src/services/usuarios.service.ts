@@ -25,6 +25,8 @@ export interface CreateUsuarioDTO {
 export interface UpdateUsuarioDTO {
   nomeCompleto?: string
   telefone?: string | null
+  email?: string
+  senha?: string
 }
 
 type BackendUsuario = {

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuth } from '@/hooks/useAuth'
+import { ROLE_DEFAULT_ROUTE } from '@/lib/permissions'
 
 const loginSchema = z.object({
   email: z.string().email('E-mail inválido'),
@@ -31,9 +32,10 @@ export function AdminLoginPage() {
 
   async function onSubmit(data: LoginForm) {
     try {
-      await loginAdmin(data.email, data.senha)
+      const loggedUser = await loginAdmin(data.email, data.senha)
       setLoginSuccess(true)
-      setTimeout(() => navigate('/admin/dashboard'), 1100)
+      const destination = ROLE_DEFAULT_ROUTE[loggedUser.role] ?? '/admin/dashboard'
+      setTimeout(() => navigate(destination), 1100)
     } catch {
       toast.error('E-mail ou senha incorretos.')
     }

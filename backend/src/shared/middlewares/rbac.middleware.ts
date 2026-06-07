@@ -29,11 +29,12 @@ export const ROLE_PERMISSIONS = {
   },
 
   PROFESSOR: {
-    // Acesso limitado: apenas suas aulas e presença de alunos
+    // Acesso limitado: agenda própria, alunos, presença e relatórios
     alunos: ['read'],
     professores: ['read'],
-    agenda: ['read'],
+    agenda: ['read', 'create', 'update'],
     presenca: ['create', 'read', 'update'],
+    relatorios: ['read', 'create'],
   },
 
   RECEPCIONISTA: {

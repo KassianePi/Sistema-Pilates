@@ -24,6 +24,8 @@ const createSchema = z.object({
 
 const editSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').optional(),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
   telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
   especialidade: z.string().optional(),
   bio: z.string().optional(),
@@ -55,6 +57,8 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
     if (professor) {
       reset({
         nomeCompleto: professor.usuario.nomeCompleto,
+        email: professor.usuario.email,
+        senha: '',
         telefone: professor.usuario.telefone ?? '',
         especialidade: professor.especialidade ?? '',
         bio: professor.bio ?? '',
@@ -69,6 +73,8 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
     const payload = {
       ...values,
       telefone: (values.telefone && values.telefone.length) ? values.telefone : undefined,
+      email: (values as any).email?.trim() || undefined,
+      senha: (values as any).senha?.trim() || undefined,
     }
 
     if (isEditing && professor) {
@@ -135,6 +141,28 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
                 )}
               </div>
             </>
+          )}
+
+          {/* Email (edição) */}
+          {isEditing && (
+            <div className="space-y-1.5">
+              <Label htmlFor="email-edit">E-mail</Label>
+              <Input id="email-edit" type="email" {...register('email' as never)} placeholder="email@exemplo.com" />
+              {(errors as { email?: { message?: string } }).email && (
+                <p className="text-xs text-rosa-vibrante">{(errors as { email?: { message?: string } }).email?.message}</p>
+              )}
+            </div>
+          )}
+
+          {/* Nova senha (edição) */}
+          {isEditing && (
+            <div className="space-y-1.5">
+              <Label htmlFor="senha-edit">Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span></Label>
+              <Input id="senha-edit" type="password" {...register('senha' as never)} placeholder="Mínimo 6 caracteres" />
+              {(errors as { senha?: { message?: string } }).senha && (
+                <p className="text-xs text-rosa-vibrante">{(errors as { senha?: { message?: string } }).senha?.message}</p>
+              )}
+            </div>
           )}
 
           {/* Telefone com máscara */}

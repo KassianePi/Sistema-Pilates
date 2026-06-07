@@ -70,23 +70,47 @@ export class AlunosService {
     return { alunos, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
   }
 
-  async atualizar(id: string, data: UpdateAlunoData, realizadoPorId?: string): Promise<Aluno> {
-    await this.buscarPorId(id)
+  async atualizar(id: string, data: UpdateAlunoData & { email?: string; senha?: string }, realizadoPorId?: string): Promise<Aluno> {
+    const alunoAtual = await this.buscarPorId(id)
     const validado = updateAlunoSchema.parse(data)
+
+    if (validado.email) {
+      const existente = await prisma.usuario.findUnique({ where: { email: validado.email } })
+      if (existente && existente.id !== alunoAtual.usuarioId) {
+        throw ValidationError.forField('email', ALUNOS_ERRORS.EMAIL_DUPLICADO)
+      }
+    }
 
     if (validado.planoId) {
       const plano = await prisma.plano.findUnique({ where: { id: validado.planoId } })
       if (!plano) throw ValidationError.forField('planoId', ALUNOS_ERRORS.PLANO_NOT_FOUND)
     }
 
+    const senhaHash = validado.senha ? await hashPassword(validado.senha) : undefined
+
     const aluno = await this.repository.update(id, {
       ...validado,
+      senhaHash,
       dataNascimento: validado.dataNascimento ? new Date(validado.dataNascimento) : undefined,
       status: validado.status as any,
     })
     logInfo('Aluno atualizado', { id })
     if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'Aluno', entidadeId: id })
     return aluno
+  }
+
+  async alterarStatus(id: string, ativo: boolean, realizadoPorId?: string): Promise<Aluno> {
+    const aluno = await this.buscarPorId(id)
+    const novoStatus = ativo ? 'ATIVO' : 'INATIVO'
+
+    await prisma.$transaction(async (tx) => {
+      await tx.aluno.update({ where: { id }, data: { status: novoStatus as any } })
+      await tx.usuario.update({ where: { id: aluno.usuarioId }, data: { status: novoStatus as any } })
+    })
+
+    logInfo(`Aluno ${novoStatus.toLowerCase()}`, { id })
+    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'Aluno', entidadeId: id })
+    return this.buscarPorId(id)
   }
 
   async excluir(id: string, realizadoPorId?: string): Promise<void> {

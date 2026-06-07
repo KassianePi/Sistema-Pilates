@@ -223,7 +223,7 @@ export class AuthRepository {
   /**
    * Atualiza dados básicos de um usuário
    */
-  async updateDados(usuarioId: string, dados: { nomeCompleto?: string; telefone?: string | null }): Promise<Usuario> {
+  async updateDados(usuarioId: string, dados: { nomeCompleto?: string; telefone?: string | null; email?: string; senhaHash?: string }): Promise<Usuario> {
     try {
       logDebug('Atualizando dados do usuário', { usuarioId })
       const usuario = await prisma.usuario.update({
@@ -231,6 +231,8 @@ export class AuthRepository {
         data: {
           ...(dados.nomeCompleto !== undefined && { nomeCompleto: dados.nomeCompleto }),
           ...(dados.telefone !== undefined && { telefone: dados.telefone }),
+          ...(dados.email && { email: dados.email }),
+          ...(dados.senhaHash && { senhaHash: dados.senhaHash }),
         },
       })
       logDebug('✅ Dados do usuário atualizados', { usuarioId })

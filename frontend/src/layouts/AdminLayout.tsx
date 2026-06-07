@@ -15,10 +15,12 @@ import {
   ChevronLeft,
   ChevronRight,
   Menu,
+  UserCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
-import type { AdminUser } from '@/types/auth.types'
+import type { AdminUser, UserRole } from '@/types/auth.types'
+import { ROLE_ALLOWED_ROUTES } from '@/lib/permissions'
 
 interface NavItem {
   label: string
@@ -37,6 +39,7 @@ const navItems: NavItem[] = [
   { label: 'Notificações', to: '/admin/notificacoes', icon: Bell },
   { label: 'Auditoria', to: '/admin/auditoria', icon: ShieldCheck },
   { label: 'Usuários', to: '/admin/usuarios', icon: Settings },
+  { label: 'Meu Perfil', to: '/admin/perfil', icon: UserCircle },
 ]
 
 export function AdminLayout() {
@@ -46,6 +49,9 @@ export function AdminLayout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const adminUser = user as AdminUser | null
+
+  const allowedRoutes = ROLE_ALLOWED_ROUTES[adminUser?.role as UserRole] ?? []
+  const visibleNavItems = navItems.filter((item) => allowedRoutes.includes(item.to))
 
   async function handleLogout() {
     setIsLoggingOut(true)
@@ -122,7 +128,7 @@ export function AdminLayout() {
 
         {/* Navegação */}
         <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2">
-          {navItems.map((item) => (
+          {visibleNavItems.map((item) => (
             <NavLink
               key={item.to}
               to={item.to}

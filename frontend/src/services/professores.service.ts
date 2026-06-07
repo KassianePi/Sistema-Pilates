@@ -13,6 +13,8 @@ export interface CreateProfessorDTO {
 
 export interface UpdateProfessorDTO {
   nomeCompleto?: string
+  email?: string
+  senha?: string
   telefone?: string
   especialidade?: string
   bio?: string
@@ -47,5 +49,10 @@ export const professoresService = {
 
   async excluir(id: string) {
     await api.delete(`/professores/${id}`)
+  },
+
+  async alterarStatus(id: string, ativo: boolean) {
+    const { data } = await api.patch<ApiResponse<Professor>>(`/professores/${id}/status`, { ativo })
+    return data.data
   },
 }

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Pencil, Trash2, UserCheck, UserX } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, UserCheck, UserX, PowerOff, Power } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +11,7 @@ import {
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { AlunoFormModal } from '../components/AlunoFormModal'
-import { useAlunos, useDeleteAluno } from '../hooks/useAlunos'
+import { useAlunos, useDeleteAluno, useAlterarStatusAluno } from '../hooks/useAlunos'
 import type { Aluno } from '@/types/domain.types'
 import { useDebounce } from '@/hooks/useDebounce'
 
@@ -21,10 +21,12 @@ export function AlunosPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [alunoEditando, setAlunoEditando] = useState<Aluno | null>(null)
   const [alunoExcluindo, setAlunoExcluindo] = useState<Aluno | null>(null)
+  const [alunoAlterandoStatus, setAlunoAlterandoStatus] = useState<Aluno | null>(null)
 
   const buscaDebounced = useDebounce(busca, 400)
   const { data, isLoading } = useAlunos({ busca: buscaDebounced, pagina, limite: 15 })
   const deleteAluno = useDeleteAluno()
+  const alterarStatus = useAlterarStatusAluno()
 
   const alunos = data?.data ?? []
   const totalPaginas = data?.totalPaginas ?? 1
@@ -43,6 +45,12 @@ export function AlunosPage() {
     if (!alunoExcluindo) return
     await deleteAluno.mutateAsync(alunoExcluindo.id)
     setAlunoExcluindo(null)
+  }
+
+  async function confirmarAlterarStatus() {
+    if (!alunoAlterandoStatus) return
+    await alterarStatus.mutateAsync({ id: alunoAlterandoStatus.id, ativo: alunoAlterandoStatus.status !== 'ATIVO' })
+    setAlunoAlterandoStatus(null)
   }
 
   return (
@@ -121,6 +129,18 @@ export function AlunosPage() {
                         <Button size="icon" variant="ghost" onClick={() => abrirEditar(aluno)} title="Editar">
                           <Pencil className="w-4 h-4" />
                         </Button>
+                        <Button
+                          size="icon" variant="ghost"
+                          onClick={() => setAlunoAlterandoStatus(aluno)}
+                          title={aluno.status === 'ATIVO' ? 'Inativar aluno' : 'Reativar aluno'}
+                          className={aluno.status === 'ATIVO'
+                            ? 'hover:text-amber-600 hover:bg-amber-50'
+                            : 'hover:text-emerald-600 hover:bg-emerald-50'}
+                        >
+                          {aluno.status === 'ATIVO'
+                            ? <PowerOff className="w-4 h-4" />
+                            : <Power className="w-4 h-4" />}
+                        </Button>
                         <Button size="icon" variant="ghost" onClick={() => setAlunoExcluindo(aluno)} title="Excluir"
                           className="hover:text-red-600 hover:bg-red-50">
                           <Trash2 className="w-4 h-4" />
@@ -154,6 +174,36 @@ export function AlunosPage() {
         onClose={() => setModalOpen(false)}
         aluno={alunoEditando}
       />
+
+      <AlertDialog open={!!alunoAlterandoStatus} onOpenChange={(v) => !v && setAlunoAlterandoStatus(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {alunoAlterandoStatus?.status === 'ATIVO' ? 'Inativar aluno?' : 'Reativar aluno?'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {alunoAlterandoStatus?.status === 'ATIVO'
+                ? <>O aluno <strong>{alunoAlterandoStatus?.usuario.nomeCompleto}</strong> não poderá mais acessar o portal. Você pode reativá-lo a qualquer momento.</>
+                : <>O aluno <strong>{alunoAlterandoStatus?.usuario.nomeCompleto}</strong> voltará a ter acesso ao portal.</>
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmarAlterarStatus}
+              disabled={alterarStatus.isPending}
+              className={alunoAlterandoStatus?.status === 'ATIVO'
+                ? 'bg-amber-600 hover:bg-amber-700'
+                : 'bg-emerald-600 hover:bg-emerald-700'}
+            >
+              {alterarStatus.isPending
+                ? 'Aguarde...'
+                : alunoAlterandoStatus?.status === 'ATIVO' ? 'Inativar' : 'Reativar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={!!alunoExcluindo} onOpenChange={(v) => !v && setAlunoExcluindo(null)}>
         <AlertDialogContent>

@@ -49,12 +49,20 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
 
     logDebug('Controller: login iniciado', { email })
 
-    // Chamar service
     const resultado = await authService.login(email, senha)
 
-    logInfo('✅ Controller: login bem-sucedido', { usuarioId: resultado.usuarioId })
+    // Alunos não podem acessar o painel administrativo
+    if (resultado.funcao === 'ALUNO') {
+      logWarn('Tentativa de acesso ao painel admin com conta de aluno', { email })
+      return reply.code(401).send({
+        success: false,
+        message: 'E-mail ou senha incorretos.',
+        code: 'INVALID_CREDENTIALS',
+      })
+    }
 
-    // Retornar resposta
+    logInfo('✅ Controller: login bem-sucedido', { usuarioId: resultado.usuarioId, funcao: resultado.funcao })
+
     return reply.code(200).send({
       success: true,
       data: resultado,
@@ -87,6 +95,41 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
       message: 'Erro interno do servidor',
       code: 'INTERNAL_ERROR',
     })
+  }
+}
+
+/**
+ * POST /api/v1/auth/aluno/login
+ *
+ * Login exclusivo para alunos — rejeita qualquer outra funcao
+ */
+export async function loginAluno(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { email, senha } = loginSchema.parse(request.body)
+    logDebug('Controller: login do aluno iniciado', { email })
+
+    const resultado = await authService.login(email, senha)
+
+    if (resultado.funcao !== 'ALUNO') {
+      logWarn('Tentativa de acesso ao portal do aluno com conta não-aluno', { email, funcao: resultado.funcao })
+      return reply.code(401).send({
+        success: false,
+        message: 'E-mail ou senha incorretos.',
+        code: 'INVALID_CREDENTIALS',
+      })
+    }
+
+    logInfo('✅ Controller: login do aluno bem-sucedido', { usuarioId: resultado.usuarioId })
+    return reply.code(200).send({ success: true, data: resultado })
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    }
+    if (error instanceof UnauthorizedError) {
+      return reply.code(error.statusCode || 401).send({ success: false, message: error.message, code: error.code })
+    }
+    logWarn('Controller: erro no login do aluno', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro interno do servidor', code: 'INTERNAL_ERROR' })
   }
 }
 
@@ -325,7 +368,9 @@ export async function atualizarUsuario(request: FastifyRequest, reply: FastifyRe
     const { id } = z.object({ id: z.string().uuid() }).parse(request.params)
     const dados = z.object({
       nomeCompleto: z.string().min(3).optional(),
-      telefone: z.string().min(10).max(11).nullable().optional(),
+      telefone: z.string().regex(/^\d{10,11}$/).nullable().optional(),
+      email: z.string().email().optional(),
+      senha: z.string().min(6).max(128).optional(),
     }).parse(request.body)
 
     const adminId = request.usuarioId as string
@@ -377,6 +422,49 @@ export async function alterarStatusUsuario(request: FastifyRequest, reply: Fasti
     }
     logWarn('Controller: erro ao alterar status do usuário', { error: error instanceof Error ? error.message : String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao alterar status', code: 'STATUS_UPDATE_ERROR' })
+  }
+}
+
+/**
+ * GET /api/v1/me
+ * Retorna o perfil do usuário autenticado (inclui dados de professor se aplicável)
+ */
+export async function getMeuPerfil(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const usuarioId = request.usuarioId as string
+    const perfil = await authService.getMeuPerfil(usuarioId)
+    return reply.code(200).send({ success: true, data: perfil })
+  } catch (error) {
+    if (error instanceof AppError) {
+      return reply.code(error.statusCode || 400).send({ success: false, message: error.message, code: error.code })
+    }
+    logWarn('Controller: erro ao buscar perfil', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao buscar perfil', code: 'GET_PERFIL_ERROR' })
+  }
+}
+
+/**
+ * PUT /api/v1/me
+ * Atualiza o próprio perfil (nome, telefone; bio/especialidade se professor)
+ */
+export async function atualizarMeuPerfil(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const usuarioId = request.usuarioId as string
+    const dados = z.object({
+      nomeCompleto: z.string().min(3).optional(),
+      telefone: z.string().regex(/^\d{10,11}$/).nullable().optional(),
+      bio: z.string().max(500).nullable().optional(),
+      especialidade: z.string().max(200).nullable().optional(),
+    }).parse(request.body)
+
+    const perfil = await authService.atualizarMeuPerfil(usuarioId, dados)
+    return reply.code(200).send({ success: true, data: perfil })
+  } catch (error) {
+    if (error instanceof AppError) {
+      return reply.code(error.statusCode || 400).send({ success: false, message: error.message, code: error.code })
+    }
+    logWarn('Controller: erro ao atualizar perfil', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao atualizar perfil', code: 'UPDATE_PERFIL_ERROR' })
   }
 }
 

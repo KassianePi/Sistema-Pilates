@@ -7,8 +7,10 @@ export const api = axios.create({
   withCredentials: true,
 })
 
+const STORAGE_REFRESH = 'pilates_refresh_token'
+const STORAGE_USER_TYPE = 'pilates_user_type'
+
 let accessToken: string | null = null
-let refreshToken: string | null = null
 
 export function setAccessToken(token: string | null) {
   accessToken = token
@@ -19,7 +21,15 @@ export function getAccessToken() {
 }
 
 export function setRefreshToken(token: string | null) {
-  refreshToken = token
+  if (token) {
+    localStorage.setItem(STORAGE_REFRESH, token)
+  } else {
+    localStorage.removeItem(STORAGE_REFRESH)
+  }
+}
+
+export function getStoredRefreshToken() {
+  return localStorage.getItem(STORAGE_REFRESH)
 }
 
 api.interceptors.request.use((config) => {
@@ -37,25 +47,29 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
 
-      if (!refreshToken) {
-        window.location.href = '/admin/login'
+      const storedRefresh = getStoredRefreshToken()
+
+      if (!storedRefresh) {
+        const userType = localStorage.getItem(STORAGE_USER_TYPE)
+        window.location.href = userType === 'aluno' ? '/aluno/login' : '/admin/login'
         return Promise.reject(error)
       }
 
       try {
         const { data } = await axios.post(
           `${BASE_URL}/auth/refresh`,
-          { refreshToken },
+          { refreshToken: storedRefresh },
           { withCredentials: true },
         )
         accessToken = data.data.accessToken
-        refreshToken = data.data.refreshToken
+        localStorage.setItem(STORAGE_REFRESH, data.data.refreshToken)
         original.headers.Authorization = `Bearer ${accessToken}`
         return api(original)
       } catch {
         accessToken = null
-        refreshToken = null
-        window.location.href = '/admin/login'
+        localStorage.removeItem(STORAGE_REFRESH)
+        const userType = localStorage.getItem(STORAGE_USER_TYPE)
+        window.location.href = userType === 'aluno' ? '/aluno/login' : '/admin/login'
       }
     }
 

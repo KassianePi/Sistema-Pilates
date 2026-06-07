@@ -46,3 +46,15 @@ export function useDeleteProfessor() {
     onError: () => toast.error('Erro ao remover professor.'),
   })
 }
+
+export function useAlterarStatusProfessor() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ativo }: { id: string; ativo: boolean }) => professoresService.alterarStatus(id, ativo),
+    onSuccess: (_, { ativo }) => {
+      qc.invalidateQueries({ queryKey: [QUERY_KEY] })
+      toast.success(ativo ? 'Professor reativado com sucesso.' : 'Professor inativado com sucesso.')
+    },
+    onError: () => toast.error('Erro ao alterar status do professor.'),
+  })
+}

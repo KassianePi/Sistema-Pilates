@@ -55,6 +55,8 @@ const criarSchema = z.object({
 
 const editarSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
   telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
 })
 
@@ -176,6 +178,8 @@ function ModalEditar({ usuario, onClose }: { usuario: UsuarioSistema; onClose: (
     resolver: zodResolver(editarSchema),
     defaultValues: {
       nomeCompleto: usuario.nome,
+      email: usuario.email,
+      senha: '',
       telefone: usuario.telefone ?? '',
     },
   })
@@ -186,6 +190,8 @@ function ModalEditar({ usuario, onClose }: { usuario: UsuarioSistema; onClose: (
       dto: {
         nomeCompleto: values.nomeCompleto,
         telefone: values.telefone || null,
+        email: values.email?.trim() || undefined,
+        senha: values.senha?.trim() || undefined,
       },
     })
     onClose()
@@ -202,6 +208,16 @@ function ModalEditar({ usuario, onClose }: { usuario: UsuarioSistema; onClose: (
             <Label>Nome completo *</Label>
             <Input {...form.register('nomeCompleto')} />
             {form.formState.errors.nomeCompleto && <p className="text-xs text-rosa-vibrante">{form.formState.errors.nomeCompleto.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label>E-mail</Label>
+            <Input type="email" {...form.register('email')} />
+            {form.formState.errors.email && <p className="text-xs text-rosa-vibrante">{form.formState.errors.email.message}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label>Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span></Label>
+            <Input type="password" placeholder="Mínimo 6 caracteres" {...form.register('senha')} />
+            {form.formState.errors.senha && <p className="text-xs text-rosa-vibrante">{form.formState.errors.senha.message}</p>}
           </div>
           <div className="space-y-1.5">
             <Label>Telefone</Label>

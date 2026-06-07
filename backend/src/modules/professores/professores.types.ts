@@ -29,6 +29,8 @@ export interface CreateProfessorData {
 
 export interface UpdateProfessorData {
   nomeCompleto?: string
+  email?: string
+  senhaHash?: string
   telefone?: string | null
   especialidade?: string | null
   bio?: string | null

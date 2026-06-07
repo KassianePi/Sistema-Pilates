@@ -1,6 +1,7 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
+import { z } from 'zod'
 import { professoresService } from './professores.service'
-import { ValidationError } from '../../shared/errors'
+import { ValidationError, AppError } from '../../shared/errors'
 import { logWarn } from '../../shared/utils'
 
 export async function criar(request: FastifyRequest, reply: FastifyReply) {
@@ -59,5 +60,18 @@ export async function excluir(request: FastifyRequest, reply: FastifyReply) {
     if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
     logWarn('Erro ao excluir professor', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao excluir professor', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function alterarStatus(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.params as { id: string }
+    const { ativo } = z.object({ ativo: z.boolean() }).parse(request.body)
+    const professor = await professoresService.alterarStatus(id, ativo)
+    return reply.code(200).send({ success: true, data: professor })
+  } catch (error: any) {
+    if (error instanceof AppError) return reply.code(error.statusCode || 400).send({ success: false, message: error.message, code: error.code })
+    logWarn('Erro ao alterar status do professor', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao alterar status', code: 'INTERNAL_ERROR' })
   }
 }

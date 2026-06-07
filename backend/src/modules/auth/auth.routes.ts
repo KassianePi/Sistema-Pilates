@@ -10,7 +10,7 @@
  */
 
 import type { FastifyInstance } from 'fastify'
-import { login, register, refresh, logout, changePassword, setup, criarUsuario, listarUsuarios, atualizarUsuario, alterarStatusUsuario } from './auth.controller'
+import { login, loginAluno, register, refresh, logout, changePassword, setup, criarUsuario, listarUsuarios, atualizarUsuario, alterarStatusUsuario, getMeuPerfil, atualizarMeuPerfil } from './auth.controller'
 import { authenticateToken, requireRole } from '../../shared/middlewares/auth.middleware'
 import { logDebug } from '../../shared/utils'
 
@@ -63,6 +63,23 @@ export async function authRoutes(fastify: FastifyInstance) {
       },
     },
   }, login)
+
+  /**
+   * POST /api/v1/auth/aluno/login
+   * Login exclusivo para alunos (rejeita outras funções)
+   */
+  fastify.post('/api/v1/auth/aluno/login', {
+    schema: {
+      body: {
+        type: 'object',
+        required: ['email', 'senha'],
+        properties: {
+          email: { type: 'string', format: 'email' },
+          senha: { type: 'string', minLength: 6 },
+        },
+      },
+    },
+  }, loginAluno)
 
   /**
    * POST /api/v1/auth/setup
@@ -247,6 +264,24 @@ export async function authRoutes(fastify: FastifyInstance) {
   fastify.patch('/api/v1/usuarios/:id/status', {
     onRequest: [authenticateToken, requireRole('ADMIN')],
   }, alterarStatusUsuario)
+
+  /**
+   * GET /api/v1/me
+   * Retorna o perfil do usuário autenticado
+   * ⚠️ PROTEGIDO
+   */
+  fastify.get('/api/v1/me', {
+    onRequest: [authenticateToken],
+  }, getMeuPerfil)
+
+  /**
+   * PUT /api/v1/me
+   * Atualiza o próprio perfil
+   * ⚠️ PROTEGIDO
+   */
+  fastify.put('/api/v1/me', {
+    onRequest: [authenticateToken],
+  }, atualizarMeuPerfil)
 
   logDebug('✅ Rotas de autenticação registradas')
 }

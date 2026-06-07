@@ -28,6 +28,8 @@ const createSchema = z.object({
 
 const editSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').optional(),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
+  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
   telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
   planoId: z.string().optional(),
   dataNascimento: z.string().optional(),
@@ -63,7 +65,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
     if (aluno) {
       reset({
         nomeCompleto: aluno.usuario.nomeCompleto,
-        telefone: aluno.usuario.telefone ?? '',          // dígitos limpos do servidor
+        email: aluno.usuario.email,
+        senha: '',
+        telefone: aluno.usuario.telefone ?? '',
         planoId: aluno.planoId ?? '',
         dataNascimento: aluno.dataNascimento ? aluno.dataNascimento.split('T')[0] : '',
         cidade: aluno.cidade ?? '',
@@ -83,12 +87,11 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
     // Normaliza valores antes de enviar à API
     const payload = {
       ...values,
-      // planoId vazio → undefined (backend espera UUID ou ausente)
       planoId: (values.planoId && values.planoId.trim()) ? values.planoId : undefined,
-      // telefone vazio → undefined
       telefone: (values.telefone && values.telefone.length) ? values.telefone : undefined,
-      // estado em maiúsculas; vazio → undefined
       estado: values.estado ? (values.estado as string).toUpperCase() : undefined,
+      email: (values as any).email?.trim() || undefined,
+      senha: (values as any).senha?.trim() || undefined,
     }
 
     if (isEditing && aluno) {
@@ -168,6 +171,28 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                   )}
                 </div>
               </>
+            )}
+
+            {/* Email (edição) */}
+            {isEditing && (
+              <div className="space-y-1.5">
+                <Label htmlFor="email-edit">E-mail</Label>
+                <Input id="email-edit" type="email" {...register('email' as never)} placeholder="email@exemplo.com" />
+                {(errors as { email?: { message?: string } }).email && (
+                  <p className="text-xs text-rosa-vibrante">{(errors as { email?: { message?: string } }).email?.message}</p>
+                )}
+              </div>
+            )}
+
+            {/* Nova senha (edição) */}
+            {isEditing && (
+              <div className="space-y-1.5">
+                <Label htmlFor="senha-edit">Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span></Label>
+                <Input id="senha-edit" type="password" {...register('senha' as never)} placeholder="Mínimo 6 caracteres" />
+                {(errors as { senha?: { message?: string } }).senha && (
+                  <p className="text-xs text-rosa-vibrante">{(errors as { senha?: { message?: string } }).senha?.message}</p>
+                )}
+              </div>
             )}
 
             {/* Telefone com máscara */}

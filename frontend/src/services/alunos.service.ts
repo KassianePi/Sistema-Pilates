@@ -19,6 +19,8 @@ export interface CreateAlunoDTO {
 
 export interface UpdateAlunoDTO {
   nomeCompleto?: string
+  email?: string
+  senha?: string
   telefone?: string
   planoId?: string
   dataNascimento?: string
@@ -57,5 +59,10 @@ export const alunosService = {
 
   async excluir(id: string) {
     await api.delete(`/alunos/${id}`)
+  },
+
+  async alterarStatus(id: string, ativo: boolean) {
+    const { data } = await api.patch<ApiResponse<Aluno>>(`/alunos/${id}/status`, { ativo })
+    return data.data
   },
 }

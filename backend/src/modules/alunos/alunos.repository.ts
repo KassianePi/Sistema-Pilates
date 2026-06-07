@@ -92,12 +92,14 @@ export class AlunosRepository {
       if (!aluno) throw AppError.notFound('Aluno', id)
 
       await prisma.$transaction(async (tx) => {
-        if (data.nomeCompleto || data.telefone !== undefined) {
+        if (data.nomeCompleto || data.telefone !== undefined || data.email || data.senhaHash) {
           await tx.usuario.update({
             where: { id: aluno.usuarioId },
             data: {
               ...(data.nomeCompleto && { nomeCompleto: data.nomeCompleto }),
               ...(data.telefone !== undefined && { telefone: data.telefone }),
+              ...(data.email && { email: data.email }),
+              ...(data.senhaHash && { senhaHash: data.senhaHash }),
             },
           })
         }

@@ -54,3 +54,15 @@ export function useDeleteAluno() {
     onError: () => toast.error('Erro ao remover aluno.'),
   })
 }
+
+export function useAlterarStatusAluno() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, ativo }: { id: string; ativo: boolean }) => alunosService.alterarStatus(id, ativo),
+    onSuccess: (_, { ativo }) => {
+      qc.invalidateQueries({ queryKey: [QUERY_KEY] })
+      toast.success(ativo ? 'Aluno reativado com sucesso.' : 'Aluno inativado com sucesso.')
+    },
+    onError: () => toast.error('Erro ao alterar status do aluno.'),
+  })
+}

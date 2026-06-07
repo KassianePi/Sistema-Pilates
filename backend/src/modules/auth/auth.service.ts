@@ -17,6 +17,7 @@ import { loginSchema, registerSchema, setupSchema, criarUsuarioSchema } from '..
 import { AUTH_ERRORS } from './auth.constants'
 import { registrarLog } from '../auditoria/auditoria.service'
 import { AppError } from '../../shared/errors'
+import { prisma } from '../../database/prisma.client'
 import type { LoginResponse, RegisterResponse, RefreshTokenResult, CreateUsuarioData, Usuario } from './auth.types'
 
 /**
@@ -399,14 +400,23 @@ export class AuthService {
    */
   async atualizarDados(
     usuarioId: string,
-    dados: { nomeCompleto?: string; telefone?: string | null },
+    dados: { nomeCompleto?: string; telefone?: string | null; email?: string; senha?: string },
     adminId: string,
   ): Promise<Usuario> {
     const usuario = await this.repository.findById(usuarioId)
     if (!usuario) {
       throw new AppError('Usuário não encontrado', 'USER_NOT_FOUND', 404)
     }
-    const atualizado = await this.repository.updateDados(usuarioId, dados)
+
+    if (dados.email) {
+      const existente = await this.repository.findByEmail(dados.email)
+      if (existente && existente.id !== usuarioId) {
+        throw new ValidationError('Email já cadastrado por outro usuário')
+      }
+    }
+
+    const senhaHash = dados.senha ? await hashPassword(dados.senha) : undefined
+    const atualizado = await this.repository.updateDados(usuarioId, { ...dados, senhaHash })
     await registrarLog({ usuarioId: adminId, acao: 'UPDATE', entidade: 'Usuario', entidadeId: usuarioId })
     return atualizado
   }
@@ -438,6 +448,61 @@ export class AuthService {
     await this.repository.updateStatus(usuarioId, true)
     await registrarLog({ usuarioId: adminId, acao: 'UPDATE', entidade: 'Usuario', entidadeId: usuarioId })
     logInfo('✅ Usuário reativado', { usuarioId, adminId })
+  }
+
+  /**
+   * Retorna o perfil do usuário logado (inclui dados de professor se aplicável)
+   */
+  async getMeuPerfil(usuarioId: string) {
+    const usuario = await this.repository.findById(usuarioId)
+    if (!usuario) throw new AppError('Usuário não encontrado', 'USER_NOT_FOUND', 404)
+
+    const base = {
+      id: usuario.id,
+      nome: usuario.nomeCompleto,
+      email: usuario.email,
+      telefone: usuario.telefone,
+      funcao: usuario.funcao,
+      cpf: usuario.cpf,
+    }
+
+    if (usuario.funcao === 'PROFESSOR') {
+      const professor = await prisma.professor.findUnique({
+        where: { usuarioId: usuario.id },
+      })
+      return { ...base, professorId: professor?.id ?? null, especialidade: professor?.especialidade ?? null, bio: professor?.bio ?? null }
+    }
+
+    return base
+  }
+
+  /**
+   * Atualiza o próprio perfil (nome, telefone; bio/especialidade se professor)
+   */
+  async atualizarMeuPerfil(
+    usuarioId: string,
+    dados: { nomeCompleto?: string; telefone?: string | null; bio?: string | null; especialidade?: string | null },
+  ) {
+    const usuario = await this.repository.findById(usuarioId)
+    if (!usuario) throw new AppError('Usuário não encontrado', 'USER_NOT_FOUND', 404)
+
+    await this.repository.updateDados(usuarioId, {
+      nomeCompleto: dados.nomeCompleto,
+      telefone: dados.telefone,
+    })
+
+    if (usuario.funcao === 'PROFESSOR' && (dados.bio !== undefined || dados.especialidade !== undefined)) {
+      await prisma.professor.updateMany({
+        where: { usuarioId },
+        data: {
+          ...(dados.bio !== undefined && { bio: dados.bio }),
+          ...(dados.especialidade !== undefined && { especialidade: dados.especialidade }),
+        },
+      })
+    }
+
+    await registrarLog({ usuarioId, acao: 'UPDATE', entidade: 'Usuario', entidadeId: usuarioId })
+    return this.getMeuPerfil(usuarioId)
   }
 
   /**

@@ -13,6 +13,8 @@ export type CreateProfessorDTO = z.infer<typeof createProfessorSchema>
 
 export const updateProfessorSchema = z.object({
   nomeCompleto: z.string().min(3).max(255).optional(),
+  email: z.string().email('E-mail inválido').toLowerCase().trim().optional(),
+  senha: z.string().min(6).max(128).optional(),
   telefone: z.string().regex(/^\d{10,11}$/).optional().nullable(),
   especialidade: z.string().max(255).optional().nullable(),
   bio: z.string().max(2000).optional().nullable(),

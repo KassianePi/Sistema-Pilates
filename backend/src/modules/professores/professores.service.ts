@@ -57,12 +57,34 @@ export class ProfessoresService {
     }
   }
 
-  async atualizar(id: string, data: UpdateProfessorData): Promise<Professor> {
-    await this.buscarPorId(id)
+  async atualizar(id: string, data: UpdateProfessorData & { email?: string; senha?: string }): Promise<Professor> {
+    const professorAtual = await this.buscarPorId(id)
     const validado = updateProfessorSchema.parse(data)
-    const professor = await this.repository.update(id, validado as any)
+
+    if (validado.email) {
+      const existente = await prisma.usuario.findUnique({ where: { email: validado.email } })
+      if (existente && existente.id !== professorAtual.usuarioId) {
+        throw ValidationError.forField('email', PROFESSORES_ERRORS.EMAIL_DUPLICADO)
+      }
+    }
+
+    const senhaHash = validado.senha ? await hashPassword(validado.senha) : undefined
+    const professor = await this.repository.update(id, { ...validado as any, senhaHash })
     logInfo('Professor atualizado', { id })
     return professor
+  }
+
+  async alterarStatus(id: string, ativo: boolean): Promise<Professor> {
+    const professor = await this.buscarPorId(id)
+    const novoStatus = ativo ? 'ATIVO' : 'INATIVO'
+
+    await prisma.$transaction(async (tx) => {
+      await tx.professor.update({ where: { id }, data: { status: novoStatus as any } })
+      await tx.usuario.update({ where: { id: professor.usuarioId }, data: { status: novoStatus as any } })
+    })
+
+    logInfo(`Professor ${novoStatus.toLowerCase()}`, { id })
+    return this.buscarPorId(id)
   }
 
   async excluir(id: string): Promise<void> {
