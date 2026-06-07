@@ -19,6 +19,7 @@ const STATUS_BADGE: Record<StatusAula, { label: string; variant: 'success' | 'wa
   AGENDADA: { label: 'Agendada', variant: 'secondary' as never },
   REALIZADA: { label: 'Realizada', variant: 'success' },
   CANCELADA: { label: 'Cancelada', variant: 'destructive' },
+  ADIADA: { label: 'Adiada', variant: 'warning' },
 }
 
 function formatarData(data: string) {
@@ -82,12 +83,12 @@ export function AgendaPage() {
               />
             </div>
 
-            <Select value={filtroStatus} onValueChange={(v) => { setFiltroStatus(v); setPagina(1) }}>
+            <Select value={filtroStatus || 'all'} onValueChange={(v) => { setFiltroStatus(v === 'all' ? '' : v); setPagina(1) }}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos</SelectItem>
+                <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="AGENDADA">Agendada</SelectItem>
                 <SelectItem value="REALIZADA">Realizada</SelectItem>
                 <SelectItem value="CANCELADA">Cancelada</SelectItem>
@@ -136,7 +137,7 @@ export function AgendaPage() {
                     </TableCell>
                     <TableCell className="text-cinza-texto">{formatarData(aula.data)}</TableCell>
                     <TableCell className="text-cinza-texto">{aula.horaInicio} – {aula.horaFim}</TableCell>
-                    <TableCell className="text-cinza-texto">{aula.professor.usuario.nome}</TableCell>
+                    <TableCell className="text-cinza-texto">{aula.professor.usuario.nomeCompleto}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
                         <Users className="w-3.5 h-3.5 text-cinza-medio" />

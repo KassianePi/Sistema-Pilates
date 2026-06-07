@@ -2,20 +2,23 @@ import { api } from './api'
 import type { Aluno, ApiResponse, PaginatedResponse } from '@/types/domain.types'
 
 export interface CreateAlunoDTO {
-  nome: string
+  nomeCompleto: string
   email: string
+  cpf: string
   senha: string
   telefone?: string
   planoId?: string
+  dataInicio: string
   dataNascimento?: string
   endereco?: string
   cidade?: string
   estado?: string
   cep?: string
+  observacoes?: string
 }
 
 export interface UpdateAlunoDTO {
-  nome?: string
+  nomeCompleto?: string
   telefone?: string
   planoId?: string
   dataNascimento?: string
@@ -26,10 +29,15 @@ export interface UpdateAlunoDTO {
   status?: 'ATIVO' | 'INATIVO'
 }
 
+type BackendListResponse = { alunos: Aluno[]; total: number; page: number; limit: number; totalPages: number }
+
 export const alunosService = {
-  async listar(params?: { pagina?: number; limite?: number; busca?: string; status?: string }) {
-    const { data } = await api.get<ApiResponse<PaginatedResponse<Aluno>>>('/alunos', { params })
-    return data.data
+  async listar(params?: { pagina?: number; limite?: number; busca?: string; status?: string }): Promise<PaginatedResponse<Aluno>> {
+    const { data } = await api.get<ApiResponse<BackendListResponse>>('/alunos', {
+      params: { search: params?.busca, status: params?.status, page: params?.pagina, limit: params?.limite },
+    })
+    const r = data.data
+    return { data: r.alunos, total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
   },
 
   async buscarPorId(id: string) {

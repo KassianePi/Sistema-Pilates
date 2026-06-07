@@ -379,6 +379,68 @@ export class AuthService {
   }
 
   /**
+   * Lista usuários do sistema (exclui alunos)
+   */
+  async listarUsuarios(
+    page: number = 1,
+    limit: number = 20,
+    funcao?: string,
+  ): Promise<{ usuarios: Usuario[]; total: number; page: number; limit: number; totalPages: number }> {
+    const offset = (page - 1) * limit
+    const [usuarios, total] = await Promise.all([
+      this.repository.findSistema(limit, offset, funcao),
+      this.repository.countSistema(funcao),
+    ])
+    return { usuarios, total, page, limit, totalPages: Math.ceil(total / limit) }
+  }
+
+  /**
+   * Atualiza dados básicos de um usuário (admin only)
+   */
+  async atualizarDados(
+    usuarioId: string,
+    dados: { nomeCompleto?: string; telefone?: string | null },
+    adminId: string,
+  ): Promise<Usuario> {
+    const usuario = await this.repository.findById(usuarioId)
+    if (!usuario) {
+      throw new AppError('Usuário não encontrado', 'USER_NOT_FOUND', 404)
+    }
+    const atualizado = await this.repository.updateDados(usuarioId, dados)
+    await registrarLog({ usuarioId: adminId, acao: 'UPDATE', entidade: 'Usuario', entidadeId: usuarioId })
+    return atualizado
+  }
+
+  /**
+   * Inativa um usuário (soft delete — admin only)
+   */
+  async inativarUsuario(usuarioId: string, adminId: string): Promise<void> {
+    if (usuarioId === adminId) {
+      throw new ValidationError('Não é possível desativar seu próprio usuário')
+    }
+    const usuario = await this.repository.findById(usuarioId)
+    if (!usuario) {
+      throw new AppError('Usuário não encontrado', 'USER_NOT_FOUND', 404)
+    }
+    await this.repository.updateStatus(usuarioId, false)
+    await registrarLog({ usuarioId: adminId, acao: 'DELETE', entidade: 'Usuario', entidadeId: usuarioId })
+    logInfo('✅ Usuário inativado', { usuarioId, adminId })
+  }
+
+  /**
+   * Reativa um usuário inativo (admin only)
+   */
+  async reativarUsuario(usuarioId: string, adminId: string): Promise<void> {
+    const usuario = await this.repository.findById(usuarioId)
+    if (!usuario) {
+      throw new AppError('Usuário não encontrado', 'USER_NOT_FOUND', 404)
+    }
+    await this.repository.updateStatus(usuarioId, true)
+    await registrarLog({ usuarioId: adminId, acao: 'UPDATE', entidade: 'Usuario', entidadeId: usuarioId })
+    logInfo('✅ Usuário reativado', { usuarioId, adminId })
+  }
+
+  /**
    * Gera senha temporária (para reset)
    *
    * @returns Senha aleatória de 12 caracteres

@@ -96,7 +96,7 @@ export function ProfessoresPage() {
               <TableBody>
                 {professores.map((professor) => (
                   <TableRow key={professor.id}>
-                    <TableCell className="font-medium">{professor.usuario.nome}</TableCell>
+                    <TableCell className="font-medium">{professor.usuario.nomeCompleto}</TableCell>
                     <TableCell className="text-cinza-texto">{professor.usuario.email}</TableCell>
                     <TableCell className="text-cinza-texto">{professor.usuario.telefone ?? '—'}</TableCell>
                     <TableCell className="text-cinza-texto">{professor.especialidade ?? '—'}</TableCell>
@@ -143,7 +143,7 @@ export function ProfessoresPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover professor?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação removerá permanentemente <strong>{professorExcluindo?.usuario.nome}</strong> do sistema.
+              Esta ação removerá permanentemente <strong>{professorExcluindo?.usuario.nomeCompleto}</strong> do sistema.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

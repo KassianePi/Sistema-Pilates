@@ -101,7 +101,7 @@ export function AlunosPage() {
               <TableBody>
                 {alunos.map((aluno) => (
                   <TableRow key={aluno.id}>
-                    <TableCell className="font-medium">{aluno.usuario.nome}</TableCell>
+                    <TableCell className="font-medium">{aluno.usuario.nomeCompleto}</TableCell>
                     <TableCell className="text-cinza-texto">{aluno.usuario.email}</TableCell>
                     <TableCell className="text-cinza-texto">{aluno.usuario.telefone ?? '—'}</TableCell>
                     <TableCell>
@@ -160,7 +160,7 @@ export function AlunosPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover aluno?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação removerá permanentemente <strong>{alunoExcluindo?.usuario.nome}</strong> do sistema. Não é possível desfazer.
+              Esta ação removerá permanentemente <strong>{alunoExcluindo?.usuario.nomeCompleto}</strong> do sistema. Não é possível desfazer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

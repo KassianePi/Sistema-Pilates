@@ -2,8 +2,9 @@ import { api } from './api'
 import type { Professor, ApiResponse, PaginatedResponse } from '@/types/domain.types'
 
 export interface CreateProfessorDTO {
-  nome: string
+  nomeCompleto: string
   email: string
+  cpf: string
   senha: string
   telefone?: string
   especialidade?: string
@@ -11,17 +12,22 @@ export interface CreateProfessorDTO {
 }
 
 export interface UpdateProfessorDTO {
-  nome?: string
+  nomeCompleto?: string
   telefone?: string
   especialidade?: string
   bio?: string
   status?: 'ATIVO' | 'INATIVO'
 }
 
+type BackendListResponse = { professores: Professor[]; total: number; page: number; limit: number; totalPages: number }
+
 export const professoresService = {
-  async listar(params?: { pagina?: number; limite?: number; busca?: string }) {
-    const { data } = await api.get<ApiResponse<PaginatedResponse<Professor>>>('/professores', { params })
-    return data.data
+  async listar(params?: { pagina?: number; limite?: number; busca?: string }): Promise<PaginatedResponse<Professor>> {
+    const { data } = await api.get<ApiResponse<BackendListResponse>>('/professores', {
+      params: { search: params?.busca, page: params?.pagina, limit: params?.limite },
+    })
+    const r = data.data
+    return { data: r.professores, total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
   },
 
   async buscarPorId(id: string) {

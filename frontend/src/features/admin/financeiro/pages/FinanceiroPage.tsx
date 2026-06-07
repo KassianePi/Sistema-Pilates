@@ -48,7 +48,7 @@ const METODOS_PAGAMENTO: { value: MetodoPagamento; label: string }[] = [
 ]
 
 const abrirCaixaSchema = z.object({
-  saldoInicial: z.number().min(0, 'Saldo deve ser positivo'),
+  saldoAbertura: z.number().min(0, 'Saldo deve ser positivo'),
 })
 
 const mensalidadeSchema = z.object({
@@ -61,7 +61,7 @@ const mensalidadeSchema = z.object({
 const pagamentoSchema = z.object({
   mensalidadeId: z.string().min(1, 'Selecione uma mensalidade'),
   valor: z.number().positive('Valor deve ser positivo'),
-  metodoPagamento: z.enum(['DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'PIX', 'TRANSFERENCIA']),
+  metodo: z.enum(['DINHEIRO', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'PIX', 'TRANSFERENCIA']),
   dataPagamento: z.string().min(1, 'Informe a data'),
   observacoes: z.string().optional(),
 })
@@ -87,15 +87,15 @@ export function FinanceiroPage() {
   const alunos = alunosData?.data ?? []
   const planos = planosData?.data ?? []
 
-  const formCaixa = useForm<z.infer<typeof abrirCaixaSchema>>({ resolver: zodResolver(abrirCaixaSchema), defaultValues: { saldoInicial: 0 } })
+  const formCaixa = useForm<z.infer<typeof abrirCaixaSchema>>({ resolver: zodResolver(abrirCaixaSchema), defaultValues: { saldoAbertura: 0 } })
   const formMensalidade = useForm<z.infer<typeof mensalidadeSchema>>({ resolver: zodResolver(mensalidadeSchema) })
   const formPagamento = useForm<z.infer<typeof pagamentoSchema>>({
     resolver: zodResolver(pagamentoSchema),
-    defaultValues: { metodoPagamento: 'PIX', dataPagamento: new Date().toISOString().split('T')[0] },
+    defaultValues: { metodo: 'PIX', dataPagamento: new Date().toISOString().split('T')[0] },
   })
 
   async function onAbrirCaixa(values: z.infer<typeof abrirCaixaSchema>) {
-    await abrirCaixa.mutateAsync(values.saldoInicial)
+    await abrirCaixa.mutateAsync(values.saldoAbertura)
     setModalCaixaAbrir(false)
     formCaixa.reset()
   }
@@ -107,7 +107,8 @@ export function FinanceiroPage() {
   }
 
   async function onRegistrarPagamento(values: z.infer<typeof pagamentoSchema>) {
-    await registrarPagamento.mutateAsync(values)
+    if (!caixa) return
+    await registrarPagamento.mutateAsync({ ...values, caixaId: caixa.id })
     setModalPagamento(null)
     formPagamento.reset()
   }
@@ -142,7 +143,9 @@ export function FinanceiroPage() {
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
                 <div>
                   <p className="font-medium text-cinza-forte">Caixa aberto</p>
-                  <p className="text-sm text-cinza-texto">Desde {formatarData(caixa.abertura)} — Saldo inicial: {formatarValor(caixa.saldoInicial)}</p>
+                  <p className="text-sm text-cinza-texto">
+                    Desde {formatarData(caixa.dataAbertura)} — Saldo inicial: {formatarValor(Number(caixa.saldoAbertura))}
+                  </p>
                 </div>
               </div>
               <Button variant="outline" onClick={() => setModalFecharCaixa(true)}>Fechar caixa</Button>
@@ -182,12 +185,12 @@ export function FinanceiroPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Select value={filtroStatusMensalidade} onValueChange={setFiltroStatusMensalidade}>
+                  <Select value={filtroStatusMensalidade || 'all'} onValueChange={(v) => setFiltroStatusMensalidade(v === 'all' ? '' : v)}>
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Todos</SelectItem>
+                      <SelectItem value="all">Todos</SelectItem>
                       <SelectItem value="PENDENTE">Pendente</SelectItem>
                       <SelectItem value="PAGO">Pago</SelectItem>
                       <SelectItem value="VENCIDO">Vencido</SelectItem>
@@ -227,21 +230,21 @@ export function FinanceiroPage() {
                   <TableBody>
                     {(mensalidadesData?.data ?? []).map((m) => (
                       <TableRow key={m.id}>
-                        <TableCell className="font-medium">{m.aluno.usuario.nome}</TableCell>
+                        <TableCell className="font-medium">{m.aluno.usuario.nomeCompleto}</TableCell>
                         <TableCell className="text-cinza-texto">{m.plano.nome}</TableCell>
                         <TableCell className="font-semibold">{formatarValor(m.valor)}</TableCell>
                         <TableCell className="text-cinza-texto">{formatarData(m.vencimento)}</TableCell>
                         <TableCell>
-                          <Badge variant={STATUS_MENSALIDADE[m.status].variant}>
+                          <Badge variant={STATUS_MENSALIDADE[m.status]?.variant ?? 'outline'}>
                             {m.status === 'PAGO' && <CheckCircle2 className="w-3 h-3 mr-1" />}
                             {m.status === 'PENDENTE' && <Clock className="w-3 h-3 mr-1" />}
                             {m.status === 'VENCIDO' && <AlertTriangle className="w-3 h-3 mr-1" />}
-                            {STATUS_MENSALIDADE[m.status].label}
+                            {STATUS_MENSALIDADE[m.status]?.label ?? m.status}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
                           {(m.status === 'PENDENTE' || m.status === 'VENCIDO') && (
-                            <Button size="sm" variant="outline" onClick={() => abrirModalPagamento(m)}>
+                            <Button size="sm" variant="outline" onClick={() => abrirModalPagamento(m)} disabled={!caixa}>
                               <ArrowDownCircle className="w-3.5 h-3.5" />Registrar pagamento
                             </Button>
                           )}
@@ -279,8 +282,8 @@ export function FinanceiroPage() {
                   <TableBody>
                     {(pagamentosData?.data ?? []).map((p) => (
                       <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.mensalidade.aluno.usuario.nome}</TableCell>
-                        <TableCell className="text-cinza-texto">{p.mensalidade.plano.nome}</TableCell>
+                        <TableCell className="font-medium">{p.mensalidade?.aluno?.usuario?.nomeCompleto ?? '—'}</TableCell>
+                        <TableCell className="text-cinza-texto">{p.mensalidade?.plano?.nome ?? '—'}</TableCell>
                         <TableCell className="font-semibold text-green-700">{formatarValor(p.valor)}</TableCell>
                         <TableCell className="text-cinza-texto">{METODOS_PAGAMENTO.find(m => m.value === p.metodoPagamento)?.label ?? p.metodoPagamento}</TableCell>
                         <TableCell className="text-cinza-texto">{formatarData(p.dataPagamento)}</TableCell>
@@ -301,7 +304,7 @@ export function FinanceiroPage() {
           <form onSubmit={formCaixa.handleSubmit(onAbrirCaixa)} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Saldo inicial (R$)</Label>
-              <Input type="number" step="0.01" min="0" {...formCaixa.register('saldoInicial', { valueAsNumber: true })} />
+              <Input type="number" step="0.01" min="0" {...formCaixa.register('saldoAbertura', { valueAsNumber: true })} />
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setModalCaixaAbrir(false)}>Cancelar</Button>
@@ -338,7 +341,7 @@ export function FinanceiroPage() {
                 <SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger>
                 <SelectContent>
                   {alunos.filter(a => a.status === 'ATIVO').map(a => (
-                    <SelectItem key={a.id} value={a.id}>{a.usuario.nome}</SelectItem>
+                    <SelectItem key={a.id} value={a.id}>{a.usuario.nomeCompleto}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -379,10 +382,13 @@ export function FinanceiroPage() {
             <DialogTitle>Registrar Pagamento</DialogTitle>
             {modalPagamento && (
               <p className="text-sm text-cinza-texto mt-1">
-                {modalPagamento.aluno.usuario.nome} — {modalPagamento.plano.nome}
+                {modalPagamento.aluno.usuario.nomeCompleto} — {modalPagamento.plano.nome}
               </p>
             )}
           </DialogHeader>
+          {!caixa && (
+            <p className="text-sm text-amber-600 bg-amber-50 rounded p-2">Abra o caixa antes de registrar pagamentos.</p>
+          )}
           <form onSubmit={formPagamento.handleSubmit(onRegistrarPagamento as never)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -397,8 +403,8 @@ export function FinanceiroPage() {
             <div className="space-y-1.5">
               <Label>Método *</Label>
               <Select
-                value={formPagamento.watch('metodoPagamento')}
-                onValueChange={(v) => formPagamento.setValue('metodoPagamento', v as MetodoPagamento)}
+                value={formPagamento.watch('metodo')}
+                onValueChange={(v) => formPagamento.setValue('metodo', v as MetodoPagamento)}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -408,7 +414,7 @@ export function FinanceiroPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setModalPagamento(null)}>Cancelar</Button>
-              <Button type="submit" disabled={registrarPagamento.isPending}>Confirmar pagamento</Button>
+              <Button type="submit" disabled={registrarPagamento.isPending || !caixa}>Confirmar pagamento</Button>
             </DialogFooter>
           </form>
         </DialogContent>

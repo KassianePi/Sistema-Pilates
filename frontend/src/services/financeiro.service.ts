@@ -10,40 +10,73 @@ export interface CreateMensalidadeDTO {
 
 export interface CreatePagamentoDTO {
   mensalidadeId: string
+  caixaId: string
   valor: number
-  metodoPagamento: MetodoPagamento
+  metodo: MetodoPagamento
   dataPagamento: string
   observacoes?: string
 }
 
 export interface CaixaAtivo {
   id: string
-  abertura: string
-  saldoInicial: number
-  saldoFinal?: number
-  fechamento?: string
+  dataAbertura: string
+  saldoAbertura: number
+  saldoFechamento?: number
+  dataFechamento?: string
   status: 'ABERTO' | 'FECHADO'
 }
 
+type BackendMensalidadeRaw = Omit<Mensalidade, 'vencimento'> & { dataVencimento: string }
+type BackendPagamentoRaw = Omit<Pagamento, 'metodoPagamento'> & { metodo: MetodoPagamento }
+type BackendMensalidadesResponse = { mensalidades: BackendMensalidadeRaw[]; total: number; page: number; limit: number; totalPages: number }
+type BackendPagamentosResponse = { pagamentos: BackendPagamentoRaw[]; total: number; page: number; limit: number; totalPages: number }
+
+function mapMensalidade(raw: BackendMensalidadeRaw): Mensalidade {
+  return { ...raw, vencimento: raw.dataVencimento, valor: Number(raw.valor) } as Mensalidade
+}
+
+function mapPagamento(raw: BackendPagamentoRaw): Pagamento {
+  return { ...raw, metodoPagamento: raw.metodo, valor: Number(raw.valor) } as Pagamento
+}
+
 export const financeiroService = {
-  async listarMensalidades(params?: { pagina?: number; limite?: number; alunoId?: string; status?: string }) {
-    const { data } = await api.get<ApiResponse<PaginatedResponse<Mensalidade>>>('/mensalidades', { params })
-    return data.data
+  async listarMensalidades(params?: { pagina?: number; limite?: number; alunoId?: string; status?: string }): Promise<PaginatedResponse<Mensalidade>> {
+    const { data } = await api.get<ApiResponse<BackendMensalidadesResponse>>('/mensalidades', {
+      params: { alunoId: params?.alunoId, status: params?.status, page: params?.pagina, limit: params?.limite },
+    })
+    const r = data.data
+    return { data: r.mensalidades.map(mapMensalidade), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
   },
 
   async criarMensalidade(dto: CreateMensalidadeDTO) {
-    const { data } = await api.post<ApiResponse<Mensalidade>>('/mensalidades', dto)
-    return data.data
+    const { data } = await api.post<ApiResponse<BackendMensalidadeRaw>>('/mensalidades', {
+      alunoId: dto.alunoId,
+      planoId: dto.planoId,
+      valor: dto.valor,
+      mesReferencia: dto.vencimento,
+      dataVencimento: dto.vencimento,
+    })
+    return mapMensalidade(data.data)
   },
 
-  async listarPagamentos(params?: { pagina?: number; limite?: number }) {
-    const { data } = await api.get<ApiResponse<PaginatedResponse<Pagamento>>>('/pagamentos', { params })
-    return data.data
+  async listarPagamentos(params?: { pagina?: number; limite?: number }): Promise<PaginatedResponse<Pagamento>> {
+    const { data } = await api.get<ApiResponse<BackendPagamentosResponse>>('/pagamentos', {
+      params: { page: params?.pagina, limit: params?.limite },
+    })
+    const r = data.data
+    return { data: r.pagamentos.map(mapPagamento), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
   },
 
   async registrarPagamento(dto: CreatePagamentoDTO) {
-    const { data } = await api.post<ApiResponse<Pagamento>>('/pagamentos', dto)
-    return data.data
+    const { data } = await api.post<ApiResponse<BackendPagamentoRaw>>('/pagamentos', {
+      mensalidadeId: dto.mensalidadeId,
+      caixaId: dto.caixaId,
+      valor: dto.valor,
+      metodo: dto.metodo,
+      dataPagamento: dto.dataPagamento,
+      observacoes: dto.observacoes,
+    })
+    return mapPagamento(data.data)
   },
 
   async buscarCaixaAtivo() {
@@ -51,8 +84,8 @@ export const financeiroService = {
     return data.data
   },
 
-  async abrirCaixa(saldoInicial: number) {
-    const { data } = await api.post<ApiResponse<CaixaAtivo>>('/caixa/abrir', { saldoInicial })
+  async abrirCaixa(saldoAbertura: number) {
+    const { data } = await api.post<ApiResponse<CaixaAtivo>>('/caixa/abrir', { saldoAbertura })
     return data.data
   },
 

@@ -139,7 +139,7 @@ export function AdminDashboardPage() {
                   <li key={aula.id} className="flex items-center justify-between py-2 border-b border-bege-cartao last:border-0">
                     <div>
                       <p className="text-sm font-medium text-cinza-forte">{aula.titulo}</p>
-                      <p className="text-xs text-cinza-medio">{aula.professor.usuario.nome} · {aula.horaInicio} – {aula.horaFim}</p>
+                      <p className="text-xs text-cinza-medio">{aula.professor.usuario.nomeCompleto} · {aula.horaInicio} – {aula.horaFim}</p>
                     </div>
                     <Badge variant={aula.status === 'AGENDADA' ? 'secondary' : aula.status === 'REALIZADA' ? 'success' : 'destructive'}>
                       {aula.status === 'AGENDADA' ? 'Agendada' : aula.status === 'REALIZADA' ? 'Realizada' : 'Cancelada'}
@@ -166,7 +166,7 @@ export function AdminDashboardPage() {
                 {(pagamentosData?.data ?? []).map((p) => (
                   <li key={p.id} className="flex items-center justify-between py-2 border-b border-bege-cartao last:border-0">
                     <div>
-                      <p className="text-sm font-medium text-cinza-forte">{p.mensalidade.aluno.usuario.nome}</p>
+                      <p className="text-sm font-medium text-cinza-forte">{p.mensalidade.aluno.usuario.nomeCompleto}</p>
                       <p className="text-xs text-cinza-medio">{p.mensalidade.plano.nome} · {formatarData(p.dataPagamento)}</p>
                     </div>
                     <span className="text-sm font-semibold text-green-700">{formatarValor(p.valor)}</span>

@@ -211,6 +211,14 @@ export class FinanceiroRepository {
           skip: (page - 1) * limit,
           take: limit,
           orderBy: { criadoEm: 'desc' },
+          include: {
+            mensalidade: {
+              include: {
+                aluno: { include: { usuario: { select: { nomeCompleto: true } } } },
+                plano: { select: { id: true, nome: true } },
+              },
+            },
+          },
         }),
         prisma.pagamento.count({ where }),
       ])

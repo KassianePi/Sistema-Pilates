@@ -181,6 +181,67 @@ export class AuthRepository {
   }
 
   /**
+   * Lista usuários do sistema (exclui alunos), com filtro opcional por funcao
+   */
+  async findSistema(limit: number = 20, offset: number = 0, funcao?: string): Promise<Usuario[]> {
+    try {
+      const usuarios = await prisma.usuario.findMany({
+        where: {
+          funcao: funcao
+            ? { equals: funcao as any }
+            : { notIn: ['ALUNO'] as any[] },
+        },
+        take: limit,
+        skip: offset,
+        orderBy: { criadoEm: 'desc' },
+      })
+      return usuarios
+    } catch (error) {
+      logError('Erro ao listar usuários do sistema', error as Error)
+      throw AppError.internal('Erro ao listar usuários')
+    }
+  }
+
+  /**
+   * Conta usuários do sistema (exclui alunos), com filtro opcional por funcao
+   */
+  async countSistema(funcao?: string): Promise<number> {
+    try {
+      return await prisma.usuario.count({
+        where: {
+          funcao: funcao
+            ? { equals: funcao as any }
+            : { notIn: ['ALUNO'] as any[] },
+        },
+      })
+    } catch (error) {
+      logError('Erro ao contar usuários do sistema', error as Error)
+      throw AppError.internal('Erro ao contar usuários')
+    }
+  }
+
+  /**
+   * Atualiza dados básicos de um usuário
+   */
+  async updateDados(usuarioId: string, dados: { nomeCompleto?: string; telefone?: string | null }): Promise<Usuario> {
+    try {
+      logDebug('Atualizando dados do usuário', { usuarioId })
+      const usuario = await prisma.usuario.update({
+        where: { id: usuarioId },
+        data: {
+          ...(dados.nomeCompleto !== undefined && { nomeCompleto: dados.nomeCompleto }),
+          ...(dados.telefone !== undefined && { telefone: dados.telefone }),
+        },
+      })
+      logDebug('✅ Dados do usuário atualizados', { usuarioId })
+      return usuario
+    } catch (error) {
+      logError('Erro ao atualizar dados do usuário', error as Error, { usuarioId })
+      throw AppError.internal('Erro ao atualizar usuário')
+    }
+  }
+
+  /**
    * Conta total de usuários
    *
    * @returns Total de usuários

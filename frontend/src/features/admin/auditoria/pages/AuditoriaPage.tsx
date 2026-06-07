@@ -71,7 +71,7 @@ export function AuditoriaPage() {
                 {logs.map((log) => (
                   <TableRow key={log.id}>
                     <TableCell className="text-cinza-texto text-xs">{formatarData(log.createdAt)}</TableCell>
-                    <TableCell className="text-sm">{log.usuario?.nome ?? log.usuarioId ?? '—'}</TableCell>
+                    <TableCell className="text-sm">{log.usuario?.nomeCompleto ?? log.usuarioId ?? '—'}</TableCell>
                     <TableCell>
                       <span className="font-mono text-xs bg-bege-suave text-cinza-forte px-2 py-0.5 rounded">
                         {log.acao}

@@ -10,7 +10,7 @@
  */
 
 import type { FastifyInstance } from 'fastify'
-import { login, register, refresh, logout, changePassword, setup, criarUsuario } from './auth.controller'
+import { login, register, refresh, logout, changePassword, setup, criarUsuario, listarUsuarios, atualizarUsuario, alterarStatusUsuario } from './auth.controller'
 import { authenticateToken, requireRole } from '../../shared/middlewares/auth.middleware'
 import { logDebug } from '../../shared/utils'
 
@@ -223,6 +223,30 @@ export async function authRoutes(fastify: FastifyInstance) {
       },
     },
   }, changePassword)
+
+  /**
+   * GET /api/v1/usuarios
+   * Lista usuários do sistema — ADMIN only
+   */
+  fastify.get('/api/v1/usuarios', {
+    onRequest: [authenticateToken, requireRole('ADMIN')],
+  }, listarUsuarios)
+
+  /**
+   * PUT /api/v1/usuarios/:id
+   * Atualiza dados de um usuário — ADMIN only
+   */
+  fastify.put('/api/v1/usuarios/:id', {
+    onRequest: [authenticateToken, requireRole('ADMIN')],
+  }, atualizarUsuario)
+
+  /**
+   * PATCH /api/v1/usuarios/:id/status
+   * Ativa ou inativa um usuário — ADMIN only
+   */
+  fastify.patch('/api/v1/usuarios/:id/status', {
+    onRequest: [authenticateToken, requireRole('ADMIN')],
+  }, alterarStatusUsuario)
 
   logDebug('✅ Rotas de autenticação registradas')
 }

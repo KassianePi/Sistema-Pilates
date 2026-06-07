@@ -10,6 +10,7 @@
  */
 
 import type { FastifyRequest, FastifyReply } from 'fastify'
+import { z } from 'zod'
 import { authService } from './auth.service'
 import { ValidationError, UnauthorizedError, AppError } from '../../shared/errors'
 import { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema, setupSchema, criarUsuarioSchema } from '../../shared/schemas'
@@ -292,6 +293,90 @@ export async function logout(request: FastifyRequest, reply: FastifyReply) {
       message: 'Erro ao fazer logout',
       code: 'LOGOUT_ERROR',
     })
+  }
+}
+
+/**
+ * GET /api/v1/usuarios
+ * Lista usuários do sistema (exceto alunos) — ADMIN only
+ */
+export async function listarUsuarios(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const query = z.object({
+      page: z.coerce.number().int().min(1).default(1),
+      limit: z.coerce.number().int().min(1).max(100).default(20),
+      funcao: z.string().optional(),
+    }).parse(request.query)
+
+    const resultado = await authService.listarUsuarios(query.page, query.limit, query.funcao)
+    return reply.code(200).send({ success: true, data: resultado })
+  } catch (error) {
+    logWarn('Controller: erro ao listar usuários', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao listar usuários', code: 'LIST_USERS_ERROR' })
+  }
+}
+
+/**
+ * PUT /api/v1/usuarios/:id
+ * Atualiza dados de um usuário — ADMIN only
+ */
+export async function atualizarUsuario(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = z.object({ id: z.string().uuid() }).parse(request.params)
+    const dados = z.object({
+      nomeCompleto: z.string().min(3).optional(),
+      telefone: z.string().min(10).max(11).nullable().optional(),
+    }).parse(request.body)
+
+    const adminId = request.usuarioId as string
+    const usuario = await authService.atualizarDados(id, dados, adminId)
+
+    return reply.code(200).send({
+      success: true,
+      data: {
+        id: usuario.id,
+        nome: usuario.nomeCompleto,
+        email: usuario.email,
+        telefone: usuario.telefone,
+        funcao: usuario.funcao,
+        status: usuario.status,
+      },
+    })
+  } catch (error) {
+    if (error instanceof AppError) {
+      return reply.code(error.statusCode || 400).send({ success: false, message: error.message, code: error.code })
+    }
+    logWarn('Controller: erro ao atualizar usuário', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao atualizar usuário', code: 'UPDATE_USER_ERROR' })
+  }
+}
+
+/**
+ * PATCH /api/v1/usuarios/:id/status
+ * Ativa ou inativa um usuário — ADMIN only
+ */
+export async function alterarStatusUsuario(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = z.object({ id: z.string().uuid() }).parse(request.params)
+    const { ativo } = z.object({ ativo: z.boolean() }).parse(request.body)
+    const adminId = request.usuarioId as string
+
+    if (ativo) {
+      await authService.reativarUsuario(id, adminId)
+    } else {
+      await authService.inativarUsuario(id, adminId)
+    }
+
+    return reply.code(200).send({ success: true, data: { id, ativo } })
+  } catch (error) {
+    if (error instanceof AppError) {
+      return reply.code(error.statusCode || 400).send({ success: false, message: error.message, code: error.code })
+    }
+    if (error instanceof ValidationError) {
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    }
+    logWarn('Controller: erro ao alterar status do usuário', { error: error instanceof Error ? error.message : String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao alterar status', code: 'STATUS_UPDATE_ERROR' })
   }
 }
 

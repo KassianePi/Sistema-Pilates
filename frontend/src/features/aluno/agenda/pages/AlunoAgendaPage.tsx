@@ -44,7 +44,7 @@ export function AlunoAgendaPage() {
                       </span>
                       <span className="flex items-center gap-1">
                         <Users className="w-3.5 h-3.5" />
-                        {aula.professor.usuario.nome}
+                        {aula.professor.usuario.nomeCompleto}
                       </span>
                     </div>
                   </div>

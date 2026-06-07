@@ -1,8 +1,26 @@
-import { CalendarDays, ClipboardCheck, CreditCard, ChevronRight } from 'lucide-react'
+import { CalendarDays, ClipboardCheck, CreditCard, ChevronRight, Clock, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/useAuth'
+import { useAulas } from '@/features/admin/agenda/hooks/useAgenda'
+import { useMensalidades } from '@/features/admin/financeiro/hooks/useFinanceiro'
 import type { AlunoUser } from '@/types/auth.types'
+import type { StatusMensalidade } from '@/types/domain.types'
+
+function formatarData(d: string) {
+  return new Date(d).toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+function formatarValor(v: number) {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
+}
+
+const STATUS_MENSALIDADE: Record<StatusMensalidade, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline'; Icon: React.ElementType }> = {
+  PAGO: { label: 'Em dia', variant: 'success', Icon: CheckCircle2 },
+  PENDENTE: { label: 'Pendente', variant: 'warning', Icon: AlertTriangle },
+  VENCIDO: { label: 'Vencido', variant: 'destructive', Icon: AlertCircle },
+  CANCELADO: { label: 'Cancelado', variant: 'outline', Icon: () => null },
+}
 
 interface QuickLinkProps {
   to: string
@@ -63,6 +81,13 @@ export function AlunoDashboardPage() {
   const alunoUser = user as AlunoUser | null
   const firstName = alunoUser?.nome?.split(' ')[0] ?? 'Aluno'
 
+  const hoje = new Date().toISOString().split('T')[0]
+  const { data: aulasData, isLoading: loadingAulas } = useAulas({ status: 'AGENDADA', limite: 30 })
+  const proximaAula = (aulasData?.data ?? []).filter(a => a.data >= hoje)[0] ?? null
+
+  const { data: mensalidadesData, isLoading: loadingMensalidades } = useMensalidades({ limite: 3 })
+  const ultimaMensalidade = (mensalidadesData?.data ?? [])[0] ?? null
+
   return (
     <div className="space-y-8">
       {/* Saudação */}
@@ -95,27 +120,84 @@ export function AlunoDashboardPage() {
 
       {/* Resumo */}
       <section className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Próxima Aula */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Próxima Aula</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-6 text-center text-cinza-medio">
-              <CalendarDays className="w-8 h-8 mb-2 opacity-30" />
-              <p className="text-sm">Nenhuma aula agendada</p>
-            </div>
+            {loadingAulas ? (
+              <p className="text-cinza-medio text-sm py-4 text-center">Carregando...</p>
+            ) : proximaAula ? (
+              <div className="space-y-3">
+                <div>
+                  <p className="font-semibold text-cinza-forte">{proximaAula.titulo}</p>
+                  <p className="text-sm text-cinza-texto mt-0.5 capitalize">{formatarData(proximaAula.data)}</p>
+                </div>
+                <div className="flex items-center gap-3 text-sm text-cinza-medio">
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5" />
+                    {proximaAula.horaInicio} – {proximaAula.horaFim}
+                  </span>
+                </div>
+                <p className="text-xs text-cinza-texto">{proximaAula.professor.usuario.nomeCompleto}</p>
+                <Link
+                  to="/aluno/agenda"
+                  className="inline-flex items-center gap-1 text-xs text-lilas-medio hover:underline mt-1"
+                >
+                  Ver todas as aulas <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center text-cinza-medio">
+                <CalendarDays className="w-8 h-8 mb-2 opacity-30" />
+                <p className="text-sm">Nenhuma aula agendada</p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
+        {/* Situação Financeira */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Situação Financeira</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-6 text-center text-cinza-medio">
-              <CreditCard className="w-8 h-8 mb-2 opacity-30" />
-              <p className="text-sm">Carregando informações...</p>
-            </div>
+            {loadingMensalidades ? (
+              <p className="text-cinza-medio text-sm py-4 text-center">Carregando...</p>
+            ) : ultimaMensalidade ? (
+              <div className="space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="font-semibold text-cinza-forte">{ultimaMensalidade.plano.nome}</p>
+                    <p className="text-sm text-cinza-texto mt-0.5">
+                      Vencimento: {new Date(ultimaMensalidade.vencimento).toLocaleDateString('pt-BR')}
+                    </p>
+                  </div>
+                  {(() => {
+                    const info = STATUS_MENSALIDADE[ultimaMensalidade.status]
+                    return (
+                      <Badge variant={info.variant}>
+                        <info.Icon className="w-3 h-3 mr-1" />
+                        {info.label}
+                      </Badge>
+                    )
+                  })()}
+                </div>
+                <p className="text-2xl font-bold text-cinza-forte">{formatarValor(ultimaMensalidade.valor)}</p>
+                <Link
+                  to="/aluno/financeiro"
+                  className="inline-flex items-center gap-1 text-xs text-lilas-medio hover:underline"
+                >
+                  Ver histórico completo <ChevronRight className="w-3 h-3" />
+                </Link>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-6 text-center text-cinza-medio">
+                <CreditCard className="w-8 h-8 mb-2 opacity-30" />
+                <p className="text-sm">Nenhuma mensalidade encontrada</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </section>

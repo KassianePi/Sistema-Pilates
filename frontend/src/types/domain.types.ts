@@ -1,6 +1,6 @@
 export type StatusAtivo = 'ATIVO' | 'INATIVO'
 export type StatusMensalidade = 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO'
-export type StatusAula = 'AGENDADA' | 'REALIZADA' | 'CANCELADA'
+export type StatusAula = 'AGENDADA' | 'REALIZADA' | 'CANCELADA' | 'ADIADA'
 export type StatusPresenca = 'PRESENTE' | 'AUSENTE' | 'JUSTIFICADO'
 export type TipoAula = 'INDIVIDUAL' | 'DUPLA' | 'GRUPO'
 export type ModalidadeAula = 'MAT' | 'APARELHOS' | 'REFORMER' | 'CADILLAC'
@@ -30,7 +30,7 @@ export interface Professor {
   updatedAt: string
   usuario: {
     id: string
-    nome: string
+    nomeCompleto: string
     email: string
     telefone?: string
   }
@@ -50,7 +50,7 @@ export interface Aluno {
   updatedAt: string
   usuario: {
     id: string
-    nome: string
+    nomeCompleto: string
     email: string
     telefone?: string
   }
@@ -74,8 +74,10 @@ export interface Aula {
   updatedAt: string
   professor: {
     id: string
-    usuario: { nome: string }
+    usuario: { nomeCompleto: string }
   }
+  sala?: string
+  duracao?: number
 }
 
 export interface Presenca {
@@ -86,7 +88,7 @@ export interface Presenca {
   observacoes?: string
   createdAt: string
   aula: Pick<Aula, 'id' | 'titulo' | 'data' | 'horaInicio'>
-  aluno: { id: string; usuario: { nome: string } }
+  aluno: { id: string; usuario: { nomeCompleto: string } }
 }
 
 export interface Mensalidade {
@@ -98,7 +100,7 @@ export interface Mensalidade {
   status: StatusMensalidade
   createdAt: string
   updatedAt: string
-  aluno: { id: string; usuario: { nome: string } }
+  aluno: { id: string; usuario: { nomeCompleto: string } }
   plano: Pick<Plano, 'id' | 'nome'>
 }
 
@@ -132,7 +134,23 @@ export interface LogAuditoria {
   detalhes?: string
   ip?: string
   createdAt: string
-  usuario?: { nome: string; email: string }
+  usuario?: { nomeCompleto: string; email: string }
+}
+
+export type TipoRelatorio = 'FREQUENCIA' | 'FINANCEIRO' | 'RECEITA_MENSAL' | 'PENDENCIAS_PAGAMENTO' | 'PRESENCA_ALUNO'
+
+export interface Relatorio {
+  id: string
+  professorId: string
+  tipo: TipoRelatorio
+  titulo: string
+  descricao?: string | null
+  dataPeriodoInicio: string
+  dataPeriodoFim: string
+  conteudo: string
+  criadoEm: string
+  atualizadoEm: string
+  professor?: { id: string; usuario: { nomeCompleto: string } }
 }
 
 export interface PaginatedResponse<T> {
