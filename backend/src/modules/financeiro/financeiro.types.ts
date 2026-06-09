@@ -1,4 +1,4 @@
-import type { MetodoPagamento, StatusMensalidade, Prisma } from '@prisma/client'
+import type { MetodoPagamento, StatusMensalidade, TipoMensalidade, Prisma } from '@prisma/client'
 
 export interface Caixa {
   id: string
@@ -16,7 +16,8 @@ export interface Caixa {
 export interface Mensalidade {
   id: string
   alunoId: string
-  planoId: string
+  planoId: string | null
+  tipo: TipoMensalidade
   mesReferencia: Date
   dataVencimento: Date
   valor: Prisma.Decimal
@@ -26,7 +27,7 @@ export interface Mensalidade {
   criadoEm: Date
   atualizadoEm: Date
   aluno?: { id: string; usuario: { nomeCompleto: string } }
-  plano?: { id: string; nome: string }
+  plano?: { id: string; nome: string } | null
   pagamentos?: Pagamento[]
 }
 
@@ -46,7 +47,7 @@ export interface Pagamento {
 export interface AbrirCaixaData { usuarioId: string; saldoAbertura: number; observacoes?: string | null }
 export interface FecharCaixaData { saldoFechamento: number; observacoes?: string | null }
 export interface CreateMensalidadeData {
-  alunoId: string; planoId: string; mesReferencia: Date; dataVencimento: Date
+  alunoId: string; planoId?: string | null; tipo?: TipoMensalidade; mesReferencia: Date; dataVencimento: Date
   valor: number; desconto?: number; observacoes?: string | null
 }
 export interface CreatePagamentoData {

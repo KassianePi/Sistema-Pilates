@@ -64,3 +64,19 @@ export async function cancelar(request: FastifyRequest, reply: FastifyReply) {
     return reply.code(500).send({ success: false, message: 'Erro ao cancelar aula', code: 'INTERNAL_ERROR' })
   }
 }
+
+// Endpoint público para o portal do aluno — retorna agenda de aulas AGENDADAS
+export async function listarAulasAluno(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const query = request.query as { page?: string; limit?: string }
+    const resultado = await agendaService.listar({
+      status: 'AGENDADA',
+      page: query.page ? parseInt(query.page) : 1,
+      limit: query.limit ? parseInt(query.limit) : 30,
+    })
+    return reply.code(200).send({ success: true, data: resultado })
+  } catch (error) {
+    logWarn('Erro ao listar aulas para aluno', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao listar aulas', code: 'INTERNAL_ERROR' })
+  }
+}

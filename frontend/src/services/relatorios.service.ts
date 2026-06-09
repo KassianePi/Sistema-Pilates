@@ -33,4 +33,28 @@ export const relatoriosService = {
     const { data } = await api.post<ApiResponse<Relatorio>>('/relatorios/gerar', dto)
     return data.data
   },
+
+  async exportarExcel(id: string, nomeArquivo?: string): Promise<void> {
+    const { data } = await api.get(`/relatorios/${id}/exportar`, { responseType: 'blob' })
+    const url = URL.createObjectURL(data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = nomeArquivo ?? `relatorio_${id.slice(0, 8)}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
+
+  async exportarDireto(dto: GerarRelatorioDTO, nomeArquivo?: string): Promise<void> {
+    const { data } = await api.post('/relatorios/exportar-direto', dto, { responseType: 'blob' })
+    const url = URL.createObjectURL(data)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = nomeArquivo ?? `relatorio_${new Date().toISOString().slice(0, 10)}.xlsx`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  },
 }

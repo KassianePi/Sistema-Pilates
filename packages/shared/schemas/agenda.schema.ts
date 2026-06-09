@@ -4,7 +4,7 @@ export const createAulaSchema = z.object({
   professorId: z.string({ required_error: 'Professor é obrigatório' }).uuid(),
   dataHoraInicio: z.string({ required_error: 'Data/hora é obrigatória' })
     .refine((d) => !isNaN(new Date(d).getTime()), 'Data/hora inválida'),
-  duracao: z.number().int().min(15).max(180).default(50),
+  duracao: z.number().int().min(15).max(480).default(50),
   capacidade: z.number().int().min(1).max(50).default(10),
   sala: z.string({ required_error: 'Sala é obrigatória' }).min(1).max(100),
   tipo: z.enum(['INDIVIDUAL', 'DUPLA', 'GRUPO']).default('GRUPO'),
@@ -16,7 +16,7 @@ export type CreateAulaDTO = z.infer<typeof createAulaSchema>
 export const updateAulaSchema = z.object({
   professorId: z.string().uuid().optional(),
   dataHoraInicio: z.string().refine((d) => !isNaN(new Date(d).getTime()), 'Data/hora inválida').optional(),
-  duracao: z.number().int().min(15).max(180).optional(),
+  duracao: z.number().int().min(15).max(480).optional(),
   capacidade: z.number().int().min(1).max(50).optional(),
   sala: z.string().min(1).max(100).optional(),
   tipo: z.enum(['INDIVIDUAL', 'DUPLA', 'GRUPO']).optional(),

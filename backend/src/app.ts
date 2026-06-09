@@ -18,6 +18,8 @@ import { financeiroRoutes } from './modules/financeiro/financeiro.routes'
 import { notificacoesRoutes } from './modules/notificacoes/notificacoes.routes'
 import { auditoriaRoutes } from './modules/auditoria/auditoria.routes'
 import { relatoriosRoutes } from './modules/relatorios/relatorios.routes'
+import { configuracaoRoutes } from './modules/configuracao/configuracao.routes'
+import { estornosRoutes } from './modules/estornos/estornos.routes'
 
 // Inicializa listeners de eventos dos módulos
 import './modules/notificacoes/notificacoes.service'
@@ -166,6 +168,8 @@ export async function createApp() {
     await app.register(notificacoesRoutes)
     await app.register(auditoriaRoutes)
     await app.register(relatoriosRoutes)
+    await app.register(configuracaoRoutes)
+    await app.register(estornosRoutes)
 
     // ========================================
     // 7. ERROR HANDLING GLOBAL

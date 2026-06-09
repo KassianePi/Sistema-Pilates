@@ -8,7 +8,7 @@ export const abrirCaixaSchema = z.object({
 export type AbrirCaixaDTO = z.infer<typeof abrirCaixaSchema>
 
 export const fecharCaixaSchema = z.object({
-  saldoFechamento: z.number().min(0),
+  saldoFechamento: z.number().min(0).default(0),
   observacoes: z.string().max(1000).optional().nullable(),
 })
 export type FecharCaixaDTO = z.infer<typeof fecharCaixaSchema>
@@ -16,7 +16,8 @@ export type FecharCaixaDTO = z.infer<typeof fecharCaixaSchema>
 // Mensalidade
 export const createMensalidadeSchema = z.object({
   alunoId: z.string({ required_error: 'Aluno é obrigatório' }).uuid(),
-  planoId: z.string({ required_error: 'Plano é obrigatório' }).uuid(),
+  planoId: z.string().uuid().optional().nullable(),
+  tipo: z.enum(['MENSAL', 'AVULSO']).default('MENSAL'),
   mesReferencia: z.string().refine((d) => !isNaN(new Date(d).getTime()), 'Data inválida'),
   dataVencimento: z.string().refine((d) => !isNaN(new Date(d).getTime()), 'Data inválida'),
   valor: z.number().positive(),
@@ -37,6 +38,7 @@ export type UpdateMensalidadeDTO = z.infer<typeof updateMensalidadeSchema>
 export const listMensalidadesSchema = z.object({
   alunoId: z.string().uuid().optional(),
   planoId: z.string().uuid().optional(),
+  tipo: z.enum(['MENSAL', 'AVULSO']).optional(),
   status: z.enum(['PENDENTE', 'PARCIAL', 'PAGO', 'VENCIDO', 'CANCELADO']).optional(),
   dataInicio: z.string().optional(),
   dataFim: z.string().optional(),

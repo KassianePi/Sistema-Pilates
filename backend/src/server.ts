@@ -4,6 +4,7 @@ import { createApp } from './app'
 import { PrismaClientSingleton } from './database/prisma.client'
 import { logInfo, logFatal, logError } from './shared/utils'
 import { iniciarJobMensalidadesVencidas } from './jobs/mensalidades-vencidas.job'
+import { iniciarJobAulasVencidas } from './jobs/aulas-vencidas.job'
 
 const PORT = parseInt(process.env.PORT || '3000', 10)
 const HOST = process.env.HOST || '0.0.0.0'
@@ -19,6 +20,7 @@ async function start() {
     app = await createApp()
 
     jobTimer = iniciarJobMensalidadesVencidas()
+    iniciarJobAulasVencidas()
 
     await app.listen({ port: PORT, host: HOST })
 

@@ -1,7 +1,15 @@
+import { useQuery } from '@tanstack/react-query'
 import { CalendarDays, Clock, Users } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { useAulas } from '@/features/admin/agenda/hooks/useAgenda'
+import { agendaService } from '@/services/agenda.service'
+
+function useAulasAluno() {
+  return useQuery({
+    queryKey: ['aulas-aluno'],
+    queryFn: () => agendaService.listarAulasAluno({ limit: 30 }),
+  })
+}
 
 function formatarData(d: string) {
   return new Date(d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -9,8 +17,8 @@ function formatarData(d: string) {
 
 export function AlunoAgendaPage() {
   const hoje = new Date().toISOString().split('T')[0]
-  const { data: aulasData, isLoading } = useAulas({ status: 'AGENDADA', limite: 30 })
-  const aulas = (aulasData?.data ?? []).filter(a => a.data >= hoje)
+  const { data: aulasData, isLoading } = useAulasAluno()
+  const aulas = (aulasData?.data ?? []).filter((a) => a.data >= hoje)
 
   return (
     <div className="space-y-6">

@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { BarChart3, FileText, Eye, TrendingUp, DollarSign, AlertCircle, Users, X } from 'lucide-react'
+import { BarChart3, FileText, Eye, TrendingUp, DollarSign, AlertCircle, Users, X, Download } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
@@ -17,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Textarea } from '@/components/ui/textarea'
 import { useRelatorios, useGerarRelatorio } from '../hooks/useRelatorios'
 import { useProfessores } from '@/features/admin/professores/hooks/useProfessores'
+import { relatoriosService } from '@/services/relatorios.service'
 import type { Relatorio, TipoRelatorio } from '@/types/domain.types'
 
 function formatarValor(v: number) {
@@ -187,6 +189,8 @@ function ConteudoRelatorio({ relatorio }: { relatorio: Relatorio }) {
 export function RelatoriosPage() {
   const [modalRelatorio, setModalRelatorio] = useState<Relatorio | null>(null)
   const [filtroTipo, setFiltroTipo] = useState('')
+  const [exportandoId, setExportandoId] = useState<string | null>(null)
+  const [exportandoDireto, setExportandoDireto] = useState(false)
 
   const { data, isLoading } = useRelatorios({ tipo: filtroTipo || undefined })
   const gerarRelatorio = useGerarRelatorio()
@@ -217,6 +221,32 @@ export function RelatoriosPage() {
   async function onGerar(values: GerarForm) {
     await gerarRelatorio.mutateAsync(values)
     form.reset()
+  }
+
+  async function onExportarExcel(relatorio: Relatorio) {
+    setExportandoId(relatorio.id)
+    try {
+      const nome = `${relatorio.titulo.replace(/[^a-z0-9]/gi, '_').slice(0, 40)}.xlsx`
+      await relatoriosService.exportarExcel(relatorio.id, nome)
+      toast.success('Excel exportado com sucesso.')
+    } catch {
+      toast.error('Erro ao exportar Excel.')
+    } finally {
+      setExportandoId(null)
+    }
+  }
+
+  async function onExportarDireto(values: GerarForm) {
+    setExportandoDireto(true)
+    try {
+      const nome = `${values.titulo.replace(/[^a-z0-9]/gi, '_').slice(0, 40)}.xlsx`
+      await relatoriosService.exportarDireto(values, nome)
+      toast.success('Excel exportado com sucesso.')
+    } catch {
+      toast.error('Erro ao exportar Excel.')
+    } finally {
+      setExportandoDireto(false)
+    }
   }
 
   return (
@@ -305,10 +335,19 @@ export function RelatoriosPage() {
               <Textarea rows={2} placeholder="Observações sobre o relatório..." {...form.register('descricao')} />
             </div>
 
-            <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={gerarRelatorio.isPending}>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={exportandoDireto || gerarRelatorio.isPending}
+                onClick={form.handleSubmit(onExportarDireto as never)}
+              >
+                <Download className="w-4 h-4" />
+                {exportandoDireto ? 'Exportando...' : 'Exportar Excel (sem salvar)'}
+              </Button>
+              <Button type="submit" disabled={gerarRelatorio.isPending || exportandoDireto}>
                 <BarChart3 className="w-4 h-4" />
-                {gerarRelatorio.isPending ? 'Gerando...' : 'Gerar relatório'}
+                {gerarRelatorio.isPending ? 'Gerando...' : 'Gerar e salvar'}
               </Button>
             </div>
           </form>
@@ -383,10 +422,21 @@ export function RelatoriosPage() {
                         {formatarDataHora(r.criadoEm)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline" onClick={() => setModalRelatorio(r)}>
-                          <Eye className="w-3.5 h-3.5" />
-                          Ver
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button size="sm" variant="outline" onClick={() => setModalRelatorio(r)}>
+                            <Eye className="w-3.5 h-3.5" />
+                            Ver
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => onExportarExcel(r)}
+                            disabled={exportandoId === r.id}
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            {exportandoId === r.id ? '...' : 'Excel'}
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   )

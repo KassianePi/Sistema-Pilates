@@ -2,8 +2,9 @@ import { api } from './api'
 import type { Mensalidade, Pagamento, ApiResponse, PaginatedResponse, MetodoPagamento } from '@/types/domain.types'
 
 export interface CreateMensalidadeDTO {
+  tipo?: 'MENSAL' | 'AVULSO'
   alunoId: string
-  planoId: string
+  planoId?: string
   valor: number
   vencimento: string
 }
@@ -50,8 +51,9 @@ export const financeiroService = {
 
   async criarMensalidade(dto: CreateMensalidadeDTO) {
     const { data } = await api.post<ApiResponse<BackendMensalidadeRaw>>('/mensalidades', {
+      tipo: dto.tipo ?? 'MENSAL',
       alunoId: dto.alunoId,
-      planoId: dto.planoId,
+      planoId: dto.planoId ?? null,
       valor: dto.valor,
       mesReferencia: dto.vencimento,
       dataVencimento: dto.vencimento,
@@ -89,8 +91,24 @@ export const financeiroService = {
     return data.data
   },
 
-  async fecharCaixa(id: string) {
-    const { data } = await api.patch<ApiResponse<CaixaAtivo>>(`/caixa/${id}/fechar`)
+  async fecharCaixa(id: string, saldoFechamento: number = 0) {
+    const { data } = await api.patch<ApiResponse<CaixaAtivo>>(`/caixa/${id}/fechar`, { saldoFechamento })
     return data.data
+  },
+
+  async listarMinhasMensalidades(params?: { pagina?: number; limite?: number; status?: string }): Promise<PaginatedResponse<Mensalidade>> {
+    const { data } = await api.get<ApiResponse<BackendMensalidadesResponse>>('/aluno/mensalidades', {
+      params: { status: params?.status, page: params?.pagina, limit: params?.limite },
+    })
+    const r = data.data
+    return { data: r.mensalidades.map(mapMensalidade), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
+  },
+
+  async notificarPagamento(mensalidadeId: string, observacoes?: string): Promise<void> {
+    await api.post('/aluno/notificar-pagamento', { mensalidadeId, observacoes })
+  },
+
+  async solicitarAulaAvulsa(dataDesejada?: string, observacoes?: string): Promise<void> {
+    await api.post('/aluno/solicitar-avulsa', { dataDesejada, observacoes })
   },
 }

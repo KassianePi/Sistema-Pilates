@@ -44,19 +44,22 @@ export class FinanceiroService {
 
   // ===================== MENSALIDADES =====================
 
-  async criarMensalidade(data: { alunoId: string; planoId: string; mesReferencia: string; dataVencimento: string; valor: number; desconto?: number; observacoes?: string | null }): Promise<Mensalidade> {
+  async criarMensalidade(data: { alunoId: string; planoId?: string | null; tipo?: string; mesReferencia: string; dataVencimento: string; valor: number; desconto?: number; observacoes?: string | null }): Promise<Mensalidade> {
     const validado = createMensalidadeSchema.parse(data)
 
-    const [aluno, plano] = await Promise.all([
-      prisma.aluno.findUnique({ where: { id: validado.alunoId } }),
-      prisma.plano.findUnique({ where: { id: validado.planoId } }),
-    ])
+    const aluno = await prisma.aluno.findUnique({ where: { id: validado.alunoId } })
     if (!aluno) throw ValidationError.forField('alunoId', FINANCEIRO_ERRORS.ALUNO_NOT_FOUND)
-    if (!plano) throw ValidationError.forField('planoId', FINANCEIRO_ERRORS.PLANO_NOT_FOUND)
+
+    if (validado.tipo === 'MENSAL' || !validado.tipo) {
+      if (!validado.planoId) throw ValidationError.forField('planoId', 'Plano é obrigatório para mensalidade mensal')
+      const plano = await prisma.plano.findUnique({ where: { id: validado.planoId } })
+      if (!plano) throw ValidationError.forField('planoId', FINANCEIRO_ERRORS.PLANO_NOT_FOUND)
+    }
 
     const mensalidade = await this.repository.createMensalidade({
       alunoId: validado.alunoId,
-      planoId: validado.planoId,
+      planoId: validado.planoId ?? null,
+      tipo: (validado.tipo ?? 'MENSAL') as any,
       mesReferencia: new Date(validado.mesReferencia),
       dataVencimento: new Date(validado.dataVencimento),
       valor: validado.valor,
@@ -64,7 +67,7 @@ export class FinanceiroService {
       observacoes: validado.observacoes,
     })
 
-    logInfo('Mensalidade criada', { id: mensalidade.id })
+    logInfo('Mensalidade criada', { id: mensalidade.id, tipo: mensalidade.tipo })
     return mensalidade
   }
 
@@ -74,11 +77,12 @@ export class FinanceiroService {
     return mensalidade
   }
 
-  async listarMensalidades(params: { alunoId?: string; planoId?: string; status?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
+  async listarMensalidades(params: { alunoId?: string; planoId?: string; tipo?: string; status?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
     const validado = listMensalidadesSchema.parse(params)
     const { mensalidades, total } = await this.repository.findMensalidades({
       alunoId: validado.alunoId,
       planoId: validado.planoId,
+      tipo: validado.tipo,
       status: validado.status,
       dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
       dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,

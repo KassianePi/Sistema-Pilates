@@ -1,19 +1,33 @@
 import { useState } from 'react'
-import { Plus, Search, Pencil, X, CalendarDays, Users } from 'lucide-react'
+import { Plus, Search, Pencil, X, CalendarDays, Users, Zap, ClipboardCheck } from 'lucide-react'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { AulaFormModal } from '../components/AulaFormModal'
+import { PresencaModal } from '../components/PresencaModal'
 import { useAulas, useCancelarAula } from '../hooks/useAgenda'
+import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
+import { useCreateMensalidade } from '@/features/admin/financeiro/hooks/useFinanceiro'
 import type { Aula, StatusAula } from '@/types/domain.types'
+
+const avulsoSchema = z.object({
+  alunoId: z.string().min(1, 'Selecione um aluno'),
+  valor: z.number().positive('Informe o valor'),
+  vencimento: z.string().min(1, 'Informe a data'),
+})
 
 const STATUS_BADGE: Record<StatusAula, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
   AGENDADA: { label: 'Agendada', variant: 'secondary' as never },
@@ -33,6 +47,8 @@ export function AgendaPage() {
   const [modalOpen, setModalOpen] = useState(false)
   const [aulaEditando, setAulaEditando] = useState<Aula | null>(null)
   const [aulaCancelando, setAulaCancelando] = useState<Aula | null>(null)
+  const [modalAvulso, setModalAvulso] = useState(false)
+  const [aulaPresenca, setAulaPresenca] = useState<Aula | null>(null)
 
   const { data, isLoading } = useAulas({
     data: filtroData || undefined,
@@ -41,6 +57,16 @@ export function AgendaPage() {
     limite: 15,
   })
   const cancelarAula = useCancelarAula()
+  const createMensalidade = useCreateMensalidade()
+  const { data: alunosData } = useAlunos({ limite: 200 })
+  const alunos = (alunosData?.data ?? []).filter((a) => a.status !== 'INATIVO' && a.status !== 'FORMADO')
+
+  const [alunoIdAvulso, setAlunoIdAvulso] = useState('')
+
+  const formAvulso = useForm<z.infer<typeof avulsoSchema>>({
+    resolver: zodResolver(avulsoSchema),
+    defaultValues: { alunoId: '', valor: 0, vencimento: new Date().toISOString().split('T')[0] },
+  })
 
   const aulas = data?.data ?? []
   const totalPaginas = data?.totalPaginas ?? 1
@@ -56,6 +82,22 @@ export function AgendaPage() {
     setAulaCancelando(null)
   }
 
+  function fecharModalAvulso() {
+    setModalAvulso(false)
+    setAlunoIdAvulso('')
+    formAvulso.reset({ alunoId: undefined, valor: 0, vencimento: new Date().toISOString().split('T')[0] })
+  }
+
+  async function onCriarAvulso(values: z.infer<typeof avulsoSchema>) {
+    await createMensalidade.mutateAsync({
+      tipo: 'AVULSO',
+      alunoId: values.alunoId,
+      valor: values.valor,
+      vencimento: values.vencimento,
+    })
+    fecharModalAvulso()
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -63,10 +105,16 @@ export function AgendaPage() {
           <h1 className="text-2xl font-bold text-cinza-forte">Agenda</h1>
           <p className="text-sm text-cinza-texto mt-1">Gerencie as aulas do studio.</p>
         </div>
-        <Button onClick={abrirCriar}>
-          <Plus className="w-4 h-4" />
-          Nova aula
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setModalAvulso(true)}>
+            <Zap className="w-4 h-4" />
+            Aula avulsa
+          </Button>
+          <Button onClick={abrirCriar}>
+            <Plus className="w-4 h-4" />
+            Nova aula
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -153,6 +201,17 @@ export function AgendaPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        {(aula.status === 'AGENDADA' || aula.status === 'REALIZADA') && (
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setAulaPresenca(aula)}
+                            title="Registrar presenças"
+                            className="hover:text-green-700 hover:bg-green-50"
+                          >
+                            <ClipboardCheck className="w-4 h-4" />
+                          </Button>
+                        )}
                         {aula.status === 'AGENDADA' && (
                           <>
                             <Button size="icon" variant="ghost" onClick={() => { setAulaEditando(aula); setModalOpen(true) }} title="Editar">
@@ -183,6 +242,61 @@ export function AgendaPage() {
       </Card>
 
       <AulaFormModal open={modalOpen} onClose={() => setModalOpen(false)} aula={aulaEditando} />
+
+      <PresencaModal aula={aulaPresenca} onClose={() => setAulaPresenca(null)} />
+
+      {/* Modal: Cobrança Avulsa */}
+      <Dialog open={modalAvulso} onOpenChange={(v) => !v && fecharModalAvulso()}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Zap className="w-4 h-4 text-lilas-medio" /> Registrar Aula Avulsa
+            </DialogTitle>
+          </DialogHeader>
+          <p className="text-xs text-cinza-texto -mt-2 mb-2">
+            Cria uma cobrança avulsa para aluno sem plano mensal.
+          </p>
+          <form onSubmit={formAvulso.handleSubmit(onCriarAvulso as never)} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Aluno *</Label>
+              <Select
+                value={alunoIdAvulso}
+                onValueChange={(v) => {
+                  setAlunoIdAvulso(v)
+                  formAvulso.setValue('alunoId', v, { shouldValidate: true })
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger>
+                <SelectContent>
+                  {alunos.map((a) => (
+                    <SelectItem key={a.id} value={a.id}>{a.usuario.nomeCompleto}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {formAvulso.formState.errors.alunoId && (
+                <p className="text-xs text-rosa-vibrante">{formAvulso.formState.errors.alunoId.message}</p>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>Valor (R$) *</Label>
+                <Input type="number" step="0.01" min="0" {...formAvulso.register('valor', { valueAsNumber: true })} />
+                {formAvulso.formState.errors.valor && (
+                  <p className="text-xs text-rosa-vibrante">{formAvulso.formState.errors.valor.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label>Data *</Label>
+                <Input type="date" {...formAvulso.register('vencimento')} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={fecharModalAvulso}>Cancelar</Button>
+              <Button type="submit" disabled={createMensalidade.isPending}>Registrar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={!!aulaCancelando} onOpenChange={(v) => !v && setAulaCancelando(null)}>
         <AlertDialogContent>

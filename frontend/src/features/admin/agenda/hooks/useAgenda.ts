@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { agendaService, type CreateAulaDTO, type UpdateAulaDTO } from '@/services/agenda.service'
+import { presencaService, type BatchPresencaDTO } from '@/services/presenca.service'
 
 const QUERY_KEY = 'aulas'
 
@@ -44,5 +45,18 @@ export function useCancelarAula() {
       toast.success('Aula cancelada.')
     },
     onError: () => toast.error('Erro ao cancelar aula.'),
+  })
+}
+
+export function useRegistrarPresencasBatch() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (dto: BatchPresencaDTO) => presencaService.registrarBatch(dto),
+    onSuccess: (_, { presencas }) => {
+      const presentes = presencas.filter((p) => p.status === 'PRESENTE').length
+      qc.invalidateQueries({ queryKey: [QUERY_KEY] })
+      toast.success(`Presenças salvas: ${presentes} presente(s), ${presencas.length - presentes} ausente(s). Aula marcada como Realizada.`)
+    },
+    onError: () => toast.error('Erro ao registrar presenças.'),
   })
 }

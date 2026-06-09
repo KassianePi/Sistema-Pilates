@@ -3,6 +3,7 @@ import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo } from '../../shared/utils'
 import { createRelatorioSchema, listRelatoriosSchema } from '../../shared/schemas'
 import { prisma } from '../../database/prisma.client'
+import { gerarExcel } from './relatorios.excel'
 import type { Relatorio } from './relatorios.types'
 
 export class RelatoriosService {
@@ -88,6 +89,38 @@ export class RelatoriosService {
       limit: validado.limit,
     })
     return { relatorios, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
+  }
+
+  async exportarPorId(id: string): Promise<Buffer> {
+    const relatorio = await this.buscarPorId(id)
+    return gerarExcel(relatorio)
+  }
+
+  async gerarEExportar(data: { professorId: string; tipo: string; titulo: string; descricao?: string | null; dataPeriodoInicio: string; dataPeriodoFim: string }): Promise<Buffer> {
+    const validado = createRelatorioSchema.parse(data)
+
+    const professor = await prisma.professor.findUnique({ where: { id: validado.professorId } })
+    if (!professor) throw ValidationError.forField('professorId', 'Professor não encontrado')
+
+    const inicio = new Date(validado.dataPeriodoInicio)
+    const fim = new Date(validado.dataPeriodoFim)
+    const conteudo = await this.gerarConteudo(validado.tipo as any, { inicio, fim, professorId: validado.professorId })
+
+    const relatorioTemp: Relatorio = {
+      id: 'temp',
+      professorId: validado.professorId,
+      tipo: validado.tipo as any,
+      titulo: validado.titulo,
+      descricao: validado.descricao ?? null,
+      dataPeriodoInicio: inicio,
+      dataPeriodoFim: fim,
+      conteudo: JSON.stringify(conteudo),
+      criadoEm: new Date(),
+      atualizadoEm: new Date(),
+      professor: professor ? { usuario: { nomeCompleto: '' } } as any : undefined,
+    }
+
+    return gerarExcel(relatorioTemp)
   }
 }
 

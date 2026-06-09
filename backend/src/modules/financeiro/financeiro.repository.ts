@@ -1,7 +1,7 @@
 import { prisma } from '../../database/prisma.client'
 import { AppError } from '../../shared/errors'
 import { logError } from '../../shared/utils'
-import type { Prisma, StatusMensalidade, MetodoPagamento } from '@prisma/client'
+import type { Prisma, StatusMensalidade, TipoMensalidade, MetodoPagamento } from '@prisma/client'
 import type { Caixa, Mensalidade, Pagamento, AbrirCaixaData, FecharCaixaData, CreateMensalidadeData, CreatePagamentoData } from './financeiro.types'
 
 export class FinanceiroRepository {
@@ -85,6 +85,7 @@ export class FinanceiroRepository {
   async findMensalidades(params: {
     alunoId?: string
     planoId?: string
+    tipo?: string
     status?: string
     dataInicio?: Date
     dataFim?: Date
@@ -92,12 +93,12 @@ export class FinanceiroRepository {
     limit: number
   }): Promise<{ mensalidades: Mensalidade[]; total: number }> {
     try {
-      const { alunoId, planoId, status, dataInicio, dataFim, page, limit } = params
+      const { alunoId, planoId, tipo, status, dataInicio, dataFim, page, limit } = params
 
-      // Constrói o filtro via spread para evitar erros de atribuição em tipos Prisma
       const where: Prisma.MensalidadeWhereInput = {
         ...(alunoId && { alunoId }),
         ...(planoId && { planoId }),
+        ...(tipo && { tipo: tipo as TipoMensalidade }),
         ...(status && { status: status as StatusMensalidade }),
         ...((dataInicio ?? dataFim) && {
           dataVencimento: {
@@ -131,10 +132,10 @@ export class FinanceiroRepository {
   async createMensalidade(data: CreateMensalidadeData): Promise<Mensalidade> {
     try {
       return await prisma.mensalidade.create({
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: {
           alunoId: data.alunoId,
-          planoId: data.planoId,
+          planoId: data.planoId ?? null,
+          tipo: data.tipo ?? 'MENSAL',
           mesReferencia: data.mesReferencia,
           dataVencimento: data.dataVencimento,
           valor: data.valor,

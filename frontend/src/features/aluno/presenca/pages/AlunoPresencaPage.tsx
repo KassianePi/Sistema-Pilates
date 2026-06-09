@@ -3,13 +3,23 @@ import { ClipboardList, CheckCircle2, XCircle, MinusCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { api } from '@/services/api'
-import type { ApiResponse, PaginatedResponse, Presenca, StatusPresenca } from '@/types/domain.types'
+import type { ApiResponse, Presenca, StatusPresenca } from '@/types/domain.types'
+
+type PresencasResponse = {
+  presencas: Presenca[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
 
 function useMinhasPresencas() {
   return useQuery({
     queryKey: ['presencas-aluno'],
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<PaginatedResponse<Presenca>>>('/presencas', { params: { limite: 50 } })
+      const { data } = await api.get<ApiResponse<PresencasResponse>>('/aluno/presencas', {
+        params: { limit: 50 },
+      })
       return data.data
     },
   })
@@ -27,9 +37,9 @@ const STATUS_PRESENCA: Record<StatusPresenca, { label: string; variant: 'success
 
 export function AlunoPresencaPage() {
   const { data, isLoading } = useMinhasPresencas()
-  const presencas = data?.data ?? []
+  const presencas = data?.presencas ?? []
 
-  const totalPresente = presencas.filter(p => p.status === 'PRESENTE').length
+  const totalPresente = presencas.filter((p) => p.status === 'PRESENTE').length
   const percentual = presencas.length > 0 ? Math.round((totalPresente / presencas.length) * 100) : 0
 
   return (

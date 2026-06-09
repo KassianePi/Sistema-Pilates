@@ -1,5 +1,6 @@
 export type StatusAtivo = 'ATIVO' | 'INATIVO'
-export type StatusMensalidade = 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO'
+export type StatusAluno = 'ATIVO' | 'INATIVO' | 'SUSPENSO' | 'FORMADO'
+export type StatusMensalidade = 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO' | 'PARCIAL'
 export type StatusAula = 'AGENDADA' | 'REALIZADA' | 'CANCELADA' | 'ADIADA'
 export type StatusPresenca = 'PRESENTE' | 'AUSENTE' | 'JUSTIFICADO'
 export type TipoAula = 'INDIVIDUAL' | 'DUPLA' | 'GRUPO'
@@ -45,7 +46,7 @@ export interface Aluno {
   cidade?: string
   estado?: string
   cep?: string
-  status: StatusAtivo
+  status: StatusAluno
   createdAt: string
   updatedAt: string
   usuario: {
@@ -131,9 +132,11 @@ export interface LogAuditoria {
   acao: string
   entidade: string
   entidadeId?: string
+  dadosAntigos?: string | null
+  dadosNovos?: string | null
   detalhes?: string
-  ip?: string
-  createdAt: string
+  enderecoIp?: string | null
+  criadoEm: string
   usuario?: { nomeCompleto: string; email: string }
 }
 

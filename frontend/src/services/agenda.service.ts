@@ -95,4 +95,13 @@ export const agendaService = {
     const { data } = await api.patch<ApiResponse<BackendAula>>(`/aulas/${id}/cancelar`, { motivo })
     return mapAula(data.data)
   },
+
+  // Endpoint exclusivo para o portal do aluno — retorna agenda de aulas AGENDADAS
+  async listarAulasAluno(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Aula>> {
+    const { data } = await api.get<ApiResponse<BackendListResponse>>('/aluno/aulas', {
+      params: { page: params?.page, limit: params?.limit },
+    })
+    const r = data.data
+    return { data: r.aulas.map(mapAula), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
+  },
 }

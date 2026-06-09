@@ -25,7 +25,8 @@ export function useAbrirCaixa() {
 export function useFecharCaixa() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => financeiroService.fecharCaixa(id),
+    mutationFn: ({ id, saldoFechamento }: { id: string; saldoFechamento?: number }) =>
+      financeiroService.fecharCaixa(id, saldoFechamento ?? 0),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['caixa-ativo'] })
       toast.success('Caixa fechado.')

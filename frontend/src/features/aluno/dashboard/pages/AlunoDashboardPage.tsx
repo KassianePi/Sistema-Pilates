@@ -1,10 +1,14 @@
-import { CalendarDays, ClipboardCheck, CreditCard, ChevronRight, Clock, CheckCircle2, AlertTriangle, AlertCircle } from 'lucide-react'
+import { useState } from 'react'
+import { CalendarDays, ClipboardCheck, CreditCard, ChevronRight, Clock, CheckCircle2, AlertTriangle, AlertCircle, Send, RotateCcw } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useAuth } from '@/hooks/useAuth'
 import { useAulas } from '@/features/admin/agenda/hooks/useAgenda'
-import { useMensalidades } from '@/features/admin/financeiro/hooks/useFinanceiro'
+import { financeiroService } from '@/services/financeiro.service'
 import type { AlunoUser } from '@/types/auth.types'
 import type { StatusMensalidade } from '@/types/domain.types'
 
@@ -20,6 +24,7 @@ const STATUS_MENSALIDADE: Record<StatusMensalidade, { label: string; variant: 's
   PENDENTE: { label: 'Pendente', variant: 'warning', Icon: AlertTriangle },
   VENCIDO: { label: 'Vencido', variant: 'destructive', Icon: AlertCircle },
   CANCELADO: { label: 'Cancelado', variant: 'outline', Icon: () => null },
+  PARCIAL: { label: 'Parcial', variant: 'warning', Icon: AlertTriangle },
 }
 
 interface QuickLinkProps {
@@ -70,7 +75,7 @@ const quickLinks: QuickLinkProps[] = [
     to: '/aluno/financeiro',
     icon: CreditCard,
     label: 'Financeiro',
-    description: 'Visualize seus pagamentos e mensalidades',
+    description: 'Mensalidades, pagamentos e estornos',
     iconColor: 'text-green-600',
     iconBg: 'bg-green-50',
   },
@@ -81,12 +86,34 @@ export function AlunoDashboardPage() {
   const alunoUser = user as AlunoUser | null
   const firstName = alunoUser?.nome?.split(' ')[0] ?? 'Aluno'
 
+  const [notificandoId, setNotificandoId] = useState<string | null>(null)
+
   const hoje = new Date().toISOString().split('T')[0]
   const { data: aulasData, isLoading: loadingAulas } = useAulas({ status: 'AGENDADA', limite: 30 })
   const proximaAula = (aulasData?.data ?? []).filter(a => a.data >= hoje)[0] ?? null
 
-  const { data: mensalidadesData, isLoading: loadingMensalidades } = useMensalidades({ limite: 3 })
+  const { data: mensalidadesData, isLoading: loadingMensalidades } = useQuery({
+    queryKey: ['mensalidades-aluno-dashboard'],
+    queryFn: () => financeiroService.listarMinhasMensalidades({ limite: 3 }),
+  })
   const ultimaMensalidade = (mensalidadesData?.data ?? [])[0] ?? null
+
+  const notificarPagamento = useMutation({
+    mutationFn: (mensalidadeId: string) => financeiroService.notificarPagamento(mensalidadeId),
+    onSuccess: () => {
+      toast.success('Studio notificado! Aguarde a confirmação do pagamento.')
+      setNotificandoId(null)
+    },
+    onError: (err: any) => {
+      toast.error(err?.response?.data?.message ?? 'Erro ao notificar pagamento.')
+      setNotificandoId(null)
+    },
+  })
+
+  function handleNotificar(mensalidadeId: string) {
+    setNotificandoId(mensalidadeId)
+    notificarPagamento.mutate(mensalidadeId)
+  }
 
   return (
     <div className="space-y-8">
@@ -169,13 +196,13 @@ export function AlunoDashboardPage() {
               <div className="space-y-3">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-semibold text-cinza-forte">{ultimaMensalidade.plano.nome}</p>
+                    <p className="font-semibold text-cinza-forte">{ultimaMensalidade.plano?.nome ?? 'Aula avulsa'}</p>
                     <p className="text-sm text-cinza-texto mt-0.5">
                       Vencimento: {new Date(ultimaMensalidade.vencimento).toLocaleDateString('pt-BR')}
                     </p>
                   </div>
                   {(() => {
-                    const info = STATUS_MENSALIDADE[ultimaMensalidade.status]
+                    const info = STATUS_MENSALIDADE[ultimaMensalidade.status] ?? STATUS_MENSALIDADE.PENDENTE
                     return (
                       <Badge variant={info.variant}>
                         <info.Icon className="w-3 h-3 mr-1" />
@@ -185,6 +212,30 @@ export function AlunoDashboardPage() {
                   })()}
                 </div>
                 <p className="text-2xl font-bold text-cinza-forte">{formatarValor(ultimaMensalidade.valor)}</p>
+
+                {/* Ações rápidas */}
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {(ultimaMensalidade.status === 'PENDENTE' || ultimaMensalidade.status === 'VENCIDO') && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5"
+                      onClick={() => handleNotificar(ultimaMensalidade.id)}
+                      disabled={notificarPagamento.isPending && notificandoId === ultimaMensalidade.id}
+                    >
+                      <Send className="w-3.5 h-3.5 mr-1" />
+                      {notificarPagamento.isPending && notificandoId === ultimaMensalidade.id ? 'Enviando...' : 'Notificar pagamento'}
+                    </Button>
+                  )}
+                  {(ultimaMensalidade.status === 'PAGO' || ultimaMensalidade.status === 'PARCIAL') && (
+                    <Link to="/aluno/financeiro">
+                      <Button size="sm" variant="outline" className="text-xs text-rosa-vibrante border-rosa-vibrante/30 hover:bg-rosa-vibrante/5">
+                        <RotateCcw className="w-3.5 h-3.5 mr-1" /> Solicitar estorno
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+
                 <Link
                   to="/aluno/financeiro"
                   className="inline-flex items-center gap-1 text-xs text-lilas-medio hover:underline"

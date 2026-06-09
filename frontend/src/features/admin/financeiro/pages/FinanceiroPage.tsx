@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import { DollarSign, ArrowDownCircle, ArrowUpCircle, CheckCircle2, Clock, AlertTriangle, X } from 'lucide-react'
+import { DollarSign, ArrowDownCircle, ArrowUpCircle, CheckCircle2, Clock, AlertTriangle, X, RotateCcw } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,18 +14,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
   useCaixaAtivo, useAbrirCaixa, useFecharCaixa,
   useMensalidades, useCreateMensalidade,
   usePagamentos, useRegistrarPagamento,
 } from '../hooks/useFinanceiro'
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { usePlanos } from '@/features/admin/planos/hooks/usePlanos'
+import { estornosService } from '@/services/estornos.service'
 import type { Mensalidade, StatusMensalidade, MetodoPagamento } from '@/types/domain.types'
+import type { StatusEstorno } from '@/services/estornos.service'
 
 function formatarValor(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
@@ -37,6 +36,14 @@ const STATUS_MENSALIDADE: Record<StatusMensalidade, { label: string; variant: 's
   PENDENTE: { label: 'Pendente', variant: 'warning' },
   VENCIDO: { label: 'Vencido', variant: 'destructive' },
   CANCELADO: { label: 'Cancelado', variant: 'outline' },
+  PARCIAL: { label: 'Parcial', variant: 'warning' },
+}
+
+const STATUS_ESTORNO: Record<StatusEstorno, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
+  SOLICITADO: { label: 'Solicitado', variant: 'warning' },
+  APROVADO: { label: 'Aprovado', variant: 'success' },
+  PROCESSADO: { label: 'Processado', variant: 'outline' },
+  NEGADO: { label: 'Negado', variant: 'destructive' },
 }
 
 const METODOS_PAGAMENTO: { value: MetodoPagamento; label: string }[] = [
@@ -52,10 +59,15 @@ const abrirCaixaSchema = z.object({
 })
 
 const mensalidadeSchema = z.object({
+  tipo: z.enum(['MENSAL', 'AVULSO']).default('MENSAL'),
   alunoId: z.string().min(1, 'Selecione um aluno'),
-  planoId: z.string().min(1, 'Selecione um plano'),
+  planoId: z.string().optional(),
   valor: z.number().positive('Valor deve ser positivo'),
   vencimento: z.string().min(1, 'Informe o vencimento'),
+}).superRefine((data, ctx) => {
+  if (data.tipo === 'MENSAL' && !data.planoId) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Selecione um plano', path: ['planoId'] })
+  }
 })
 
 const pagamentoSchema = z.object({
@@ -67,8 +79,9 @@ const pagamentoSchema = z.object({
 })
 
 export function FinanceiroPage() {
-  const [abaSelecionada, setAbaSelecionada] = useState<'mensalidades' | 'pagamentos'>('mensalidades')
+  const [abaSelecionada, setAbaSelecionada] = useState<'mensalidades' | 'pagamentos' | 'estornos'>('mensalidades')
   const [filtroStatusMensalidade, setFiltroStatusMensalidade] = useState('')
+  const [filtroStatusEstorno, setFiltroStatusEstorno] = useState<StatusEstorno | ''>('SOLICITADO')
   const [modalCaixaAbrir, setModalCaixaAbrir] = useState(false)
   const [modalFecharCaixa, setModalFecharCaixa] = useState(false)
   const [modalMensalidade, setModalMensalidade] = useState(false)
@@ -84,11 +97,37 @@ export function FinanceiroPage() {
 
   const { data: alunosData } = useAlunos({ limite: 200 })
   const { data: planosData } = usePlanos({ limite: 100 })
+
+  const queryClient = useQueryClient()
+  const { data: estornosData, isLoading: loadingEstornos } = useQuery({
+    queryKey: ['estornos-admin', filtroStatusEstorno],
+    queryFn: () => estornosService.listar({ status: filtroStatusEstorno || undefined, limit: 50 }),
+    enabled: abaSelecionada === 'estornos',
+  })
+  const aprovarEstorno = useMutation({
+    mutationFn: estornosService.aprovar,
+    onSuccess: () => { toast.success('Estorno aprovado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onError: () => toast.error('Erro ao aprovar estorno.'),
+  })
+  const negarEstorno = useMutation({
+    mutationFn: estornosService.negar,
+    onSuccess: () => { toast.success('Estorno negado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onError: () => toast.error('Erro ao negar estorno.'),
+  })
+  const processarEstorno = useMutation({
+    mutationFn: estornosService.processar,
+    onSuccess: () => { toast.success('Estorno marcado como processado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onError: () => toast.error('Erro ao processar estorno.'),
+  })
   const alunos = alunosData?.data ?? []
   const planos = planosData?.data ?? []
 
   const formCaixa = useForm<z.infer<typeof abrirCaixaSchema>>({ resolver: zodResolver(abrirCaixaSchema), defaultValues: { saldoAbertura: 0 } })
-  const formMensalidade = useForm<z.infer<typeof mensalidadeSchema>>({ resolver: zodResolver(mensalidadeSchema) })
+  const formFecharCaixa = useForm<{ saldoFechamento: number }>({ defaultValues: { saldoFechamento: 0 } })
+  const formMensalidade = useForm<z.infer<typeof mensalidadeSchema>>({
+    resolver: zodResolver(mensalidadeSchema),
+    defaultValues: { tipo: 'MENSAL', alunoId: '', planoId: '', vencimento: '', valor: 0 },
+  })
   const formPagamento = useForm<z.infer<typeof pagamentoSchema>>({
     resolver: zodResolver(pagamentoSchema),
     defaultValues: { metodo: 'PIX', dataPagamento: new Date().toISOString().split('T')[0] },
@@ -101,9 +140,12 @@ export function FinanceiroPage() {
   }
 
   async function onCriarMensalidade(values: z.infer<typeof mensalidadeSchema>) {
-    await createMensalidade.mutateAsync(values)
+    await createMensalidade.mutateAsync({
+      ...values,
+      planoId: values.tipo === 'AVULSO' ? undefined : values.planoId,
+    })
     setModalMensalidade(false)
-    formMensalidade.reset()
+    formMensalidade.reset({ tipo: 'MENSAL', alunoId: '', planoId: '', vencimento: '', valor: 0 })
   }
 
   async function onRegistrarPagamento(values: z.infer<typeof pagamentoSchema>) {
@@ -165,7 +207,7 @@ export function FinanceiroPage() {
       {/* Abas Mensalidades / Pagamentos */}
       <div>
         <div className="flex gap-1 bg-bege-suave p-1 rounded-lg w-fit mb-6">
-          {(['mensalidades', 'pagamentos'] as const).map((aba) => (
+          {(['mensalidades', 'pagamentos', 'estornos'] as const).map((aba) => (
             <button
               key={aba}
               onClick={() => setAbaSelecionada(aba)}
@@ -231,7 +273,7 @@ export function FinanceiroPage() {
                     {(mensalidadesData?.data ?? []).map((m) => (
                       <TableRow key={m.id}>
                         <TableCell className="font-medium">{m.aluno.usuario.nomeCompleto}</TableCell>
-                        <TableCell className="text-cinza-texto">{m.plano.nome}</TableCell>
+                        <TableCell className="text-cinza-texto">{(m as any).plano?.nome ?? 'Avulso'}</TableCell>
                         <TableCell className="font-semibold">{formatarValor(m.valor)}</TableCell>
                         <TableCell className="text-cinza-texto">{formatarData(m.vencimento)}</TableCell>
                         <TableCell>
@@ -295,6 +337,129 @@ export function FinanceiroPage() {
             </CardContent>
           </Card>
         )}
+
+        {abaSelecionada === 'estornos' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <Select
+                  value={filtroStatusEstorno || 'all'}
+                  onValueChange={(v) => setFiltroStatusEstorno(v === 'all' ? '' : v as StatusEstorno)}
+                >
+                  <SelectTrigger className="w-44">
+                    <SelectValue placeholder="Todos os status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="SOLICITADO">Solicitado</SelectItem>
+                    <SelectItem value="APROVADO">Aprovado</SelectItem>
+                    <SelectItem value="PROCESSADO">Processado</SelectItem>
+                    <SelectItem value="NEGADO">Negado</SelectItem>
+                  </SelectContent>
+                </Select>
+                {filtroStatusEstorno && (
+                  <Button variant="ghost" size="sm" onClick={() => setFiltroStatusEstorno('')}>
+                    <X className="w-3 h-3 mr-1" />Limpar
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingEstornos ? (
+                <div className="py-12 text-center text-cinza-medio">Carregando...</div>
+              ) : (estornosData?.estornos ?? []).length === 0 ? (
+                <div className="py-12 text-center text-cinza-medio">
+                  <RotateCcw className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Nenhuma solicitação de estorno encontrada.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Aluno</TableHead>
+                      <TableHead>Referência</TableHead>
+                      <TableHead className="text-center">Contratado</TableHead>
+                      <TableHead className="text-center">Compareceu</TableHead>
+                      <TableHead className="text-center">A estornar</TableHead>
+                      <TableHead>Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(estornosData?.estornos ?? []).map((e: any) => {
+                      const statusInfo = STATUS_ESTORNO[e.status as StatusEstorno] ?? STATUS_ESTORNO.SOLICITADO
+                      const pendente = e.status === 'SOLICITADO'
+                      const aprovado = e.status === 'APROVADO'
+                      return (
+                        <TableRow key={e.id}>
+                          <TableCell className="font-medium">
+                            {e.aluno?.usuario?.nomeCompleto ?? '—'}
+                          </TableCell>
+                          <TableCell className="text-cinza-texto text-sm">
+                            <div>{e.mensalidade?.plano?.nome ?? 'Avulso'}</div>
+                            {e.mensalidade?.mesReferencia && (
+                              <div className="text-xs text-cinza-medio">{formatarData(e.mensalidade.mesReferencia)}</div>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center">{e.diasContratados}</TableCell>
+                          <TableCell className="text-center">{e.diasComparecidos}</TableCell>
+                          <TableCell className="text-center font-semibold text-rosa-vibrante">{e.diasEstornados}</TableCell>
+                          <TableCell className="font-semibold text-cinza-forte">{formatarValor(Number(e.valorEstorno))}</TableCell>
+                          <TableCell>
+                            <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1.5">
+                              {pendente && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-700 border-green-300 hover:bg-green-50 text-xs"
+                                    onClick={() => aprovarEstorno.mutate(e.id)}
+                                    disabled={aprovarEstorno.isPending}
+                                  >
+                                    Aprovar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-rosa-vibrante border-rosa-vibrante/30 hover:bg-rosa-vibrante/5 text-xs"
+                                    onClick={() => negarEstorno.mutate(e.id)}
+                                    disabled={negarEstorno.isPending}
+                                  >
+                                    Negar
+                                  </Button>
+                                </>
+                              )}
+                              {aprovado && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs"
+                                  onClick={() => processarEstorno.mutate(e.id)}
+                                  disabled={processarEstorno.isPending}
+                                >
+                                  Marcar processado
+                                </Button>
+                              )}
+                              {e.motivo && (
+                                <span className="text-xs text-cinza-medio italic max-w-[120px] truncate" title={e.motivo}>
+                                  {e.motivo}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Modal: Abrir Caixa */}
@@ -314,30 +479,67 @@ export function FinanceiroPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Confirmar fechar caixa */}
-      <AlertDialog open={modalFecharCaixa} onOpenChange={setModalFecharCaixa}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Fechar caixa?</AlertDialogTitle>
-            <AlertDialogDescription>O caixa será fechado e o saldo final será calculado automaticamente.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => { if (caixa) fecharCaixa.mutate(caixa.id); setModalFecharCaixa(false) }} disabled={fecharCaixa.isPending}>
-              Fechar caixa
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Fechar caixa */}
+      <Dialog open={modalFecharCaixa} onOpenChange={(v) => { if (!v) { setModalFecharCaixa(false); formFecharCaixa.reset() } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Fechar caixa</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={formFecharCaixa.handleSubmit(async (values) => {
+            if (!caixa) return
+            await fecharCaixa.mutateAsync({ id: caixa.id, saldoFechamento: values.saldoFechamento })
+            setModalFecharCaixa(false)
+            formFecharCaixa.reset()
+          })} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>Saldo de fechamento (R$)</Label>
+              <Input type="number" step="0.01" min="0" {...formFecharCaixa.register('saldoFechamento', { valueAsNumber: true })} />
+              <p className="text-xs text-cinza-medio">Informe o valor em caixa ao fechar. Use 0 se não desejar informar.</p>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => { setModalFecharCaixa(false); formFecharCaixa.reset() }}>Cancelar</Button>
+              <Button type="submit" disabled={fecharCaixa.isPending}>Fechar caixa</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal: Nova Mensalidade */}
       <Dialog open={modalMensalidade} onOpenChange={(v) => !v && setModalMensalidade(false)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Nova Mensalidade</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle>Nova Mensalidade</DialogTitle>
+          </DialogHeader>
           <form onSubmit={formMensalidade.handleSubmit(onCriarMensalidade as never)} className="space-y-4">
+            <div className="flex gap-1 bg-bege-suave p-1 rounded-lg w-fit">
+              {(['MENSAL', 'AVULSO'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => formMensalidade.setValue('tipo', t, { shouldValidate: false })}
+                  className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                    formMensalidade.watch('tipo') === t
+                      ? 'bg-branco-puro text-cinza-forte shadow-sm'
+                      : 'text-cinza-texto hover:text-cinza-forte'
+                  }`}
+                >
+                  {t === 'MENSAL' ? 'Mensalidade' : 'Aula Avulsa'}
+                </button>
+              ))}
+            </div>
+
+            {formMensalidade.watch('tipo') === 'AVULSO' && (
+              <p className="text-xs text-cinza-texto bg-lilas-claro/30 rounded-lg px-3 py-2">
+                Cobrança avulsa — sem plano vinculado. Ideal para alunos eventuais.
+              </p>
+            )}
+
             <div className="space-y-1.5">
               <Label>Aluno *</Label>
-              <Select onValueChange={(v) => formMensalidade.setValue('alunoId', v)}>
+              <Select
+                value={formMensalidade.watch('alunoId') || undefined}
+                onValueChange={(v) => formMensalidade.setValue('alunoId', v, { shouldValidate: true })}
+              >
                 <SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger>
                 <SelectContent>
                   {alunos.filter(a => a.status === 'ATIVO').map(a => (
@@ -345,18 +547,31 @@ export function FinanceiroPage() {
                   ))}
                 </SelectContent>
               </Select>
+              {formMensalidade.formState.errors.alunoId && (
+                <p className="text-xs text-rosa-vibrante">{formMensalidade.formState.errors.alunoId.message}</p>
+              )}
             </div>
-            <div className="space-y-1.5">
-              <Label>Plano *</Label>
-              <Select onValueChange={(v) => formMensalidade.setValue('planoId', v)}>
-                <SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-                <SelectContent>
-                  {planos.filter(p => p.ativo).map(p => (
-                    <SelectItem key={p.id} value={p.id}>{p.nome} — {formatarValor(p.valor)}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+
+            {formMensalidade.watch('tipo') === 'MENSAL' && (
+              <div className="space-y-1.5">
+                <Label>Plano *</Label>
+                <Select
+                  value={formMensalidade.watch('planoId') || undefined}
+                  onValueChange={(v) => formMensalidade.setValue('planoId', v, { shouldValidate: true })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
+                  <SelectContent>
+                    {planos.filter(p => p.ativo).map(p => (
+                      <SelectItem key={p.id} value={p.id}>{p.nome} — {formatarValor(p.valor)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {formMensalidade.formState.errors.planoId && (
+                  <p className="text-xs text-rosa-vibrante">{formMensalidade.formState.errors.planoId.message}</p>
+                )}
+              </div>
+            )}
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Valor (R$) *</Label>
@@ -382,7 +597,7 @@ export function FinanceiroPage() {
             <DialogTitle>Registrar Pagamento</DialogTitle>
             {modalPagamento && (
               <p className="text-sm text-cinza-texto mt-1">
-                {modalPagamento.aluno.usuario.nomeCompleto} — {modalPagamento.plano.nome}
+                {modalPagamento.aluno.usuario.nomeCompleto} — {(modalPagamento as any).plano?.nome ?? 'Avulso'}
               </p>
             )}
           </DialogHeader>

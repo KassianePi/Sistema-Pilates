@@ -64,6 +64,36 @@ export class PresencaService {
     logInfo('Presença atualizada', { id })
     return presenca
   }
+
+  async registrarBatch(
+    aulaId: string,
+    presencas: Array<{ alunoId: string; status: 'PRESENTE' | 'AUSENTE' | 'JUSTIFICADO' }>,
+  ): Promise<{ registros: number; aulaStatus: string }> {
+    const aula = await prisma.aula.findUnique({ where: { id: aulaId } })
+    if (!aula) throw AppError.notFound('Aula', aulaId)
+    if (aula.status === 'CANCELADA') throw AppError.badRequest('Não é possível registrar presenças em aula cancelada')
+
+    const agora = new Date()
+    await prisma.$transaction(async (tx) => {
+      for (const item of presencas) {
+        await tx.presenca.upsert({
+          where: { alunoId_aulaId: { alunoId: item.alunoId, aulaId } },
+          update: { status: item.status as any },
+          create: {
+            alunoId: item.alunoId,
+            aulaId,
+            status: item.status as any,
+            dataRegistro: agora,
+          },
+        })
+      }
+      await tx.aula.update({ where: { id: aulaId }, data: { status: 'REALIZADA' } })
+    })
+
+    eventBus.emit('aula.realizada', { aulaId, totalPresentes: presencas.filter(p => p.status === 'PRESENTE').length })
+    logInfo('Presenças registradas em lote', { aulaId, total: presencas.length })
+    return { registros: presencas.length, aulaStatus: 'REALIZADA' }
+  }
 }
 
 export const presencaService = new PresencaService(new PresencaRepository())
