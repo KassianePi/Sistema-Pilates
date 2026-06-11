@@ -117,6 +117,7 @@ export class FinanceiroRepository {
           include: {
             aluno: { include: { usuario: { select: { nomeCompleto: true } } } },
             plano: { select: { id: true, nome: true } },
+            pagamentos: true,
           },
         }),
         prisma.mensalidade.count({ where }),

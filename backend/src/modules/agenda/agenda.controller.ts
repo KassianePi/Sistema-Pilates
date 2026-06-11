@@ -68,12 +68,16 @@ export async function cancelar(request: FastifyRequest, reply: FastifyReply) {
 // Endpoint público para o portal do aluno — retorna agenda de aulas AGENDADAS
 export async function listarAulasAluno(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const query = request.query as { page?: string; limit?: string }
-    const resultado = await agendaService.listar({
-      status: 'AGENDADA',
-      page: query.page ? parseInt(query.page) : 1,
-      limit: query.limit ? parseInt(query.limit) : 30,
-    })
+    const query = request.query as { page?: string; limit?: string; escopo?: string }
+    const escoposValidos = ['minhas', 'gerais', 'historico'] as const
+    const escopo = escoposValidos.includes(query.escopo as any) ? (query.escopo as 'minhas' | 'gerais' | 'historico') : 'minhas'
+
+    const resultado = await agendaService.listarParaAluno(
+      request.usuarioId!,
+      escopo,
+      query.page ? parseInt(query.page) : 1,
+      query.limit ? parseInt(query.limit) : 30,
+    )
     return reply.code(200).send({ success: true, data: resultado })
   } catch (error) {
     logWarn('Erro ao listar aulas para aluno', { error: String(error) })

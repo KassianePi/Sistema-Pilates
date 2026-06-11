@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { notificacoesService } from '@/services/notificacoes.service'
+import { getNotificacaoMeta } from '@/lib/notificacaoMeta'
 
 function useNotificacoes() {
   return useQuery({
@@ -74,10 +75,15 @@ export function NotificacoesPage() {
             </div>
           ) : (
             <ul className="divide-y divide-bege-cartao">
-              {notificacoes.map((n) => (
+              {notificacoes.map((n) => {
+                const meta = getNotificacaoMeta(n.tipo)
+                return (
                 <li key={n.id} className={`flex items-start gap-4 py-4 ${!n.lida ? 'bg-lilas-claro/30 -mx-6 px-6' : ''}`}>
+                  <div className={`p-2 rounded-lg shrink-0 ${meta.iconBg}`}>
+                    <meta.Icon className={`w-4 h-4 ${meta.iconColor}`} />
+                  </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <p className={`text-sm font-medium ${!n.lida ? 'text-cinza-forte' : 'text-cinza-texto'}`}>{n.titulo}</p>
                       {!n.lida && <Badge variant="secondary" className="text-xs">Nova</Badge>}
                     </div>
@@ -96,7 +102,8 @@ export function NotificacoesPage() {
                     </Button>
                   </div>
                 </li>
-              ))}
+                )
+              })}
             </ul>
           )}
         </CardContent>

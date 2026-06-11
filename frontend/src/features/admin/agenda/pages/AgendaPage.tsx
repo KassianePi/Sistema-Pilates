@@ -180,7 +180,9 @@ export function AgendaPage() {
                     <TableCell>
                       <div>
                         <p className="font-medium">{aula.titulo}</p>
-                        <p className="text-xs text-cinza-medio">{aula.modalidade} · {aula.tipo}</p>
+                        <p className="text-xs text-cinza-medio">
+                          {aula.modalidade?.nome ? `${aula.modalidade.nome} · ` : ''}{aula.tipo}
+                        </p>
                       </div>
                     </TableCell>
                     <TableCell className="text-cinza-texto">{formatarData(aula.data)}</TableCell>

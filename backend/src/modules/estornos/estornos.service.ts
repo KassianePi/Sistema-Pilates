@@ -4,6 +4,7 @@ import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo } from '../../shared/utils'
 import { prisma } from '../../database/prisma.client'
 import { registrarLog } from '../auditoria/auditoria.service'
+import { notificacoesService } from '../notificacoes/notificacoes.service'
 import type { Estorno } from './estornos.types'
 
 const solicitarSchema = z.object({
@@ -70,6 +71,21 @@ export class EstornosService {
       motivo: validado.motivo ?? null,
     })
 
+    // Notificar todos os admins ativos sobre a solicitação de estorno
+    const nomeAluno = (await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { nomeCompleto: true } }))?.nomeCompleto ?? 'Aluno'
+    const admins = await prisma.usuario.findMany({ where: { funcao: 'ADMIN', status: 'ATIVO' }, select: { id: true } })
+    const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(estorno.valorEstorno)
+    await Promise.all(admins.map((admin) =>
+      prisma.notificacao.create({
+        data: {
+          usuarioId: admin.id,
+          tipo: 'MENSAGEM_ADMIN',
+          titulo: `Solicitação de reembolso — ${nomeAluno}`,
+          mensagem: `${nomeAluno} solicitou um reembolso proporcional no valor de ${valorFmt} (${diasEstornados} aula(s) não utilizada(s)). Acesse Financeiro > Reembolsos para analisar.`,
+        } as any,
+      })
+    ))
+
     logInfo('Estorno solicitado', { id: estorno.id, alunoId, valorEstorno: estorno.valorEstorno })
     return estorno
   }
@@ -94,6 +110,11 @@ export class EstornosService {
 
     await registrarLog({ usuarioId: aprovadoPorId, acao: 'UPDATE', entidade: 'Estorno', entidadeId: id, dadosNovos: { status: 'APROVADO' } })
     logInfo('Estorno aprovado', { id, aprovadoPorId })
+    await this.notificarAluno(
+      atualizado.alunoId,
+      'Reembolso aprovado',
+      `Seu pedido de reembolso de ${this.fmt(atualizado.valorEstorno)} foi aprovado e será processado em breve.`,
+    )
     return atualizado
   }
 
@@ -105,6 +126,11 @@ export class EstornosService {
 
     await registrarLog({ usuarioId: aprovadoPorId, acao: 'UPDATE', entidade: 'Estorno', entidadeId: id, dadosNovos: { status: 'NEGADO' } })
     logInfo('Estorno negado', { id, aprovadoPorId })
+    await this.notificarAluno(
+      atualizado.alunoId,
+      'Reembolso negado',
+      `Seu pedido de reembolso de ${this.fmt(atualizado.valorEstorno)} foi analisado e não pôde ser aprovado. Em caso de dúvidas, fale com o studio.`,
+    )
     return atualizado
   }
 
@@ -114,7 +140,25 @@ export class EstornosService {
 
     const atualizado = await this.repository.updateStatus(id, 'PROCESSADO', aprovadoPorId)
     logInfo('Estorno processado', { id })
+    await this.notificarAluno(
+      atualizado.alunoId,
+      'Reembolso concluído',
+      `O reembolso de ${this.fmt(atualizado.valorEstorno)} foi processado. O valor já deve constar na sua conta/forma de pagamento.`,
+    )
     return atualizado
+  }
+
+  private fmt(valor: number): string {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor)
+  }
+
+  /** Notifica o aluno (resolve usuarioId a partir do Aluno.id) — falha silenciosa */
+  private async notificarAluno(alunoId: string, titulo: string, mensagem: string): Promise<void> {
+    try {
+      const aluno = await prisma.aluno.findUnique({ where: { id: alunoId }, select: { usuarioId: true } })
+      if (!aluno) return
+      await notificacoesService.criar({ usuarioId: aluno.usuarioId, tipo: 'ESTORNO_ATUALIZADO', titulo, mensagem })
+    } catch { /* silencioso */ }
   }
 }
 

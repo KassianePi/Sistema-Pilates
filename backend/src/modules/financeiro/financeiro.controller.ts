@@ -3,6 +3,7 @@ import { financeiroService } from './financeiro.service'
 import { ValidationError, AppError } from '../../shared/errors'
 import { logWarn } from '../../shared/utils'
 import { prisma } from '../../database/prisma.client'
+import { notificacoesService } from '../notificacoes/notificacoes.service'
 
 // ===================== CAIXA =====================
 
@@ -177,6 +178,206 @@ export async function solicitarAulaAvulsa(request: FastifyRequest, reply: Fastif
   } catch (error) {
     logWarn('Erro ao solicitar aula avulsa', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao enviar solicitação', code: 'INTERNAL_ERROR' })
+  }
+}
+
+// ===================== COMPROVANTES =====================
+
+export async function enviarComprovante(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const usuarioId = request.usuarioId!
+    const { mensalidadeId, arquivo, nomeArquivo, tipoArquivo } = request.body as {
+      mensalidadeId: string; arquivo: string; nomeArquivo: string; tipoArquivo: string
+    }
+
+    const aluno = await prisma.aluno.findUnique({
+      where: { usuarioId },
+      include: { usuario: { select: { nomeCompleto: true } } },
+    })
+    if (!aluno) return reply.code(403).send({ success: false, message: 'Perfil de aluno não encontrado', code: 'FORBIDDEN' })
+
+    const mensalidade = await prisma.mensalidade.findUnique({
+      where: { id: mensalidadeId },
+      include: { plano: { select: { nome: true } } },
+    })
+    if (!mensalidade) return reply.code(404).send({ success: false, message: 'Mensalidade não encontrada', code: 'NOT_FOUND' })
+    if (String(mensalidade.alunoId) !== aluno.id) return reply.code(403).send({ success: false, message: 'Mensalidade não pertence a este aluno', code: 'FORBIDDEN' })
+
+    // Verifica se já existe comprovante pendente ou aprovado para esta mensalidade
+    const existente = await prisma.comprovantePagemento.findFirst({
+      where: { mensalidadeId, alunoId: aluno.id, status: { in: ['PENDENTE', 'APROVADO'] } },
+    } as any)
+    if (existente) return reply.code(409).send({ success: false, message: 'Já existe um comprovante pendente ou aprovado para esta mensalidade', code: 'CONFLICT' })
+
+    const comprovante = await prisma.comprovantePagemento.create({
+      data: {
+        mensalidadeId,
+        alunoId: aluno.id,
+        arquivo,
+        nomeArquivo,
+        tipoArquivo,
+        dataEnvio: new Date(),
+      } as any,
+    })
+
+    // Notificar admins
+    const admins = await prisma.usuario.findMany({ where: { funcao: 'ADMIN', status: 'ATIVO' }, select: { id: true } })
+    const nomePlano = mensalidade.plano?.nome ?? 'Avulso'
+    await Promise.all(admins.map((admin) =>
+      prisma.notificacao.create({
+        data: {
+          usuarioId: admin.id,
+          tipo: 'MENSAGEM_ADMIN',
+          titulo: `Comprovante enviado — ${aluno.usuario.nomeCompleto}`,
+          mensagem: `${aluno.usuario.nomeCompleto} enviou um comprovante de pagamento para a mensalidade "${nomePlano}". Acesse Financeiro > Comprovantes para analisar.`,
+        } as any,
+      })
+    ))
+
+    logWarn('Comprovante enviado pelo aluno', { alunoId: aluno.id, mensalidadeId })
+    return reply.code(201).send({ success: true, data: comprovante })
+  } catch (error) {
+    logWarn('Erro ao enviar comprovante', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao enviar comprovante', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function listarMeusComprovantes(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const usuarioId = request.usuarioId!
+    const aluno = await prisma.aluno.findUnique({ where: { usuarioId } })
+    if (!aluno) return reply.code(403).send({ success: false, message: 'Perfil de aluno não encontrado', code: 'FORBIDDEN' })
+
+    const comprovantes = await prisma.comprovantePagemento.findMany({
+      where: { alunoId: aluno.id } as any,
+      include: {
+        mensalidade: { include: { plano: { select: { nome: true } } } },
+        analisadoPor: { select: { nomeCompleto: true } },
+      } as any,
+      orderBy: { criadoEm: 'desc' },
+    } as any)
+
+    return reply.code(200).send({ success: true, data: comprovantes })
+  } catch (error) {
+    logWarn('Erro ao listar comprovantes do aluno', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao listar comprovantes', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function listarComprovantes(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const query = request.query as { status?: string; page?: string; limit?: string }
+    const page = query.page ? parseInt(query.page) : 1
+    const limit = query.limit ? parseInt(query.limit) : 20
+    const where: any = {}
+    if (query.status) where.status = query.status
+
+    const [comprovantes, total] = await Promise.all([
+      prisma.comprovantePagemento.findMany({
+        where,
+        include: {
+          mensalidade: { include: { plano: { select: { nome: true } } } },
+          aluno: { include: { usuario: { select: { nomeCompleto: true } } } },
+          analisadoPor: { select: { nomeCompleto: true } },
+        } as any,
+        orderBy: { criadoEm: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      } as any),
+      prisma.comprovantePagemento.count({ where }),
+    ])
+
+    return reply.code(200).send({ success: true, data: { comprovantes, total, page, limit, totalPages: Math.ceil(total / limit) } })
+  } catch (error) {
+    logWarn('Erro ao listar comprovantes', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao listar comprovantes', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function analisarComprovante(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const usuarioId = request.usuarioId!
+    const { id } = request.params as { id: string }
+    const { acao, observacoes } = request.body as { acao: 'APROVADO' | 'REJEITADO'; observacoes?: string }
+
+    if (!['APROVADO', 'REJEITADO'].includes(acao)) {
+      return reply.code(400).send({ success: false, message: 'Ação inválida. Use APROVADO ou REJEITADO', code: 'BAD_REQUEST' })
+    }
+
+    const comprovante = await prisma.comprovantePagemento.findUnique({ where: { id } } as any)
+    if (!comprovante) return reply.code(404).send({ success: false, message: 'Comprovante não encontrado', code: 'NOT_FOUND' })
+    if ((comprovante as any).status !== 'PENDENTE') return reply.code(400).send({ success: false, message: 'Comprovante já foi analisado', code: 'BAD_REQUEST' })
+
+    // Atualiza o comprovante e, se aprovado, baixa a mensalidade vinculada
+    // (registrando o pagamento no caixa aberto, se houver) — tudo atômico.
+    const atualizado = await prisma.$transaction(async (tx) => {
+      const comp = await tx.comprovantePagemento.update({
+        where: { id } as any,
+        data: { status: acao, analisadoPorId: usuarioId, observacoes: observacoes ?? null } as any,
+        include: {
+          aluno: { include: { usuario: { select: { id: true, nomeCompleto: true } } } },
+          mensalidade: { include: { plano: { select: { nome: true } } } },
+        } as any,
+      } as any) as any
+
+      if (acao === 'APROVADO' && comp.mensalidade && comp.mensalidade.status !== 'PAGO') {
+        const valorDevido = Number(comp.mensalidade.valor) - Number(comp.mensalidade.desconto ?? 0)
+
+        // Se houver caixa aberto, registra o pagamento para manter o fluxo de caixa consistente
+        const caixaAberto = await tx.caixa.findFirst({
+          where: { dataFechamento: null } as any,
+          orderBy: { dataAbertura: 'desc' },
+        })
+        if (caixaAberto) {
+          await tx.pagamento.create({
+            data: {
+              mensalidadeId: comp.mensalidadeId,
+              caixaId: caixaAberto.id,
+              usuarioId,
+              valor: valorDevido,
+              metodo: 'PIX' as any,
+              dataPagamento: new Date(),
+              referencia: 'Comprovante aprovado',
+              observacoes: `Pagamento confirmado via aprovação de comprovante (${comp.nomeArquivo}).`,
+            } as any,
+          })
+        }
+
+        await tx.mensalidade.update({
+          where: { id: comp.mensalidadeId } as any,
+          data: { status: 'PAGO' as any } as any,
+        })
+      }
+
+      return comp
+    })
+
+    // Notificar o aluno
+    const titulo = acao === 'APROVADO' ? 'Comprovante aprovado!' : 'Comprovante rejeitado'
+    const nomePlano = atualizado.mensalidade?.plano?.nome ?? 'Avulso'
+    const msgAprovado = `Seu comprovante de pagamento para "${nomePlano}" foi aprovado e sua mensalidade foi quitada.`
+    const msgRejeitado = `Seu comprovante de pagamento para "${nomePlano}" foi rejeitado.${observacoes ? ` Motivo: ${observacoes}` : ' Verifique e envie novamente.'}`
+    await prisma.notificacao.create({
+      data: {
+        usuarioId: atualizado.aluno.usuario.id,
+        tipo: acao === 'APROVADO' ? 'PAGAMENTO_CONFIRMADO' : 'MENSAGEM_ADMIN',
+        titulo,
+        mensagem: acao === 'APROVADO' ? msgAprovado : msgRejeitado,
+      } as any,
+    })
+
+    // Notificar o administrador
+    const adminUsuario = await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { nomeCompleto: true } })
+    const adminNome = adminUsuario?.nomeCompleto ?? 'Administrador/Professor'
+    const statusTxt = acao === 'APROVADO' ? 'aprovado' : 'rejeitado'
+    const msgAdmin = `O comprovante de pagamento enviado por ${atualizado.aluno.usuario.nomeCompleto} para a mensalidade "${nomePlano}" foi ${statusTxt} por ${adminNome}.${observacoes ? ` Motivo: "${observacoes}"` : ''}`
+    await notificacoesService.notificarAdmins(`Comprovante de pagamento ${statusTxt}`, msgAdmin)
+
+    logWarn(`Comprovante ${acao.toLowerCase()}`, { id, analisadoPorId: usuarioId })
+    return reply.code(200).send({ success: true, data: atualizado })
+  } catch (error) {
+    logWarn('Erro ao analisar comprovante', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao analisar comprovante', code: 'INTERNAL_ERROR' })
   }
 }
 

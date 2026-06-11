@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import {
   DollarSign, CheckCircle2, Clock, AlertTriangle, QrCode, Copy,
-  RotateCcw, Info, ChevronDown, ChevronUp, Send, Zap,
+  RotateCcw, Info, ChevronDown, ChevronUp, Send, Zap, Upload, FileCheck, XCircle,
 } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input'
 import { financeiroService } from '@/services/financeiro.service'
 import { configuracaoService } from '@/services/configuracao.service'
 import { estornosService } from '@/services/estornos.service'
-import type { StatusMensalidade } from '@/types/domain.types'
+import type { StatusMensalidade, StatusComprovante } from '@/types/domain.types'
 import type { Estorno, StatusEstorno } from '@/services/estornos.service'
 
 function formatarValor(v: number) {
@@ -98,20 +98,20 @@ function CardPix({ chavePix, tipoChavePix, nomeRecebedor, qrCodeBase64 }: {
   )
 }
 
-function ModalEstorno({ mensalidadeId, onClose }: { mensalidadeId: string; onClose: () => void }) {
+function ModalReembolso({ mensalidadeId, onClose }: { mensalidadeId: string; onClose: () => void }) {
   const queryClient = useQueryClient()
   const [motivo, setMotivo] = useState('')
 
   const mutation = useMutation({
     mutationFn: () => estornosService.solicitar(mensalidadeId, motivo.trim() || undefined),
     onSuccess: () => {
-      toast.success('Solicitação de estorno enviada. Aguarde a análise do studio.')
+      toast.success('Solicitação de reembolso enviada. Aguarde a análise do studio.')
       queryClient.invalidateQueries({ queryKey: ['mensalidades-aluno'] })
       queryClient.invalidateQueries({ queryKey: ['estornos-aluno'] })
       onClose()
     },
     onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Erro ao solicitar estorno.'
+      const msg = err?.response?.data?.message ?? 'Erro ao solicitar reembolso.'
       toast.error(msg)
     },
   })
@@ -121,14 +121,14 @@ function ModalEstorno({ mensalidadeId, onClose }: { mensalidadeId: string; onClo
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <RotateCcw className="w-4 h-4 text-rosa-vibrante" /> Solicitar Estorno
+            <RotateCcw className="w-4 h-4 text-rosa-vibrante" /> Solicitar Reembolso
           </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 mt-2">
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 space-y-1">
-            <p className="font-medium">Como funciona o estorno proporcional:</p>
+            <p className="font-medium">Como funciona o reembolso proporcional:</p>
             <p>O valor devolvido é calculado com base nos dias contratados no plano menos os dias em que você compareceu neste mês.</p>
-            <p className="text-xs">Exemplo: se o plano tem 12 aulas e você foi a 8, o estorno cobre 4 aulas.</p>
+            <p className="text-xs">Exemplo: se o plano tem 12 aulas e você foi a 8, o reembolso cobre 4 aulas.</p>
           </div>
           <div className="space-y-1.5">
             <Label>Motivo <span className="text-cinza-medio text-xs">(opcional)</span></Label>
@@ -142,7 +142,7 @@ function ModalEstorno({ mensalidadeId, onClose }: { mensalidadeId: string; onClo
           <div className="flex gap-2 justify-end">
             <Button variant="outline" onClick={onClose}>Cancelar</Button>
             <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="bg-rosa-vibrante hover:bg-rosa-vibrante/90">
-              {mutation.isPending ? 'Enviando...' : 'Solicitar estorno'}
+              {mutation.isPending ? 'Enviando...' : 'Solicitar reembolso'}
             </Button>
           </div>
         </div>
@@ -268,7 +268,120 @@ function ModalSolicitarAvulsa({ onClose }: { onClose: () => void }) {
   )
 }
 
-function SecaoEstornos({ estornos }: { estornos: Estorno[] }) {
+const STATUS_COMPROVANTE: Record<StatusComprovante, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
+  PENDENTE: { label: 'Em análise', variant: 'warning' },
+  APROVADO: { label: 'Aprovado', variant: 'success' },
+  REJEITADO: { label: 'Rejeitado', variant: 'destructive' },
+}
+
+function ModalEnviarComprovante({ mensalidadeId, nomePlano, onClose }: {
+  mensalidadeId: string; nomePlano: string; onClose: () => void
+}) {
+  const queryClient = useQueryClient()
+  const [arquivo, setArquivo] = useState<{ base64: string; nome: string; tipo: string } | null>(null)
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo 5MB.')
+      return
+    }
+    const reader = new FileReader()
+    reader.onload = () => {
+      setArquivo({ base64: reader.result as string, nome: file.name, tipo: file.type })
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const mutation = useMutation({
+    mutationFn: () => financeiroService.enviarComprovante({
+      mensalidadeId,
+      arquivo: arquivo!.base64,
+      nomeArquivo: arquivo!.nome,
+      tipoArquivo: arquivo!.tipo,
+    }),
+    onSuccess: () => {
+      toast.success('Comprovante enviado! Aguarde a análise do studio.')
+      queryClient.invalidateQueries({ queryKey: ['comprovantes-aluno'] })
+      onClose()
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao enviar comprovante.'),
+  })
+
+  return (
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Upload className="w-4 h-4 text-roxo-profundo" /> Enviar Comprovante
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="bg-lilas-claro/40 border border-lilas-medio/20 rounded-lg p-3 text-sm">
+            <p className="font-medium text-cinza-forte">{nomePlano}</p>
+            <p className="text-cinza-texto mt-0.5">Envie a foto ou PDF do comprovante do pagamento PIX.</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Arquivo <span className="text-cinza-medio text-xs">(máx. 5MB — JPG, PNG, PDF)</span></Label>
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              onChange={handleFile}
+              className="block w-full text-sm text-cinza-texto file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-bege-cartao file:text-xs file:font-medium file:bg-branco-puro hover:file:bg-bege-cartao/50 cursor-pointer"
+            />
+            {arquivo && <p className="text-xs text-green-700">✓ {arquivo.nome}</p>}
+          </div>
+          <div className="flex gap-2 justify-end">
+            <Button variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button
+              onClick={() => mutation.mutate()}
+              disabled={mutation.isPending || !arquivo}
+              className="bg-roxo-profundo hover:bg-roxo-profundo/90"
+            >
+              {mutation.isPending ? 'Enviando...' : 'Enviar comprovante'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function SecaoComprovantes({ comprovantes }: { comprovantes: ReturnType<typeof Array.prototype.map> }) {
+  if (!comprovantes || comprovantes.length === 0) return null
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileCheck className="w-4 h-4 text-roxo-profundo" /> Comprovantes Enviados
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <ul className="divide-y divide-bege-cartao">
+          {comprovantes.map((c: any) => {
+            const info = STATUS_COMPROVANTE[c.status as StatusComprovante] ?? STATUS_COMPROVANTE.PENDENTE
+            return (
+              <li key={c.id} className="py-3 flex items-start justify-between gap-3 flex-wrap">
+                <div className="space-y-0.5">
+                  <p className="text-sm font-medium text-cinza-forte">{c.mensalidade?.plano?.nome ?? 'Avulso'}</p>
+                  <p className="text-xs text-cinza-medio">{c.nomeArquivo}</p>
+                  <p className="text-xs text-cinza-texto">Enviado em {formatarData(c.dataEnvio)}</p>
+                  {c.observacoes && c.status === 'REJEITADO' && (
+                    <p className="text-xs text-red-600 flex items-center gap-1"><XCircle className="w-3 h-3" /> {c.observacoes}</p>
+                  )}
+                </div>
+                <Badge variant={info.variant}>{info.label}</Badge>
+              </li>
+            )
+          })}
+        </ul>
+      </CardContent>
+    </Card>
+  )
+}
+
+function SecaoReembolsos({ estornos }: { estornos: Estorno[] }) {
   const [expandido, setExpandido] = useState(false)
   if (estornos.length === 0) return null
 
@@ -278,7 +391,7 @@ function SecaoEstornos({ estornos }: { estornos: Estorno[] }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <RotateCcw className="w-4 h-4 text-rosa-vibrante" /> Solicitações de Estorno
+          <RotateCcw className="w-4 h-4 text-rosa-vibrante" /> Solicitações de Reembolso
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -325,6 +438,7 @@ export function AlunoFinanceiroPage() {
   const [estornoMensalidadeId, setEstornoMensalidadeId] = useState<string | null>(null)
   const [notificarMensalidade, setNotificarMensalidade] = useState<{ id: string; nomePlano: string } | null>(null)
   const [modalAvulso, setModalAvulso] = useState(false)
+  const [comprovanteModal, setComprovanteModal] = useState<{ id: string; nomePlano: string } | null>(null)
 
   const { data: mensalidadesData, isLoading } = useQuery({
     queryKey: ['mensalidades-aluno'],
@@ -341,8 +455,19 @@ export function AlunoFinanceiroPage() {
     queryFn: () => estornosService.listarMeusEstornos({ limit: 50 }),
   })
 
+  const { data: comprovantesData } = useQuery({
+    queryKey: ['comprovantes-aluno'],
+    queryFn: () => financeiroService.listarMeusComprovantes(),
+  })
+
   const mensalidades = mensalidadesData?.data ?? []
   const estornos: Estorno[] = estornosData?.estornos ?? []
+  const comprovantes = comprovantesData ?? []
+
+  // Mensalidades que já têm comprovante pendente ou aprovado
+  const mensalidadesComComprovante = new Set(
+    comprovantes.filter((c: any) => c.status === 'PENDENTE' || c.status === 'APROVADO').map((c: any) => c.mensalidadeId)
+  )
 
   const pendentes = mensalidades.filter((m: any) => m.status === 'PENDENTE' || m.status === 'VENCIDO')
   const totalPago = mensalidades.reduce((acc: number, m: any) => m.status === 'PAGO' ? acc + m.valor : acc, 0)
@@ -447,14 +572,29 @@ export function AlunoFinanceiroPage() {
                         {label}
                       </Badge>
                       {(m.status === 'PENDENTE' || m.status === 'VENCIDO') && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5"
-                          onClick={() => setNotificarMensalidade({ id: m.id, nomePlano: m.plano?.nome ?? 'Avulso' })}
-                        >
-                          <Send className="w-3 h-3 mr-1" /> Notificar pagamento
-                        </Button>
+                        <>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5"
+                            onClick={() => setNotificarMensalidade({ id: m.id, nomePlano: m.plano?.nome ?? 'Avulso' })}
+                          >
+                            <Send className="w-3 h-3 mr-1" /> Notificar
+                          </Button>
+                          {!mensalidadesComComprovante.has(m.id) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5"
+                              onClick={() => setComprovanteModal({ id: m.id, nomePlano: m.plano?.nome ?? 'Avulso' })}
+                            >
+                              <Upload className="w-3 h-3 mr-1" /> Comprovante
+                            </Button>
+                          )}
+                          {mensalidadesComComprovante.has(m.id) && (
+                            <span className="text-xs text-amber-600 italic">Comprovante enviado</span>
+                          )}
+                        </>
                       )}
                       {podeSolicitarEstorno && (
                         <Button
@@ -463,11 +603,11 @@ export function AlunoFinanceiroPage() {
                           className="text-xs text-rosa-vibrante border-rosa-vibrante/30 hover:bg-rosa-vibrante/5"
                           onClick={() => setEstornoMensalidadeId(m.id)}
                         >
-                          <RotateCcw className="w-3 h-3 mr-1" /> Estorno
+                          <RotateCcw className="w-3 h-3 mr-1" /> Reembolso
                         </Button>
                       )}
                       {temEstornoAtivo && (
-                        <span className="text-xs text-cinza-medio italic">Estorno solicitado</span>
+                        <span className="text-xs text-cinza-medio italic">Reembolso solicitado</span>
                       )}
                     </div>
                   </li>
@@ -478,11 +618,14 @@ export function AlunoFinanceiroPage() {
         </CardContent>
       </Card>
 
-      {/* Histórico de estornos */}
-      <SecaoEstornos estornos={estornos} />
+      {/* Comprovantes enviados */}
+      <SecaoComprovantes comprovantes={comprovantes} />
+
+      {/* Histórico de reembolsos */}
+      <SecaoReembolsos estornos={estornos} />
 
       {estornoMensalidadeId && (
-        <ModalEstorno mensalidadeId={estornoMensalidadeId} onClose={() => setEstornoMensalidadeId(null)} />
+        <ModalReembolso mensalidadeId={estornoMensalidadeId} onClose={() => setEstornoMensalidadeId(null)} />
       )}
 
       {notificarMensalidade && (
@@ -494,6 +637,14 @@ export function AlunoFinanceiroPage() {
       )}
 
       {modalAvulso && <ModalSolicitarAvulsa onClose={() => setModalAvulso(false)} />}
+
+      {comprovanteModal && (
+        <ModalEnviarComprovante
+          mensalidadeId={comprovanteModal.id}
+          nomePlano={comprovanteModal.nomePlano}
+          onClose={() => setComprovanteModal(null)}
+        />
+      )}
     </div>
   )
 }

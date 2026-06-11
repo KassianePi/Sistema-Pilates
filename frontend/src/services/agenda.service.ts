@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { Aula, ApiResponse, PaginatedResponse, TipoAula, ModalidadeAula, StatusAula } from '@/types/domain.types'
+import type { Aula, Modalidade, ApiResponse, PaginatedResponse, TipoAula, CategoriaAula, StatusAula } from '@/types/domain.types'
 
 export interface CreateAulaDTO {
   professorId: string
@@ -8,7 +8,8 @@ export interface CreateAulaDTO {
   capacidade: number
   sala: string
   tipo: TipoAula
-  modalidade: ModalidadeAula
+  categoria?: CategoriaAula
+  modalidadeId?: string | null
   observacoes?: string
 }
 
@@ -17,13 +18,15 @@ export type UpdateAulaDTO = Partial<Omit<CreateAulaDTO, 'professorId'>>
 type BackendAula = {
   id: string
   professorId: string
+  modalidadeId?: string | null
+  modalidade?: Modalidade | null
   dataHoraInicio: string
   duracao: number
   capacidade: number
   sala: string
   status: string
   tipo: string
-  modalidade: string
+  categoria?: string | null
   observacoes?: string | null
   createdAt: string
   updatedAt: string
@@ -39,17 +42,20 @@ function mapAula(raw: BackendAula): Aula {
   const horaInicio = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
   const dtFim = new Date(dt.getTime() + raw.duracao * 60 * 1000)
   const horaFim = `${String(dtFim.getHours()).padStart(2, '0')}:${String(dtFim.getMinutes()).padStart(2, '0')}`
+  const nomeModalidade = raw.modalidade?.nome ?? raw.modalidadeId ?? ''
   return {
     id: raw.id,
-    titulo: `${raw.modalidade} ${raw.tipo} — ${raw.sala}`,
+    titulo: `${nomeModalidade ? nomeModalidade + ' — ' : ''}${raw.tipo} — ${raw.sala}`,
     professorId: raw.professorId,
+    modalidadeId: raw.modalidadeId ?? null,
+    modalidade: raw.modalidade ?? null,
     data,
     horaInicio,
     horaFim,
     vagas: raw.capacidade,
     vagasOcupadas: raw._count?.presencas ?? 0,
     tipo: raw.tipo as TipoAula,
-    modalidade: raw.modalidade as ModalidadeAula,
+    categoria: (raw.categoria as CategoriaAula) ?? 'GERAL',
     status: raw.status as StatusAula,
     observacoes: raw.observacoes ?? undefined,
     createdAt: raw.createdAt,
@@ -96,10 +102,11 @@ export const agendaService = {
     return mapAula(data.data)
   },
 
-  // Endpoint exclusivo para o portal do aluno — retorna agenda de aulas AGENDADAS
-  async listarAulasAluno(params?: { page?: number; limit?: number }): Promise<PaginatedResponse<Aula>> {
+  // Endpoint exclusivo para o portal do aluno — segmentado por escopo
+  // escopo: 'minhas' (inscritas futuras) | 'gerais' (grade aberta) | 'historico' (passadas)
+  async listarAulasAluno(params?: { page?: number; limit?: number; escopo?: 'minhas' | 'gerais' | 'historico' }): Promise<PaginatedResponse<Aula>> {
     const { data } = await api.get<ApiResponse<BackendListResponse>>('/aluno/aulas', {
-      params: { page: params?.page, limit: params?.limit },
+      params: { page: params?.page, limit: params?.limit, escopo: params?.escopo },
     })
     const r = data.data
     return { data: r.aulas.map(mapAula), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }

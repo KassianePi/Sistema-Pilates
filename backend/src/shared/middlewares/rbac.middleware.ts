@@ -35,6 +35,7 @@ export const ROLE_PERMISSIONS = {
     agenda: ['read', 'create', 'update'],
     presenca: ['create', 'read', 'update'],
     relatorios: ['read', 'create'],
+    pagamentos: ['read', 'update', 'refund'],
   },
 
   RECEPCIONISTA: {

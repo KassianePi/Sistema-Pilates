@@ -15,6 +15,7 @@ export interface CreateAlunoDTO {
   estado?: string
   cep?: string
   observacoes?: string
+  comprovante?: { arquivo: string; nomeArquivo: string; tipoArquivo: string } | null
 }
 
 export interface UpdateAlunoDTO {

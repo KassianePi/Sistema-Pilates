@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DollarSign, ArrowDownCircle, ArrowUpCircle, CheckCircle2, Clock, AlertTriangle, X, RotateCcw } from 'lucide-react'
+import { DollarSign, ArrowDownCircle, ArrowUpCircle, CheckCircle2, Clock, AlertTriangle, X, RotateCcw, FileCheck, FileX, Loader2, Eye } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
@@ -21,7 +22,8 @@ import {
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { usePlanos } from '@/features/admin/planos/hooks/usePlanos'
 import { estornosService } from '@/services/estornos.service'
-import type { Mensalidade, StatusMensalidade, MetodoPagamento } from '@/types/domain.types'
+import { financeiroService } from '@/services/financeiro.service'
+import type { Mensalidade, StatusMensalidade, MetodoPagamento, StatusComprovante } from '@/types/domain.types'
 import type { StatusEstorno } from '@/services/estornos.service'
 
 function formatarValor(v: number) {
@@ -44,6 +46,12 @@ const STATUS_ESTORNO: Record<StatusEstorno, { label: string; variant: 'success' 
   APROVADO: { label: 'Aprovado', variant: 'success' },
   PROCESSADO: { label: 'Processado', variant: 'outline' },
   NEGADO: { label: 'Negado', variant: 'destructive' },
+}
+
+const STATUS_COMPROVANTE: Record<StatusComprovante, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
+  PENDENTE: { label: 'Pendente', variant: 'warning' },
+  APROVADO: { label: 'Aprovado', variant: 'success' },
+  REJEITADO: { label: 'Rejeitado', variant: 'destructive' },
 }
 
 const METODOS_PAGAMENTO: { value: MetodoPagamento; label: string }[] = [
@@ -79,9 +87,13 @@ const pagamentoSchema = z.object({
 })
 
 export function FinanceiroPage() {
-  const [abaSelecionada, setAbaSelecionada] = useState<'mensalidades' | 'pagamentos' | 'estornos'>('mensalidades')
+  const [abaSelecionada, setAbaSelecionada] = useState<'mensalidades' | 'pagamentos' | 'estornos' | 'comprovantes'>('mensalidades')
   const [filtroStatusMensalidade, setFiltroStatusMensalidade] = useState('')
   const [filtroStatusEstorno, setFiltroStatusEstorno] = useState<StatusEstorno | ''>('SOLICITADO')
+  const [filtroStatusComprovante, setFiltroStatusComprovante] = useState<StatusComprovante | ''>('PENDENTE')
+  const [modalRejeitarId, setModalRejeitarId] = useState<string | null>(null)
+  const [motivoRejeicao, setMotivoRejeicao] = useState('')
+  const [modalVisualizarComprovante, setModalVisualizarComprovante] = useState<{ arquivo: string; nomeArquivo: string; tipoArquivo: string } | null>(null)
   const [modalCaixaAbrir, setModalCaixaAbrir] = useState(false)
   const [modalFecharCaixa, setModalFecharCaixa] = useState(false)
   const [modalMensalidade, setModalMensalidade] = useState(false)
@@ -106,19 +118,41 @@ export function FinanceiroPage() {
   })
   const aprovarEstorno = useMutation({
     mutationFn: estornosService.aprovar,
-    onSuccess: () => { toast.success('Estorno aprovado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
-    onError: () => toast.error('Erro ao aprovar estorno.'),
+    onSuccess: () => { toast.success('Reembolso aprovado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onError: () => toast.error('Erro ao aprovar reembolso.'),
   })
   const negarEstorno = useMutation({
     mutationFn: estornosService.negar,
-    onSuccess: () => { toast.success('Estorno negado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
-    onError: () => toast.error('Erro ao negar estorno.'),
+    onSuccess: () => { toast.success('Reembolso negado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onError: () => toast.error('Erro ao negar reembolso.'),
   })
   const processarEstorno = useMutation({
     mutationFn: estornosService.processar,
-    onSuccess: () => { toast.success('Estorno marcado como processado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
-    onError: () => toast.error('Erro ao processar estorno.'),
+    onSuccess: () => { toast.success('Reembolso marcado como processado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onError: () => toast.error('Erro ao processar reembolso.'),
   })
+
+  const { data: comprovantesData, isLoading: loadingComprovantes } = useQuery({
+    queryKey: ['comprovantes-admin', filtroStatusComprovante],
+    queryFn: () => financeiroService.listarComprovantes({ status: filtroStatusComprovante || undefined, limit: 50 }),
+    enabled: abaSelecionada === 'comprovantes',
+  })
+  const analisarComprovante = useMutation({
+    mutationFn: ({ id, acao, observacoes }: { id: string; acao: 'APROVADO' | 'REJEITADO'; observacoes?: string }) =>
+      financeiroService.analisarComprovante(id, acao, observacoes),
+    onSuccess: (_data, vars) => {
+      toast.success(vars.acao === 'APROVADO' ? 'Comprovante aprovado! Mensalidade quitada.' : 'Comprovante rejeitado.')
+      queryClient.invalidateQueries({ queryKey: ['comprovantes-admin'] })
+      // Aprovação baixa a mensalidade (e registra pagamento se houver caixa aberto)
+      queryClient.invalidateQueries({ queryKey: ['mensalidades'] })
+      queryClient.invalidateQueries({ queryKey: ['pagamentos'] })
+      queryClient.invalidateQueries({ queryKey: ['caixa-ativo'] })
+      setModalRejeitarId(null)
+      setMotivoRejeicao('')
+    },
+    onError: () => toast.error('Erro ao analisar comprovante.'),
+  })
+
   const alunos = alunosData?.data ?? []
   const planos = planosData?.data ?? []
 
@@ -206,18 +240,23 @@ export function FinanceiroPage() {
 
       {/* Abas Mensalidades / Pagamentos */}
       <div>
-        <div className="flex gap-1 bg-bege-suave p-1 rounded-lg w-fit mb-6">
-          {(['mensalidades', 'pagamentos', 'estornos'] as const).map((aba) => (
+        <div className="flex gap-1 bg-bege-suave p-1 rounded-lg w-fit mb-6 flex-wrap">
+          {([
+            { key: 'mensalidades', label: 'Mensalidades' },
+            { key: 'pagamentos', label: 'Pagamentos' },
+            { key: 'estornos', label: 'Reembolsos' },
+            { key: 'comprovantes', label: 'Comprovantes' },
+          ] as const).map(({ key, label }) => (
             <button
-              key={aba}
-              onClick={() => setAbaSelecionada(aba)}
-              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${
-                abaSelecionada === aba
+              key={key}
+              onClick={() => setAbaSelecionada(key)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${
+                abaSelecionada === key
                   ? 'bg-branco-puro text-cinza-forte shadow-sm'
                   : 'text-cinza-texto hover:text-cinza-forte'
               }`}
             >
-              {aba.charAt(0).toUpperCase() + aba.slice(1)}
+              {label}
             </button>
           ))}
         </div>
@@ -370,7 +409,7 @@ export function FinanceiroPage() {
               ) : (estornosData?.estornos ?? []).length === 0 ? (
                 <div className="py-12 text-center text-cinza-medio">
                   <RotateCcw className="w-10 h-10 mx-auto mb-3 opacity-30" />
-                  <p className="text-sm">Nenhuma solicitação de estorno encontrada.</p>
+                  <p className="text-sm">Nenhuma solicitação de reembolso encontrada.</p>
                 </div>
               ) : (
                 <Table>
@@ -380,7 +419,7 @@ export function FinanceiroPage() {
                       <TableHead>Referência</TableHead>
                       <TableHead className="text-center">Contratado</TableHead>
                       <TableHead className="text-center">Compareceu</TableHead>
-                      <TableHead className="text-center">A estornar</TableHead>
+                      <TableHead className="text-center">A reembolsar</TableHead>
                       <TableHead>Valor</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
@@ -460,7 +499,171 @@ export function FinanceiroPage() {
             </CardContent>
           </Card>
         )}
+
+        {abaSelecionada === 'comprovantes' && (
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-roxo-profundo" /> Comprovantes de Pagamento
+                </CardTitle>
+                <Select
+                  value={filtroStatusComprovante || 'all'}
+                  onValueChange={(v) => setFiltroStatusComprovante(v === 'all' ? '' : v as StatusComprovante)}
+                >
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="PENDENTE">Pendente</SelectItem>
+                    <SelectItem value="APROVADO">Aprovado</SelectItem>
+                    <SelectItem value="REJEITADO">Rejeitado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {loadingComprovantes ? (
+                <div className="py-12 text-center text-cinza-medio">Carregando...</div>
+              ) : (comprovantesData?.comprovantes ?? []).length === 0 ? (
+                <div className="py-12 text-center text-cinza-medio">
+                  <FileCheck className="w-10 h-10 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Nenhum comprovante encontrado.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Aluno</TableHead>
+                      <TableHead>Plano / Mensalidade</TableHead>
+                      <TableHead>Arquivo</TableHead>
+                      <TableHead>Enviado em</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {(comprovantesData?.comprovantes ?? []).map((c: any) => {
+                      const st = STATUS_COMPROVANTE[c.status as StatusComprovante] ?? { label: c.status, variant: 'outline' as const }
+                      return (
+                        <TableRow key={c.id}>
+                          <TableCell className="font-medium">{c.aluno?.usuario?.nomeCompleto ?? '—'}</TableCell>
+                          <TableCell className="text-sm text-cinza-texto">{c.mensalidade?.plano?.nome ?? 'Avulso'}</TableCell>
+                          <TableCell className="text-sm text-cinza-texto max-w-[160px] truncate" title={c.nomeArquivo}>{c.nomeArquivo}</TableCell>
+                          <TableCell className="text-sm">{formatarData(c.dataEnvio)}</TableCell>
+                          <TableCell>
+                            <Badge variant={st.variant}>{st.label}</Badge>
+                            {c.status === 'REJEITADO' && c.observacoes && (
+                              <p className="text-xs text-cinza-medio mt-0.5 max-w-[160px] truncate" title={c.observacoes}>{c.observacoes}</p>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1 flex-wrap">
+                              {c.arquivo && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5 text-xs"
+                                  onClick={() => setModalVisualizarComprovante({ arquivo: c.arquivo, nomeArquivo: c.nomeArquivo, tipoArquivo: c.tipoArquivo })}
+                                >
+                                  <Eye className="w-3 h-3 mr-1" /> Ver
+                                </Button>
+                              )}
+                              {c.status === 'PENDENTE' && (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-700 border-green-300 hover:bg-green-50 text-xs"
+                                    onClick={() => analisarComprovante.mutate({ id: c.id, acao: 'APROVADO' })}
+                                    disabled={analisarComprovante.isPending}
+                                  >
+                                    <FileCheck className="w-3 h-3 mr-1" /> Aprovar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-300 hover:bg-red-50 text-xs"
+                                    onClick={() => { setModalRejeitarId(c.id); setMotivoRejeicao('') }}
+                                    disabled={analisarComprovante.isPending}
+                                  >
+                                    <FileX className="w-3 h-3 mr-1" /> Rejeitar
+                                  </Button>
+                                </>
+                              )}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </div>
+
+      {/* Modal: Rejeitar Comprovante */}
+      <Dialog open={!!modalRejeitarId} onOpenChange={(v) => { if (!v) { setModalRejeitarId(null); setMotivoRejeicao('') } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Rejeitar comprovante</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div className="space-y-1.5">
+              <Label>Motivo da rejeição <span className="text-cinza-medio text-xs">(opcional)</span></Label>
+              <Textarea
+                rows={3}
+                value={motivoRejeicao}
+                onChange={(e) => setMotivoRejeicao(e.target.value)}
+                placeholder="Ex: imagem ilegível, valor incorreto..."
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => { setModalRejeitarId(null); setMotivoRejeicao('') }}>Cancelar</Button>
+            <Button
+              variant="destructive"
+              onClick={() => modalRejeitarId && analisarComprovante.mutate({ id: modalRejeitarId, acao: 'REJEITADO', observacoes: motivoRejeicao || undefined })}
+              disabled={analisarComprovante.isPending}
+            >
+              {analisarComprovante.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar rejeição'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal: Visualizar Comprovante */}
+      <Dialog open={!!modalVisualizarComprovante} onOpenChange={(v) => !v && setModalVisualizarComprovante(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="w-4 h-4 text-roxo-profundo" />
+              {modalVisualizarComprovante?.nomeArquivo ?? 'Comprovante'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="mt-2 flex justify-center">
+            {modalVisualizarComprovante?.tipoArquivo === 'application/pdf' ? (
+              <iframe
+                src={modalVisualizarComprovante.arquivo}
+                title="Comprovante PDF"
+                className="w-full h-[480px] rounded border border-bege-cartao"
+              />
+            ) : modalVisualizarComprovante ? (
+              <img
+                src={modalVisualizarComprovante.arquivo}
+                alt="Comprovante"
+                className="max-h-[480px] max-w-full object-contain rounded border border-bege-cartao"
+              />
+            ) : null}
+          </div>
+          <DialogFooter className="mt-3">
+            <Button variant="outline" onClick={() => setModalVisualizarComprovante(null)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Modal: Abrir Caixa */}
       <Dialog open={modalCaixaAbrir} onOpenChange={(v) => !v && setModalCaixaAbrir(false)}>

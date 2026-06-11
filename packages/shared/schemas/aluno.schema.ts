@@ -14,6 +14,12 @@ export const createAlunoSchema = z.object({
   estado: z.string().regex(/^[A-Z]{2}$/, 'UF inválida').optional().nullable(),
   cep: z.string().regex(/^\d{5}-?\d{3}$/).optional().nullable(),
   observacoes: z.string().max(2000).optional().nullable(),
+  // Comprovante de matrícula — obrigatório quando há plano (validado no service)
+  comprovante: z.object({
+    arquivo: z.string().min(1, 'Arquivo é obrigatório'),
+    nomeArquivo: z.string().min(1).max(255),
+    tipoArquivo: z.string().min(1).max(100),
+  }).optional().nullable(),
 })
 export type CreateAlunoDTO = z.infer<typeof createAlunoSchema>
 
@@ -38,6 +44,6 @@ export const listAlunosSchema = z.object({
   planoId: z.string().uuid().optional(),
   search: z.string().optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(500).default(20),
 })
 export type ListAlunosDTO = z.infer<typeof listAlunosSchema>

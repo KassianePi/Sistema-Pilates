@@ -8,7 +8,7 @@ import { logger, logInfo, logError, logFatal } from './shared/utils'
 import { AppError, ValidationError, UnauthorizedError } from './shared/errors'
 import { prisma } from './database/prisma.client'
 
-import { authRoutes } from './modules/auth/auth.routes'
+import { authRoutes, authLoginRoutes } from './modules/auth/auth.routes'
 import { planosRoutes } from './modules/planos/planos.routes'
 import { professoresRoutes } from './modules/professores/professores.routes'
 import { alunosRoutes } from './modules/alunos/alunos.routes'
@@ -20,6 +20,7 @@ import { auditoriaRoutes } from './modules/auditoria/auditoria.routes'
 import { relatoriosRoutes } from './modules/relatorios/relatorios.routes'
 import { configuracaoRoutes } from './modules/configuracao/configuracao.routes'
 import { estornosRoutes } from './modules/estornos/estornos.routes'
+import { modalidadesRoutes } from './modules/modalidades/modalidades.routes'
 
 // Inicializa listeners de eventos dos módulos
 import './modules/notificacoes/notificacoes.service'
@@ -32,6 +33,8 @@ export async function createApp() {
     requestIdHeader: 'x-request-id',
     requestIdLogLabel: 'requestId',
     disableRequestLogging: false,
+    // Comprovantes são enviados como base64 (até ~5MB → ~6.7MB em base64). 10MB de folga.
+    bodyLimit: 10 * 1024 * 1024,
   })
 
   if (!process.env.JWT_SECRET) {
@@ -138,22 +141,26 @@ export async function createApp() {
     })
 
     // ========================================
-    // 5. RATE LIMIT ESPECÍFICO — Auth
+    // 5. RATE LIMIT ESPECÍFICO — apenas rotas de login
     // ========================================
 
+    // Rate limit estrito só nas rotas de login (brute-force protection)
     app.register(async (instance) => {
       await instance.register(fastifyRateLimit, {
-        max: 10,
+        max: isDevelopment ? 1000 : 10,
         timeWindow: '15 minutes',
-        keyGenerator: (request) => `${request.ip}-auth`,
+        keyGenerator: (request) => `${request.ip}-login`,
         errorResponseBuilder: () => ({
           success: false,
-          message: 'Muitas tentativas. Aguarde 15 minutos.',
+          message: 'Muitas tentativas de login. Aguarde 15 minutos.',
           code: 'RATE_LIMIT_EXCEEDED',
         }),
       })
-      await instance.register(authRoutes)
+      await instance.register(authLoginRoutes)
     })
+
+    // Demais rotas de auth sem rate limit estrito (refresh, logout, etc.)
+    await app.register(authRoutes)
 
     // ========================================
     // 6. ROTAS DE APLICAÇÃO
@@ -170,6 +177,7 @@ export async function createApp() {
     await app.register(relatoriosRoutes)
     await app.register(configuracaoRoutes)
     await app.register(estornosRoutes)
+    await app.register(modalidadesRoutes)
 
     // ========================================
     // 7. ERROR HANDLING GLOBAL

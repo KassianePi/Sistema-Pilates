@@ -10,6 +10,7 @@ import { FINANCEIRO_ERRORS } from './financeiro.constants'
 import { prisma } from '../../database/prisma.client'
 import { eventBus } from '../../events/event-bus'
 import { registrarLog } from '../auditoria/auditoria.service'
+import { notificacoesService } from '../notificacoes/notificacoes.service'
 import type { Caixa, Mensalidade, Pagamento } from './financeiro.types'
 
 export class FinanceiroService {
@@ -68,6 +69,34 @@ export class FinanceiroService {
     })
 
     logInfo('Mensalidade criada', { id: mensalidade.id, tipo: mensalidade.tipo })
+
+    // Notifica o aluno sobre a nova cobrança
+    try {
+      const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(mensalidade.valor) - Number(mensalidade.desconto ?? 0))
+      const vencFmt = new Date(mensalidade.dataVencimento).toLocaleDateString('pt-BR')
+      const descricao = mensalidade.tipo === 'AVULSO' ? 'aula avulsa' : 'mensalidade'
+      await notificacoesService.criar({
+        usuarioId: aluno.usuarioId,
+        tipo: 'MENSALIDADE_CRIADA',
+        titulo: 'Nova cobrança disponível',
+        mensagem: `Foi gerada uma cobrança de ${descricao} no valor de ${valorFmt}, com vencimento em ${vencFmt}. Pague e envie o comprovante pelo portal.`,
+      })
+    } catch { /* silencioso */ }
+
+    if (mensalidade.tipo === 'AVULSO') {
+      const aluno = await prisma.aluno.findUnique({
+        where: { id: mensalidade.alunoId },
+        include: { usuario: { select: { nomeCompleto: true } } }
+      })
+      const nomeAluno = aluno?.usuario?.nomeCompleto ?? 'Aluno'
+      const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(mensalidade.valor))
+      const dataVenc = new Date(mensalidade.dataVencimento).toLocaleDateString('pt-BR')
+      await notificacoesService.notificarAdmins(
+        'Cobrança avulsa criada',
+        `Uma nova cobrança avulsa no valor de ${valorFmt} foi criada para o aluno ${nomeAluno} com vencimento em ${dataVenc}.`
+      )
+    }
+
     return mensalidade
   }
 

@@ -5,6 +5,7 @@ import type { Aula, CreateAulaData, UpdateAulaData } from './agenda.types'
 
 const includeRelations = {
   professor: { include: { usuario: { select: { nomeCompleto: true, email: true } } } },
+  modalidade: { select: { id: true, nome: true, descricao: true, ativo: true } },
   _count: { select: { presencas: true } },
 }
 
@@ -19,16 +20,17 @@ export class AgendaRepository {
   }
 
   async findAll(params: {
-    professorId?: string; status?: string; tipo?: string; modalidade?: string
+    professorId?: string; status?: string; tipo?: string; categoria?: string; modalidadeId?: string
     dataInicio?: Date; dataFim?: Date; page: number; limit: number
   }): Promise<{ aulas: Aula[]; total: number }> {
     try {
-      const { professorId, status, tipo, modalidade, dataInicio, dataFim, page, limit } = params
+      const { professorId, status, tipo, categoria, modalidadeId, dataInicio, dataFim, page, limit } = params
       const where: Record<string, unknown> = {}
       if (professorId) where.professorId = professorId
       if (status) where.status = status
       if (tipo) where.tipo = tipo
-      if (modalidade) where.modalidade = modalidade
+      if (categoria) where.categoria = categoria
+      if (modalidadeId) where.modalidadeId = modalidadeId
       if (dataInicio || dataFim) {
         where.dataHoraInicio = {
           ...(dataInicio && { gte: dataInicio }),
@@ -44,6 +46,57 @@ export class AgendaRepository {
       return { aulas: aulas as any, total }
     } catch (error) {
       logError('Erro ao listar aulas', error as Error)
+      throw AppError.internal('Erro ao listar aulas')
+    }
+  }
+
+  /**
+   * Lista aulas para o portal do aluno segmentadas por escopo:
+   * - 'minhas': aulas futuras AGENDADAS em que o aluno está inscrito (tem presença)
+   * - 'gerais': aulas GERAIS futuras AGENDADAS (grade aberta, somente visualização)
+   * - 'historico': aulas passadas ou encerradas em que o aluno esteve inscrito
+   */
+  async findForAluno(params: {
+    alunoId: string; escopo: 'minhas' | 'gerais' | 'historico'; page: number; limit: number
+  }): Promise<{ aulas: Aula[]; total: number }> {
+    try {
+      const { alunoId, escopo, page, limit } = params
+      const agora = new Date()
+      let where: Record<string, unknown>
+      let orderBy: Record<string, 'asc' | 'desc'> = { dataHoraInicio: 'asc' }
+
+      if (escopo === 'gerais') {
+        where = {
+          categoria: 'GERAL',
+          status: 'AGENDADA',
+          dataHoraInicio: { gte: agora },
+        }
+      } else if (escopo === 'historico') {
+        where = {
+          presencas: { some: { alunoId } },
+          OR: [
+            { dataHoraInicio: { lt: agora } },
+            { status: { in: ['REALIZADA', 'CANCELADA'] } },
+          ],
+        }
+        orderBy = { dataHoraInicio: 'desc' }
+      } else {
+        // 'minhas'
+        where = {
+          presencas: { some: { alunoId } },
+          status: 'AGENDADA',
+          dataHoraInicio: { gte: agora },
+        }
+      }
+
+      const [aulas, total] = await Promise.all([
+        prisma.aula.findMany({ where: where as any, include: includeRelations, skip: (page - 1) * limit, take: limit, orderBy }),
+        prisma.aula.count({ where: where as any }),
+      ])
+
+      return { aulas: aulas as any, total }
+    } catch (error) {
+      logError('Erro ao listar aulas do aluno', error as Error, { alunoId: params.alunoId, escopo: params.escopo })
       throw AppError.internal('Erro ao listar aulas')
     }
   }
@@ -69,7 +122,13 @@ export class AgendaRepository {
 
   async create(data: CreateAulaData): Promise<Aula> {
     try {
-      return await prisma.aula.create({ data: data as any, include: includeRelations }) as any
+      return await prisma.aula.create({
+        data: {
+          ...data,
+          modalidadeId: data.modalidadeId ?? null,
+        } as any,
+        include: includeRelations,
+      }) as any
     } catch (error) {
       logError('Erro ao criar aula', error as Error)
       throw AppError.internal('Erro ao criar aula')
@@ -78,7 +137,14 @@ export class AgendaRepository {
 
   async update(id: string, data: UpdateAulaData): Promise<Aula> {
     try {
-      return await prisma.aula.update({ where: { id }, data: data as any, include: includeRelations }) as any
+      return await prisma.aula.update({
+        where: { id },
+        data: {
+          ...data,
+          ...(data.modalidadeId !== undefined && { modalidadeId: data.modalidadeId ?? null }),
+        } as any,
+        include: includeRelations,
+      }) as any
     } catch (error) {
       logError('Erro ao atualizar aula', error as Error, { id })
       throw AppError.internal('Erro ao atualizar aula')

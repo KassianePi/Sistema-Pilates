@@ -86,6 +86,79 @@ export class AlunosRepository {
     }
   }
 
+  /**
+   * Cria aluno + primeira mensalidade + comprovante de matrícula de forma atômica.
+   * Usado no cadastro com plano, onde o comprovante de pagamento é obrigatório.
+   */
+  async createWithMatricula(
+    data: CreateAlunoData,
+    matricula: {
+      planoId: string
+      valor: number
+      mesReferencia: Date
+      dataVencimento: Date
+      comprovante: { arquivo: string; nomeArquivo: string; tipoArquivo: string }
+    },
+  ): Promise<{ aluno: Aluno; mensalidadeId: string; comprovanteId: string }> {
+    try {
+      logDebug('Criando aluno com matrícula', { email: data.email })
+      return await prisma.$transaction(async (tx) => {
+        const usuario = await tx.usuario.create({
+          data: {
+            email: data.email,
+            nomeCompleto: data.nomeCompleto,
+            cpf: data.cpf,
+            telefone: data.telefone || null,
+            senhaHash: data.senhaHash,
+            funcao: 'ALUNO' as any,
+            status: 'ATIVO',
+          },
+        })
+        const aluno = await tx.aluno.create({
+          data: {
+            usuarioId: usuario.id,
+            planoId: data.planoId || null,
+            dataInicio: data.dataInicio,
+            dataNascimento: data.dataNascimento || null,
+            endereco: data.endereco || null,
+            cidade: data.cidade || null,
+            estado: data.estado || null,
+            cep: data.cep || null,
+            observacoes: data.observacoes || null,
+            status: 'ATIVO',
+          },
+          include: includeRelations,
+        })
+        const mensalidade = await tx.mensalidade.create({
+          data: {
+            alunoId: aluno.id,
+            planoId: matricula.planoId,
+            tipo: 'MENSAL' as any,
+            mesReferencia: matricula.mesReferencia,
+            dataVencimento: matricula.dataVencimento,
+            valor: matricula.valor,
+            status: 'PENDENTE' as any,
+          },
+        })
+        const comprovante = await tx.comprovantePagemento.create({
+          data: {
+            mensalidadeId: mensalidade.id,
+            alunoId: aluno.id,
+            arquivo: matricula.comprovante.arquivo,
+            nomeArquivo: matricula.comprovante.nomeArquivo,
+            tipoArquivo: matricula.comprovante.tipoArquivo,
+            dataEnvio: new Date(),
+            status: 'PENDENTE' as any,
+          },
+        })
+        return { aluno: aluno as any, mensalidadeId: mensalidade.id, comprovanteId: comprovante.id }
+      })
+    } catch (error) {
+      logError('Erro ao criar aluno com matrícula', error as Error, { email: data.email })
+      throw AppError.internal('Erro ao cadastrar aluno')
+    }
+  }
+
   async update(id: string, data: UpdateAlunoData): Promise<Aluno> {
     try {
       const aluno = await prisma.aluno.findUnique({ where: { id } })

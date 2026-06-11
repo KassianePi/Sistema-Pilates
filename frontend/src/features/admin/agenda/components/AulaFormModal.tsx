@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +11,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useCreateAula, useUpdateAula } from '../hooks/useAgenda'
 import { useProfessores } from '@/features/admin/professores/hooks/useProfessores'
+import { modalidadesService } from '@/services/modalidades.service'
 import type { Aula } from '@/types/domain.types'
 
 const schema = z.object({
@@ -20,7 +22,8 @@ const schema = z.object({
   horaFim: z.string().min(1, 'Informe o horário de fim'),
   capacidade: z.number().int().min(1, 'Mínimo 1 vaga'),
   tipo: z.enum(['INDIVIDUAL', 'DUPLA', 'GRUPO']),
-  modalidade: z.enum(['MAT', 'APARELHOS', 'REFORMER', 'CADILLAC']),
+  categoria: z.enum(['GERAL', 'SOB_DEMANDA']),
+  modalidadeId: z.string().optional().nullable(),
   observacoes: z.string().optional(),
 })
 
@@ -38,13 +41,6 @@ const TIPOS = [
   { value: 'GRUPO', label: 'Grupo' },
 ]
 
-const MODALIDADES = [
-  { value: 'MAT', label: 'Mat' },
-  { value: 'APARELHOS', label: 'Aparelhos' },
-  { value: 'REFORMER', label: 'Reformer' },
-  { value: 'CADILLAC', label: 'Cadillac' },
-]
-
 export function AulaFormModal({ open, onClose, aula }: Props) {
   const isEditing = !!aula
   const createAula = useCreateAula()
@@ -52,9 +48,15 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
   const { data: profData } = useProfessores({ limite: 100 })
   const professores = profData?.data ?? []
 
+  const { data: modalidadesData } = useQuery({
+    queryKey: ['modalidades-ativas'],
+    queryFn: () => modalidadesService.listar(true),
+  })
+  const modalidades = modalidadesData ?? []
+
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { tipo: 'GRUPO', modalidade: 'MAT', capacidade: 8 },
+    defaultValues: { tipo: 'GRUPO', categoria: 'GERAL', capacidade: 8 },
   })
 
   useEffect(() => {
@@ -67,11 +69,12 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
         horaFim: aula.horaFim,
         capacidade: aula.vagas,
         tipo: aula.tipo,
-        modalidade: aula.modalidade,
+        categoria: aula.categoria ?? 'GERAL',
+        modalidadeId: aula.modalidadeId ?? null,
         observacoes: aula.observacoes ?? '',
       })
     } else {
-      reset({ professorId: '', sala: '', data: '', horaInicio: '', horaFim: '', capacidade: 8, tipo: 'GRUPO', modalidade: 'MAT', observacoes: '' })
+      reset({ professorId: '', sala: '', data: '', horaInicio: '', horaFim: '', capacidade: 8, tipo: 'GRUPO', categoria: 'GERAL', modalidadeId: null, observacoes: '' })
     }
   }, [aula, reset, open])
 
@@ -88,7 +91,7 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
     if (isEditing && aula) {
       await updateAula.mutateAsync({
         id: aula.id,
-        dto: { dataHoraInicio, duracao, capacidade: values.capacidade, sala: values.sala, tipo: values.tipo, modalidade: values.modalidade, observacoes: values.observacoes },
+        dto: { dataHoraInicio, duracao, capacidade: values.capacidade, sala: values.sala, tipo: values.tipo, categoria: values.categoria, modalidadeId: values.modalidadeId, observacoes: values.observacoes },
       })
     } else {
       await createAula.mutateAsync({
@@ -98,7 +101,8 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
         capacidade: values.capacidade,
         sala: values.sala,
         tipo: values.tipo,
-        modalidade: values.modalidade,
+        categoria: values.categoria,
+        modalidadeId: values.modalidadeId,
         observacoes: values.observacoes,
       })
     }
@@ -160,7 +164,7 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label>Tipo *</Label>
               <Select value={watch('tipo')} onValueChange={(v) => setValue('tipo', v as FormData['tipo'])}>
@@ -171,11 +175,28 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Modalidade *</Label>
-              <Select value={watch('modalidade')} onValueChange={(v) => setValue('modalidade', v as FormData['modalidade'])}>
+              <Label>Categoria *</Label>
+              <Select value={watch('categoria')} onValueChange={(v) => setValue('categoria', v as FormData['categoria'])}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {MODALIDADES.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                  <SelectItem value="GERAL">Geral (grade regular)</SelectItem>
+                  <SelectItem value="SOB_DEMANDA">Sob demanda (particular/reposição)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Modalidade</Label>
+              <Select
+                value={watch('modalidadeId') ?? ''}
+                onValueChange={(v) => setValue('modalidadeId', v || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione uma modalidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  {modalidades.map(m => (
+                    <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>

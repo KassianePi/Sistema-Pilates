@@ -6,6 +6,10 @@ import {
   listarMinhasMensalidades,
   notificarPagamento,
   solicitarAulaAvulsa,
+  enviarComprovante,
+  listarMeusComprovantes,
+  listarComprovantes,
+  analisarComprovante,
 } from './financeiro.controller'
 import { authenticateToken, requireRole } from '../../shared/middlewares/auth.middleware'
 import { authorize } from '../../shared/middlewares/rbac.middleware'
@@ -30,4 +34,10 @@ export async function financeiroRoutes(fastify: FastifyInstance) {
   fastify.get('/api/v1/aluno/mensalidades', { onRequest: [authenticateToken, requireRole('ALUNO')] }, listarMinhasMensalidades)
   fastify.post('/api/v1/aluno/notificar-pagamento', { onRequest: [authenticateToken, requireRole('ALUNO')] }, notificarPagamento)
   fastify.post('/api/v1/aluno/solicitar-avulsa', { onRequest: [authenticateToken, requireRole('ALUNO')] }, solicitarAulaAvulsa)
+  fastify.post('/api/v1/aluno/comprovantes', { onRequest: [authenticateToken, requireRole('ALUNO')] }, enviarComprovante)
+  fastify.get('/api/v1/aluno/comprovantes', { onRequest: [authenticateToken, requireRole('ALUNO')] }, listarMeusComprovantes)
+
+  // Comprovantes — admin/financeiro
+  fastify.get('/api/v1/comprovantes', { onRequest: [authenticateToken, authorize('pagamentos', 'read')] }, listarComprovantes)
+  fastify.patch('/api/v1/comprovantes/:id/analisar', { onRequest: [authenticateToken, authorize('pagamentos', 'update')] }, analisarComprovante)
 }

@@ -3,11 +3,39 @@ export type StatusAluno = 'ATIVO' | 'INATIVO' | 'SUSPENSO' | 'FORMADO'
 export type StatusMensalidade = 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO' | 'PARCIAL'
 export type StatusAula = 'AGENDADA' | 'REALIZADA' | 'CANCELADA' | 'ADIADA'
 export type StatusPresenca = 'PRESENTE' | 'AUSENTE' | 'JUSTIFICADO'
+export type StatusComprovante = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
 export type TipoAula = 'INDIVIDUAL' | 'DUPLA' | 'GRUPO'
-export type ModalidadeAula = 'MAT' | 'APARELHOS' | 'REFORMER' | 'CADILLAC'
+export type CategoriaAula = 'GERAL' | 'SOB_DEMANDA'
 export type TipoMovimentacao = 'ENTRADA' | 'SAIDA'
 export type MetodoPagamento = 'DINHEIRO' | 'CARTAO_CREDITO' | 'CARTAO_DEBITO' | 'PIX' | 'TRANSFERENCIA'
 export type UserRole = 'ADMIN' | 'RECEPCIONISTA' | 'PROFESSOR' | 'FINANCEIRO' | 'ALUNO'
+
+export interface Modalidade {
+  id: string
+  nome: string
+  descricao?: string | null
+  ativo: boolean
+  criadoEm?: string
+  atualizadoEm?: string
+}
+
+export interface Comprovante {
+  id: string
+  mensalidadeId: string
+  alunoId: string
+  nomeArquivo: string
+  tipoArquivo: string
+  arquivo?: string
+  dataEnvio: string
+  status: StatusComprovante
+  observacoes?: string | null
+  analisadoPorId?: string | null
+  criadoEm: string
+  atualizadoEm: string
+  mensalidade?: { id: string; valor: number; mesReferencia: string; plano: { nome: string } | null }
+  aluno?: { id: string; usuario: { nomeCompleto: string } }
+  analisadoPor?: { nomeCompleto: string } | null
+}
 
 export interface Plano {
   id: string
@@ -62,13 +90,15 @@ export interface Aula {
   id: string
   titulo: string
   professorId: string
+  modalidadeId?: string | null
+  modalidade?: Modalidade | null
   data: string
   horaInicio: string
   horaFim: string
   vagas: number
   vagasOcupadas: number
   tipo: TipoAula
-  modalidade: ModalidadeAula
+  categoria?: CategoriaAula
   status: StatusAula
   observacoes?: string
   createdAt: string
@@ -116,9 +146,20 @@ export interface Pagamento {
   mensalidade: Pick<Mensalidade, 'id' | 'aluno' | 'plano'>
 }
 
+export type TipoNotificacao =
+  | 'AULA_AGENDADA'
+  | 'PAGAMENTO_VENCIDO'
+  | 'PAGAMENTO_CONFIRMADO'
+  | 'MENSALIDADE_CRIADA'
+  | 'ESTORNO_ATUALIZADO'
+  | 'PRESENCA_REGISTRADA'
+  | 'REPOSICAO_OFERECIDA'
+  | 'MENSAGEM_ADMIN'
+
 export interface Notificacao {
   id: string
   usuarioId: string
+  tipo: TipoNotificacao
   titulo: string
   mensagem: string
   lida: boolean

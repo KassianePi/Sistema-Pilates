@@ -42,14 +42,15 @@ model Usuario {
   criadoEm       DateTime      @default(now()) @map("criado_em")
   atualizadoEm   DateTime      @default(now()) @updatedAt @map("atualizado_em")
 
-  aluno                Aluno?
-  professor            Professor?
-  pagamentos           Pagamento[]
-  caixasAbertos        Caixa[]       @relation("CaixasAbertos")
-  caixasFechados       Caixa[]       @relation("CaixasFechados")
-  notificacoes         Notificacao[]
-  logs                 LogAuditoria[]
-  estornosAprovados    Estorno[]     @relation("EstornoAprovador")
+  aluno                   Aluno?
+  professor               Professor?
+  pagamentos              Pagamento[]
+  caixasAbertos           Caixa[]       @relation("CaixasAbertos")
+  caixasFechados          Caixa[]       @relation("CaixasFechados")
+  notificacoes            Notificacao[]
+  logs                    LogAuditoria[]
+  estornosAprovados       Estorno[]     @relation("EstornoAprovador")
+  comprovantesAnalisados  ComprovantePagemento[] @relation("ComprovantesAnalisados")
 
   @@index([email])
   @@index([cpf])
@@ -90,6 +91,7 @@ model Aluno {
   mensalidades    Mensalidade[]
   reposicoes      Reposicao[]
   estornos        Estorno[]
+  comprovantes    ComprovantePagemento[]
 
   @@index([usuarioId])
   @@index([status])
@@ -171,35 +173,51 @@ enum TipoAula {
   GRUPO
 }
 
-enum ModalidadeAula {
-  MAT
-  APARELHOS
-  REFORMER
-  CADILLAC
+enum CategoriaAula {
+  GERAL
+  SOB_DEMANDA
+}
+
+model Modalidade {
+  id           String   @id @default(uuid()) @db.VarChar(36)
+  nome         String   @unique @db.VarChar(100)
+  descricao    String?  @db.VarChar(255)
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now()) @map("criado_em")
+  atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  aulas        Aula[]
+
+  @@index([ativo])
+  @@map("modalidades")
 }
 
 model Aula {
-  id              String         @id @default(uuid()) @db.VarChar(36)
-  professorId     String         @db.VarChar(36)
-  dataHoraInicio  DateTime       @map("data_hora_inicio")
-  duracao         Int            @default(50)
-  capacidade      Int            @default(10)
-  sala            String         @db.VarChar(100)
-  tipo            TipoAula       @default(GRUPO)
-  modalidade      ModalidadeAula @default(MAT)
-  observacoes     String?        @db.LongText
-  status          StatusAula     @default(AGENDADA)
-  criadoEm        DateTime       @default(now()) @map("criado_em")
-  atualizadoEm    DateTime       @default(now()) @updatedAt @map("atualizado_em")
+  id              String     @id @default(uuid()) @db.VarChar(36)
+  professorId     String     @db.VarChar(36)
+  modalidadeId    String?    @db.VarChar(36) @map("modalidade_id")
+  dataHoraInicio  DateTime   @map("data_hora_inicio")
+  duracao         Int        @default(50)
+  capacidade      Int        @default(10)
+  sala            String        @db.VarChar(100)
+  tipo            TipoAula      @default(GRUPO)
+  categoria       CategoriaAula @default(GERAL)
+  observacoes     String?       @db.LongText
+  status          StatusAula    @default(AGENDADA)
+  criadoEm        DateTime   @default(now()) @map("criado_em")
+  atualizadoEm    DateTime   @default(now()) @updatedAt @map("atualizado_em")
 
-  professor        Professor    @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  professor        Professor   @relation(fields: [professorId], references: [id], onDelete: Cascade)
+  modalidade       Modalidade? @relation(fields: [modalidadeId], references: [id], onDelete: SetNull)
   presencas        Presenca[]
   reposicoesOrigem Reposicao[] @relation("AulaOriginal")
   reposicoesAlvo   Reposicao[] @relation("ReposicaoAula")
 
   @@index([professorId])
+  @@index([modalidadeId])
   @@index([dataHoraInicio])
   @@index([status])
+  @@index([categoria])
   @@map("aulas")
 }
 
@@ -337,6 +355,7 @@ model Mensalidade {
   plano           Plano?             @relation(fields: [planoId], references: [id])
   pagamentos      Pagamento[]
   estornos        Estorno[]
+  comprovantes    ComprovantePagemento[]
 
   @@index([alunoId])
   @@index([status])
@@ -409,6 +428,9 @@ model Relatorio {
 enum TipoNotificacao {
   AULA_AGENDADA
   PAGAMENTO_VENCIDO
+  PAGAMENTO_CONFIRMADO
+  MENSALIDADE_CRIADA
+  ESTORNO_ATUALIZADO
   PRESENCA_REGISTRADA
   REPOSICAO_OFERECIDA
   MENSAGEM_ADMIN
@@ -468,6 +490,40 @@ model LogAuditoria {
   @@index([acao])
   @@index([criadoEm])
   @@map("logs_auditoria")
+}
+
+// ============================================================================
+// 📎 MÓDULO COMPROVANTES — Comprovantes de Pagamento
+// ============================================================================
+
+enum StatusComprovante {
+  PENDENTE
+  APROVADO
+  REJEITADO
+}
+
+model ComprovantePagemento {
+  id             String            @id @default(uuid()) @db.VarChar(36)
+  mensalidadeId  String            @db.VarChar(36) @map("mensalidade_id")
+  alunoId        String            @db.VarChar(36) @map("aluno_id")
+  arquivo        String            @db.LongText
+  nomeArquivo    String            @db.VarChar(255) @map("nome_arquivo")
+  tipoArquivo    String            @db.VarChar(50)  @map("tipo_arquivo")
+  dataEnvio      DateTime          @map("data_envio")
+  status         StatusComprovante @default(PENDENTE)
+  observacoes    String?           @db.LongText
+  analisadoPorId String?           @db.VarChar(36) @map("analisado_por_id")
+  criadoEm       DateTime          @default(now()) @map("criado_em")
+  atualizadoEm   DateTime          @default(now()) @updatedAt @map("atualizado_em")
+
+  mensalidade    Mensalidade @relation(fields: [mensalidadeId], references: [id], onDelete: Cascade)
+  aluno          Aluno       @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  analisadoPor   Usuario?    @relation("ComprovantesAnalisados", fields: [analisadoPorId], references: [id])
+
+  @@index([mensalidadeId])
+  @@index([alunoId])
+  @@index([status])
+  @@map("comprovantes_pagamento")
 }
 
 // ============================================================================

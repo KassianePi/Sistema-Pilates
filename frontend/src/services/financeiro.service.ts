@@ -111,4 +111,22 @@ export const financeiroService = {
   async solicitarAulaAvulsa(dataDesejada?: string, observacoes?: string): Promise<void> {
     await api.post('/aluno/solicitar-avulsa', { dataDesejada, observacoes })
   },
+
+  async enviarComprovante(dto: { mensalidadeId: string; arquivo: string; nomeArquivo: string; tipoArquivo: string }): Promise<void> {
+    await api.post('/aluno/comprovantes', dto)
+  },
+
+  async listarMeusComprovantes(): Promise<{ id: string; mensalidadeId: string; nomeArquivo: string; tipoArquivo: string; dataEnvio: string; status: string; observacoes?: string | null; mensalidade?: { plano?: { nome: string } | null } }[]> {
+    const { data } = await api.get('/aluno/comprovantes')
+    return data.data
+  },
+
+  async listarComprovantes(params?: { status?: string; page?: number; limit?: number }) {
+    const { data } = await api.get('/comprovantes', { params })
+    return data.data as { comprovantes: any[]; total: number; page: number; limit: number; totalPages: number }
+  },
+
+  async analisarComprovante(id: string, acao: 'APROVADO' | 'REJEITADO', observacoes?: string): Promise<void> {
+    await api.patch(`/comprovantes/${id}/analisar`, { acao, observacoes })
+  },
 }

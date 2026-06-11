@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Menu,
   UserCircle,
+  Layers,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -39,6 +40,7 @@ const navItems: NavItem[] = [
   { label: 'Notificações', to: '/admin/notificacoes', icon: Bell },
   { label: 'Auditoria', to: '/admin/auditoria', icon: ShieldCheck },
   { label: 'Usuários', to: '/admin/usuarios', icon: Settings },
+  { label: 'Modalidades', to: '/admin/modalidades', icon: Layers },
   { label: 'Meu Perfil', to: '/admin/perfil', icon: UserCircle },
 ]
 

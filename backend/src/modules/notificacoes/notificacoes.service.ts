@@ -46,6 +46,19 @@ export class NotificacoesService {
     if (notificacao.usuarioId !== usuarioId) throw AppError.badRequest('Sem permissão para esta notificação')
     return this.repository.arquivar(id)
   }
+
+  async notificarAdmins(titulo: string, mensagem: string): Promise<void> {
+    const { prisma } = await import('../../database/prisma.client')
+    const admins = await prisma.usuario.findMany({ where: { funcao: 'ADMIN', status: 'ATIVO' }, select: { id: true } })
+    await Promise.all(admins.map(admin =>
+      this.repository.create({
+        usuarioId: admin.id,
+        tipo: 'MENSAGEM_ADMIN',
+        titulo,
+        mensagem,
+      })
+    ))
+  }
 }
 
 export const notificacoesService = new NotificacoesService(new NotificacoesRepository())
@@ -56,11 +69,24 @@ eventBus.on('pagamento.realizado', async (data: { alunoId: string; valor: number
     const { prisma } = await import('../../database/prisma.client')
     const aluno = await prisma.aluno.findUnique({ where: { id: data.alunoId } })
     if (!aluno) return
+    const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.valor)
     await notificacoesService.criar({
       usuarioId: aluno.usuarioId,
-      tipo: 'PRESENCA_REGISTRADA',
+      tipo: 'PAGAMENTO_CONFIRMADO',
       titulo: 'Pagamento confirmado',
-      mensagem: `Pagamento de R$ ${data.valor.toFixed(2)} registrado com sucesso.`,
+      mensagem: `Recebemos o seu pagamento de ${valorFmt}. Obrigado!`,
+    })
+  } catch { /* silencioso */ }
+})
+
+eventBus.on('mensalidade.vencida', async (data: { mensalidadeId: string; usuarioId: string; dataVencimento: Date }) => {
+  try {
+    const dataFmt = new Date(data.dataVencimento).toLocaleDateString('pt-BR')
+    await notificacoesService.criar({
+      usuarioId: data.usuarioId,
+      tipo: 'PAGAMENTO_VENCIDO',
+      titulo: 'Mensalidade vencida',
+      mensagem: `Sua mensalidade com vencimento em ${dataFmt} está em atraso. Regularize o pagamento e envie o comprovante pelo portal.`,
     })
   } catch { /* silencioso */ }
 })

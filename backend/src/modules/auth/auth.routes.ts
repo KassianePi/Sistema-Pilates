@@ -19,19 +19,9 @@ import { logDebug } from '../../shared/utils'
  *
  * @param fastify - Instância Fastify
  */
-export async function authRoutes(fastify: FastifyInstance) {
-  logDebug('📝 Registrando rotas de autenticação')
-
-  /**
-   * POST /api/v1/auth/login
-   * Login com email e senha
-   */
-  fastify.post<{
-    Body: {
-      email: string
-      senha: string
-    }
-  }>('/api/v1/auth/login', {
+/** Apenas rotas de login — protegidas por rate limit estrito */
+export async function authLoginRoutes(fastify: FastifyInstance) {
+  fastify.post<{ Body: { email: string; senha: string } }>('/api/v1/auth/login', {
     schema: {
       body: {
         type: 'object',
@@ -64,10 +54,6 @@ export async function authRoutes(fastify: FastifyInstance) {
     },
   }, login)
 
-  /**
-   * POST /api/v1/auth/aluno/login
-   * Login exclusivo para alunos (rejeita outras funções)
-   */
   fastify.post('/api/v1/auth/aluno/login', {
     schema: {
       body: {
@@ -80,6 +66,11 @@ export async function authRoutes(fastify: FastifyInstance) {
       },
     },
   }, loginAluno)
+}
+
+/** Demais rotas de auth — sem rate limit estrito */
+export async function authRoutes(fastify: FastifyInstance) {
+  logDebug('📝 Registrando rotas de autenticação')
 
   /**
    * POST /api/v1/auth/setup

@@ -1,14 +1,23 @@
-import type { StatusAula, TipoAula, ModalidadeAula } from '@prisma/client'
+import type { StatusAula, TipoAula, CategoriaAula } from '@prisma/client'
+
+export interface ModalidadeInfo {
+  id: string
+  nome: string
+  descricao: string | null
+  ativo: boolean
+}
 
 export interface Aula {
   id: string
   professorId: string
+  modalidadeId: string | null
   dataHoraInicio: Date
   duracao: number
   capacidade: number
   sala: string
   tipo: TipoAula
-  modalidade: ModalidadeAula
+  categoria: CategoriaAula
+  modalidade: ModalidadeInfo | null
   observacoes: string | null
   status: StatusAula
   criadoEm: Date
@@ -22,23 +31,25 @@ export interface Aula {
 
 export interface CreateAulaData {
   professorId: string
+  modalidadeId?: string | null
   dataHoraInicio: Date
   duracao: number
   capacidade: number
   sala: string
   tipo: TipoAula
-  modalidade: ModalidadeAula
+  categoria?: CategoriaAula
   observacoes?: string | null
 }
 
 export interface UpdateAulaData {
   professorId?: string
+  modalidadeId?: string | null
   dataHoraInicio?: Date
   duracao?: number
   capacidade?: number
   sala?: string
   tipo?: TipoAula
-  modalidade?: ModalidadeAula
+  categoria?: CategoriaAula
   observacoes?: string | null
   status?: StatusAula
 }
