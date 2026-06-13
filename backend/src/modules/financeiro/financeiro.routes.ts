@@ -1,6 +1,5 @@
 import type { FastifyInstance } from 'fastify'
 import {
-  abrirCaixa, fecharCaixa, caixaAtivo,
   criarMensalidade, listarMensalidades, buscarMensalidadePorId, atualizarMensalidade,
   registrarPagamento, listarPagamentos,
   listarMinhasMensalidades,
@@ -15,11 +14,6 @@ import { authenticateToken, requireRole } from '../../shared/middlewares/auth.mi
 import { authorize } from '../../shared/middlewares/rbac.middleware'
 
 export async function financeiroRoutes(fastify: FastifyInstance) {
-  // Caixa
-  fastify.get('/api/v1/caixa/ativo', { onRequest: [authenticateToken, authorize('pagamentos', 'read')] }, caixaAtivo)
-  fastify.post('/api/v1/caixa/abrir', { onRequest: [authenticateToken, authorize('pagamentos', 'create')] }, abrirCaixa)
-  fastify.patch('/api/v1/caixa/:id/fechar', { onRequest: [authenticateToken, authorize('pagamentos', 'update')] }, fecharCaixa)
-
   // Mensalidades (admin/financeiro)
   fastify.get('/api/v1/mensalidades', { onRequest: [authenticateToken, authorize('pagamentos', 'read')] }, listarMensalidades)
   fastify.get('/api/v1/mensalidades/:id', { onRequest: [authenticateToken, authorize('pagamentos', 'read')] }, buscarMensalidadePorId)

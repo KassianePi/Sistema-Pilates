@@ -26,7 +26,7 @@ const FinanceiroPage = lazy(() => import('@/features/admin/financeiro/pages/Fina
 const PlanosPage = lazy(() => import('@/features/admin/planos/pages/PlanosPage').then(m => ({ default: m.PlanosPage })))
 const RelatoriosPage = lazy(() => import('@/features/admin/relatorios/pages/RelatoriosPage').then(m => ({ default: m.RelatoriosPage })))
 const NotificacoesPage = lazy(() => import('@/features/admin/notificacoes/pages/NotificacoesPage').then(m => ({ default: m.NotificacoesPage })))
-const AuditoriaPage = lazy(() => import('@/features/admin/auditoria/pages/AuditoriaPage').then(m => ({ default: m.AuditoriaPage })))
+const AcompanhamentoPage = lazy(() => import('@/features/admin/acompanhamento/pages/AcompanhamentoPage').then(m => ({ default: m.AcompanhamentoPage })))
 const UsuariosPage = lazy(() => import('@/features/admin/usuarios/pages/UsuariosPage').then(m => ({ default: m.UsuariosPage })))
 const ProfessorPerfilPage = lazy(() => import('@/features/admin/perfil/pages/ProfessorPerfilPage').then(m => ({ default: m.ProfessorPerfilPage })))
 const ModalidadesPage = lazy(() => import('@/features/admin/modalidades/pages/ModalidadesPage').then(m => ({ default: m.ModalidadesPage })))
@@ -102,7 +102,7 @@ export default function App() {
                   <Route path="/admin/relatorios" element={<RoleGuard path="/admin/relatorios"><Suspense fallback={<PageLoader />}><RelatoriosPage /></Suspense></RoleGuard>} />
 
                   {/* Rotas exclusivas ADMIN */}
-                  <Route path="/admin/auditoria" element={<RoleGuard path="/admin/auditoria"><Suspense fallback={<PageLoader />}><AuditoriaPage /></Suspense></RoleGuard>} />
+                  <Route path="/admin/acompanhamento" element={<RoleGuard path="/admin/acompanhamento"><Suspense fallback={<PageLoader />}><AcompanhamentoPage /></Suspense></RoleGuard>} />
                   <Route path="/admin/usuarios" element={<RoleGuard path="/admin/usuarios"><Suspense fallback={<PageLoader />}><UsuariosPage /></Suspense></RoleGuard>} />
                   <Route path="/admin/modalidades" element={<RoleGuard path="/admin/modalidades"><Suspense fallback={<PageLoader />}><ModalidadesPage /></Suspense></RoleGuard>} />
 

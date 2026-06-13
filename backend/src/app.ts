@@ -16,7 +16,7 @@ import { agendaRoutes } from './modules/agenda/agenda.routes'
 import { presencaRoutes } from './modules/presenca/presenca.routes'
 import { financeiroRoutes } from './modules/financeiro/financeiro.routes'
 import { notificacoesRoutes } from './modules/notificacoes/notificacoes.routes'
-import { auditoriaRoutes } from './modules/auditoria/auditoria.routes'
+import { acompanhamentoRoutes } from './modules/acompanhamento/acompanhamento.routes'
 import { relatoriosRoutes } from './modules/relatorios/relatorios.routes'
 import { configuracaoRoutes } from './modules/configuracao/configuracao.routes'
 import { estornosRoutes } from './modules/estornos/estornos.routes'
@@ -173,7 +173,7 @@ export async function createApp() {
     await app.register(presencaRoutes)
     await app.register(financeiroRoutes)
     await app.register(notificacoesRoutes)
-    await app.register(auditoriaRoutes)
+    await app.register(acompanhamentoRoutes)
     await app.register(relatoriosRoutes)
     await app.register(configuracaoRoutes)
     await app.register(estornosRoutes)

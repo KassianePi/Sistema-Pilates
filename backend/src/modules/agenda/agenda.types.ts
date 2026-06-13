@@ -20,6 +20,9 @@ export interface Aula {
   modalidade: ModalidadeInfo | null
   observacoes: string | null
   status: StatusAula
+  justificativa: string | null
+  statusAlteradoEm: Date | null
+  dataHoraAnterior: Date | null
   criadoEm: Date
   atualizadoEm: Date
   professor?: {
@@ -52,4 +55,8 @@ export interface UpdateAulaData {
   categoria?: CategoriaAula
   observacoes?: string | null
   status?: StatusAula
+  justificativa?: string | null
+  statusAlteradoEm?: Date | null
+  statusAlteradoPorId?: string | null
+  dataHoraAnterior?: Date | null
 }

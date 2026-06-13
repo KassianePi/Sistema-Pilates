@@ -11,7 +11,7 @@ export const ROLE_ALLOWED_ROUTES: Record<UserRole, string[]> = {
     '/admin/planos',
     '/admin/relatorios',
     '/admin/notificacoes',
-    '/admin/auditoria',
+    '/admin/acompanhamento',
     '/admin/usuarios',
     '/admin/perfil',
     '/admin/modalidades',

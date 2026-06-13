@@ -2,39 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { financeiroService, type CreateMensalidadeDTO, type CreatePagamentoDTO } from '@/services/financeiro.service'
 
-export function useCaixaAtivo() {
-  return useQuery({
-    queryKey: ['caixa-ativo'],
-    queryFn: () => financeiroService.buscarCaixaAtivo(),
-    refetchInterval: 30_000,
-  })
-}
-
-export function useAbrirCaixa() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: (saldoInicial: number) => financeiroService.abrirCaixa(saldoInicial),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['caixa-ativo'] })
-      toast.success('Caixa aberto!')
-    },
-    onError: () => toast.error('Erro ao abrir caixa.'),
-  })
-}
-
-export function useFecharCaixa() {
-  const qc = useQueryClient()
-  return useMutation({
-    mutationFn: ({ id, saldoFechamento }: { id: string; saldoFechamento?: number }) =>
-      financeiroService.fecharCaixa(id, saldoFechamento ?? 0),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['caixa-ativo'] })
-      toast.success('Caixa fechado.')
-    },
-    onError: () => toast.error('Erro ao fechar caixa.'),
-  })
-}
-
 export function useMensalidades(params?: { pagina?: number; limite?: number; alunoId?: string; status?: string }) {
   return useQuery({
     queryKey: ['mensalidades', params],

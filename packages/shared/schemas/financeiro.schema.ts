@@ -1,18 +1,5 @@
 import { z } from 'zod'
 
-// Caixa
-export const abrirCaixaSchema = z.object({
-  saldoAbertura: z.number().min(0),
-  observacoes: z.string().max(1000).optional().nullable(),
-})
-export type AbrirCaixaDTO = z.infer<typeof abrirCaixaSchema>
-
-export const fecharCaixaSchema = z.object({
-  saldoFechamento: z.number().min(0).default(0),
-  observacoes: z.string().max(1000).optional().nullable(),
-})
-export type FecharCaixaDTO = z.infer<typeof fecharCaixaSchema>
-
 // Mensalidade
 export const createMensalidadeSchema = z.object({
   alunoId: z.string({ required_error: 'Aluno é obrigatório' }).uuid(),
@@ -47,10 +34,10 @@ export const listMensalidadesSchema = z.object({
 })
 export type ListMensalidadesDTO = z.infer<typeof listMensalidadesSchema>
 
-// Pagamento
+// Pagamento — caixaId é opcional (operações financeiras não dependem de caixa aberto)
 export const createPagamentoSchema = z.object({
   mensalidadeId: z.string({ required_error: 'Mensalidade é obrigatória' }).uuid(),
-  caixaId: z.string({ required_error: 'Caixa é obrigatório' }).uuid(),
+  caixaId: z.string().uuid().optional().nullable(),
   valor: z.number({ required_error: 'Valor é obrigatório' }).positive(),
   metodo: z.enum(['DINHEIRO', 'PIX', 'CARTAO_CREDITO', 'CARTAO_DEBITO', 'CHEQUE', 'TRANSFERENCIA']).default('PIX'),
   dataPagamento: z.string().refine((d) => !isNaN(new Date(d).getTime()), 'Data inválida').optional(),

@@ -39,12 +39,49 @@ export function useUpdateAula() {
 export function useCancelarAula() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, motivo }: { id: string; motivo?: string }) => agendaService.cancelar(id, motivo),
+    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) => agendaService.cancelar(id, justificativa),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY] })
       toast.success('Aula cancelada.')
     },
     onError: () => toast.error('Erro ao cancelar aula.'),
+  })
+}
+
+export function useSuspenderAula() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) => agendaService.suspender(id, justificativa),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [QUERY_KEY] })
+      toast.success('Aula suspensa.')
+    },
+    onError: () => toast.error('Erro ao suspender aula.'),
+  })
+}
+
+export function useReagendarAula() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, dataHoraInicio, justificativa }: { id: string; dataHoraInicio: string; justificativa: string }) =>
+      agendaService.reagendar(id, dataHoraInicio, justificativa),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [QUERY_KEY] })
+      toast.success('Aula reagendada.')
+    },
+    onError: () => toast.error('Erro ao reagendar aula.'),
+  })
+}
+
+export function useExcluirAula() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) => agendaService.excluir(id, justificativa),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: [QUERY_KEY] })
+      toast.success('Aula excluída.')
+    },
+    onError: () => toast.error('Erro ao excluir aula.'),
   })
 }
 

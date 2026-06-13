@@ -55,13 +55,61 @@ export async function atualizar(request: FastifyRequest, reply: FastifyReply) {
 export async function cancelar(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { id } = request.params as { id: string }
-    const aula = await agendaService.cancelar(id)
+    const aula = await agendaService.cancelar(id, request.usuarioId!, request.body as any)
     return reply.code(200).send({ success: true, data: aula })
   } catch (error: any) {
+    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error?.name === 'ZodError') return reply.code(400).send({ success: false, message: error.errors?.[0]?.message ?? 'Dados inválidos', code: 'VALIDATION_ERROR' })
     if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
     if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
     logWarn('Erro ao cancelar aula', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao cancelar aula', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function suspender(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.params as { id: string }
+    const aula = await agendaService.suspender(id, request.usuarioId!, request.body as any)
+    return reply.code(200).send({ success: true, data: aula })
+  } catch (error: any) {
+    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error?.name === 'ZodError') return reply.code(400).send({ success: false, message: error.errors?.[0]?.message ?? 'Dados inválidos', code: 'VALIDATION_ERROR' })
+    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    logWarn('Erro ao suspender aula', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao suspender aula', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function reagendar(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.params as { id: string }
+    const aula = await agendaService.reagendar(id, request.usuarioId!, request.body as any)
+    return reply.code(200).send({ success: true, data: aula })
+  } catch (error: any) {
+    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error?.name === 'ZodError') return reply.code(400).send({ success: false, message: error.errors?.[0]?.message ?? 'Dados inválidos', code: 'VALIDATION_ERROR' })
+    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 409) return reply.code(409).send({ success: false, message: error.message, code: 'CONFLICT' })
+    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    logWarn('Erro ao reagendar aula', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao reagendar aula', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function excluir(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.params as { id: string }
+    const aula = await agendaService.excluir(id, request.usuarioId!, request.body as any)
+    return reply.code(200).send({ success: true, data: aula })
+  } catch (error: any) {
+    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error?.name === 'ZodError') return reply.code(400).send({ success: false, message: error.errors?.[0]?.message ?? 'Dados inválidos', code: 'VALIDATION_ERROR' })
+    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    logWarn('Erro ao excluir aula', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao excluir aula', code: 'INTERNAL_ERROR' })
   }
 }
 

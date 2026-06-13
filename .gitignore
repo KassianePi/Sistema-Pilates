@@ -58,3 +58,5 @@ Thumbs.db
 
 # ====== VSCODE WORKSPACE ======
 *.code-workspace
+backend.zip
+*.zip

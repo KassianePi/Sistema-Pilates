@@ -24,13 +24,28 @@ export const updateAulaSchema = z.object({
   categoria: z.enum(['GERAL', 'SOB_DEMANDA']).optional(),
   modalidadeId: z.string().uuid().optional().nullable(),
   observacoes: z.string().max(1000).optional().nullable(),
-  status: z.enum(['AGENDADA', 'REALIZADA', 'CANCELADA', 'ADIADA']).optional(),
+  status: z.enum(['AGENDADA', 'REALIZADA', 'CANCELADA', 'ADIADA', 'SUSPENSA', 'EXCLUIDA']).optional(),
 })
 export type UpdateAulaDTO = z.infer<typeof updateAulaSchema>
 
+// Ações de agenda que exigem justificativa (suspender / cancelar / excluir)
+export const justificativaAulaSchema = z.object({
+  justificativa: z.string({ required_error: 'Justificativa é obrigatória' })
+    .min(5, 'Descreva o motivo (mín. 5 caracteres)')
+    .max(1000, 'Justificativa muito longa'),
+})
+export type JustificativaAulaDTO = z.infer<typeof justificativaAulaSchema>
+
+// Reagendamento: nova data/hora + justificativa obrigatória
+export const reagendarAulaSchema = justificativaAulaSchema.extend({
+  dataHoraInicio: z.string({ required_error: 'Data/hora é obrigatória' })
+    .refine((d) => !isNaN(new Date(d).getTime()), 'Data/hora inválida'),
+})
+export type ReagendarAulaDTO = z.infer<typeof reagendarAulaSchema>
+
 export const listAulasSchema = z.object({
   professorId: z.string().uuid().optional(),
-  status: z.enum(['AGENDADA', 'REALIZADA', 'CANCELADA', 'ADIADA']).optional(),
+  status: z.enum(['AGENDADA', 'REALIZADA', 'CANCELADA', 'ADIADA', 'SUSPENSA', 'EXCLUIDA']).optional(),
   tipo: z.enum(['INDIVIDUAL', 'DUPLA', 'GRUPO']).optional(),
   categoria: z.enum(['GERAL', 'SOB_DEMANDA']).optional(),
   modalidadeId: z.string().uuid().optional(),

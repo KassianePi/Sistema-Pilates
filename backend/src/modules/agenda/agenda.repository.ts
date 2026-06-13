@@ -28,6 +28,7 @@ export class AgendaRepository {
       const where: Record<string, unknown> = {}
       if (professorId) where.professorId = professorId
       if (status) where.status = status
+      else where.status = { not: 'EXCLUIDA' } // listagem admin não mostra aulas excluídas por padrão
       if (tipo) where.tipo = tipo
       if (categoria) where.categoria = categoria
       if (modalidadeId) where.modalidadeId = modalidadeId
@@ -81,10 +82,10 @@ export class AgendaRepository {
         }
         orderBy = { dataHoraInicio: 'desc' }
       } else {
-        // 'minhas'
+        // 'minhas' — todas as aulas futuras em que o aluno está inscrito, independentemente
+        // do status, para que SUSPENSA/CANCELADA/EXCLUIDA apareçam com o motivo (justificativa).
         where = {
           presencas: { some: { alunoId } },
-          status: 'AGENDADA',
           dataHoraInicio: { gte: agora },
         }
       }

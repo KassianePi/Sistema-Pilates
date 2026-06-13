@@ -2,68 +2,9 @@ import { prisma } from '../../database/prisma.client'
 import { AppError } from '../../shared/errors'
 import { logError } from '../../shared/utils'
 import type { Prisma, StatusMensalidade, TipoMensalidade, MetodoPagamento } from '@prisma/client'
-import type { Caixa, Mensalidade, Pagamento, AbrirCaixaData, FecharCaixaData, CreateMensalidadeData, CreatePagamentoData } from './financeiro.types'
+import type { Mensalidade, Pagamento, CreateMensalidadeData, CreatePagamentoData } from './financeiro.types'
 
 export class FinanceiroRepository {
-  // ===================== CAIXA =====================
-
-  async findCaixaAtivo(): Promise<Caixa | null> {
-    try {
-      return await prisma.caixa.findFirst({
-        where: { dataFechamento: null } as any,
-        orderBy: { dataAbertura: 'desc' },
-      }) as any
-    } catch (error) {
-      logError('Erro ao buscar caixa ativo', error as Error)
-      throw AppError.internal('Erro ao buscar caixa')
-    }
-  }
-
-  async findCaixaById(id: string): Promise<Caixa | null> {
-    try {
-      return await prisma.caixa.findUnique({
-        where: { id },
-        include: { usuarioAbre: { select: { nomeCompleto: true } } } as any,
-      }) as any
-    } catch (error) {
-      logError('Erro ao buscar caixa', error as Error, { id })
-      throw AppError.internal('Erro ao buscar caixa')
-    }
-  }
-
-  async abrirCaixa(data: AbrirCaixaData): Promise<Caixa> {
-    try {
-      return await prisma.caixa.create({
-        data: {
-          usuarioAbreId: data.usuarioId,
-          dataAbertura: new Date(),
-          saldoAbertura: data.saldoAbertura,
-          observacoes: data.observacoes ?? null,
-        } as any,
-      }) as any
-    } catch (error) {
-      logError('Erro ao abrir caixa', error as Error)
-      throw AppError.internal('Erro ao abrir caixa')
-    }
-  }
-
-  async fecharCaixa(id: string, usuarioId: string, data: FecharCaixaData): Promise<Caixa> {
-    try {
-      return await prisma.caixa.update({
-        where: { id },
-        data: {
-          usuarioFechaId: usuarioId,
-          dataFechamento: new Date(),
-          saldoFechamento: data.saldoFechamento,
-          observacoes: data.observacoes ?? null,
-        },
-      }) as any
-    } catch (error) {
-      logError('Erro ao fechar caixa', error as Error, { id })
-      throw AppError.internal('Erro ao fechar caixa')
-    }
-  }
-
   // ===================== MENSALIDADES =====================
 
   async findMensalidadeById(id: string): Promise<Mensalidade | null> {
@@ -238,7 +179,7 @@ export class FinanceiroRepository {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: {
           mensalidadeId: data.mensalidadeId,
-          caixaId: data.caixaId,
+          caixaId: data.caixaId ?? null,
           usuarioId: data.usuarioId,
           valor: data.valor,
           metodo: data.metodo,

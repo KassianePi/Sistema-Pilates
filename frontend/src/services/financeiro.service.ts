@@ -11,20 +11,10 @@ export interface CreateMensalidadeDTO {
 
 export interface CreatePagamentoDTO {
   mensalidadeId: string
-  caixaId: string
   valor: number
   metodo: MetodoPagamento
   dataPagamento: string
   observacoes?: string
-}
-
-export interface CaixaAtivo {
-  id: string
-  dataAbertura: string
-  saldoAbertura: number
-  saldoFechamento?: number
-  dataFechamento?: string
-  status: 'ABERTO' | 'FECHADO'
 }
 
 type BackendMensalidadeRaw = Omit<Mensalidade, 'vencimento'> & { dataVencimento: string }
@@ -72,28 +62,12 @@ export const financeiroService = {
   async registrarPagamento(dto: CreatePagamentoDTO) {
     const { data } = await api.post<ApiResponse<BackendPagamentoRaw>>('/pagamentos', {
       mensalidadeId: dto.mensalidadeId,
-      caixaId: dto.caixaId,
       valor: dto.valor,
       metodo: dto.metodo,
       dataPagamento: dto.dataPagamento,
       observacoes: dto.observacoes,
     })
     return mapPagamento(data.data)
-  },
-
-  async buscarCaixaAtivo() {
-    const { data } = await api.get<ApiResponse<CaixaAtivo | null>>('/caixa/ativo')
-    return data.data
-  },
-
-  async abrirCaixa(saldoAbertura: number) {
-    const { data } = await api.post<ApiResponse<CaixaAtivo>>('/caixa/abrir', { saldoAbertura })
-    return data.data
-  },
-
-  async fecharCaixa(id: string, saldoFechamento: number = 0) {
-    const { data } = await api.patch<ApiResponse<CaixaAtivo>>(`/caixa/${id}/fechar`, { saldoFechamento })
-    return data.data
   },
 
   async listarMinhasMensalidades(params?: { pagina?: number; limite?: number; status?: string }): Promise<PaginatedResponse<Mensalidade>> {

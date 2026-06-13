@@ -91,17 +91,7 @@ eventBus.on('mensalidade.vencida', async (data: { mensalidadeId: string; usuario
   } catch { /* silencioso */ }
 })
 
-eventBus.on('aula.cancelada', async (data: { id: string }) => {
-  try {
-    const { prisma } = await import('../../database/prisma.client')
-    const presencas = await prisma.presenca.findMany({ where: { aulaId: data.id } as any, include: { aluno: true } })
-    for (const presenca of presencas) {
-      await notificacoesService.criar({
-        usuarioId: presenca.aluno.usuarioId,
-        tipo: 'AULA_AGENDADA',
-        titulo: 'Aula cancelada',
-        mensagem: 'Uma aula que você estava inscrito foi cancelada.',
-      })
-    }
-  } catch { /* silencioso */ }
-})
+// Observação: a notificação de cancelamento/suspensão/reagendamento/exclusão de aula
+// (com a justificativa) é emitida diretamente pelo AgendaService.notificarEnvolvidos,
+// que tem o contexto do motivo. O evento 'aula.cancelada' permanece disponível para
+// outros consumidores futuros, mas não dispara notificação genérica aqui (evita duplicidade).

@@ -1,7 +1,7 @@
 export type StatusAtivo = 'ATIVO' | 'INATIVO'
 export type StatusAluno = 'ATIVO' | 'INATIVO' | 'SUSPENSO' | 'FORMADO'
 export type StatusMensalidade = 'PENDENTE' | 'PAGO' | 'VENCIDO' | 'CANCELADO' | 'PARCIAL'
-export type StatusAula = 'AGENDADA' | 'REALIZADA' | 'CANCELADA' | 'ADIADA'
+export type StatusAula = 'AGENDADA' | 'REALIZADA' | 'CANCELADA' | 'ADIADA' | 'SUSPENSA' | 'EXCLUIDA'
 export type StatusPresenca = 'PRESENTE' | 'AUSENTE' | 'JUSTIFICADO'
 export type StatusComprovante = 'PENDENTE' | 'APROVADO' | 'REJEITADO'
 export type TipoAula = 'INDIVIDUAL' | 'DUPLA' | 'GRUPO'
@@ -101,6 +101,8 @@ export interface Aula {
   categoria?: CategoriaAula
   status: StatusAula
   observacoes?: string
+  justificativa?: string | null
+  dataHoraAnterior?: string | null
   createdAt: string
   updatedAt: string
   professor: {

@@ -28,6 +28,8 @@ type BackendAula = {
   tipo: string
   categoria?: string | null
   observacoes?: string | null
+  justificativa?: string | null
+  dataHoraAnterior?: string | null
   createdAt: string
   updatedAt: string
   professor: { id: string; usuario: { nomeCompleto: string; email?: string } }
@@ -58,6 +60,8 @@ function mapAula(raw: BackendAula): Aula {
     categoria: (raw.categoria as CategoriaAula) ?? 'GERAL',
     status: raw.status as StatusAula,
     observacoes: raw.observacoes ?? undefined,
+    justificativa: raw.justificativa ?? null,
+    dataHoraAnterior: raw.dataHoraAnterior ?? null,
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     professor: { id: raw.professor.id, usuario: { nomeCompleto: raw.professor.usuario.nomeCompleto } },
@@ -97,8 +101,23 @@ export const agendaService = {
     return mapAula(data.data)
   },
 
-  async cancelar(id: string, motivo?: string) {
-    const { data } = await api.patch<ApiResponse<BackendAula>>(`/aulas/${id}/cancelar`, { motivo })
+  async cancelar(id: string, justificativa: string) {
+    const { data } = await api.patch<ApiResponse<BackendAula>>(`/aulas/${id}/cancelar`, { justificativa })
+    return mapAula(data.data)
+  },
+
+  async suspender(id: string, justificativa: string) {
+    const { data } = await api.patch<ApiResponse<BackendAula>>(`/aulas/${id}/suspender`, { justificativa })
+    return mapAula(data.data)
+  },
+
+  async reagendar(id: string, dataHoraInicio: string, justificativa: string) {
+    const { data } = await api.patch<ApiResponse<BackendAula>>(`/aulas/${id}/reagendar`, { dataHoraInicio, justificativa })
+    return mapAula(data.data)
+  },
+
+  async excluir(id: string, justificativa: string) {
+    const { data } = await api.delete<ApiResponse<BackendAula>>(`/aulas/${id}`, { data: { justificativa } })
     return mapAula(data.data)
   },
 

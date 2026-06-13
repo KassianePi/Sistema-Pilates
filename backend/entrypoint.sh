@@ -33,20 +33,20 @@ echo "✅ MySQL está aceitando conexões."
 sleep 2
 
 # ============================================================================
-# 2. SINCRONIZAR SCHEMA COM O BANCO (OBRIGATÓRIO)
+# 2. APLICAR MIGRAÇÕES (FLUXO PADRÃO PRISMA MIGRATE)
 # ============================================================================
+# Tanto em dev quanto em prod usamos `migrate deploy` (aplica as migrações
+# versionadas em prisma/migrations). Novas alterações de schema devem ser
+# criadas com `prisma migrate dev --name <nome>` (ver prisma/migrations/README.md).
+#
+# IMPORTANTE: em um banco PRÉ-EXISTENTE (criado antes das migrações), execute
+# UMA ÚNICA VEZ o baseline antes do primeiro deploy:
+#   docker compose run --rm backend npx prisma migrate resolve --applied 0_init
 
-echo "🗄️  Sincronizando schema do Prisma com o banco de dados..."
+echo "🗄️  Aplicando migrações do Prisma (migrate deploy)..."
+npx prisma migrate deploy
 
-if [ "$NODE_ENV" = "development" ]; then
-  echo "   [DEV] Executando prisma db push..."
-  npx prisma db push --skip-generate
-else
-  echo "   [PROD] Executando prisma migrate deploy..."
-  npx prisma migrate deploy
-fi
-
-echo "✅ Schema sincronizado com sucesso!"
+echo "✅ Migrações aplicadas com sucesso!"
 
 # ============================================================================
 # 3. INICIAR O SERVIDOR

@@ -1,11 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { CalendarDays, Clock, Users, Sparkles, History } from 'lucide-react'
+import { CalendarDays, Clock, Users, Sparkles, History, AlertCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
 import { agendaService } from '@/services/agenda.service'
-import type { CategoriaAula } from '@/types/domain.types'
+import type { CategoriaAula, StatusAula } from '@/types/domain.types'
 
 type Escopo = 'minhas' | 'gerais' | 'historico'
 
@@ -26,8 +26,20 @@ const VAZIO: Record<Escopo, string> = {
   historico: 'Nenhuma aula no seu histórico ainda.',
 }
 
+// Status que merecem um aviso destacado para o aluno (com a justificativa do studio)
+const STATUS_AVISO: Partial<Record<StatusAula, { label: string; className: string }>> = {
+  SUSPENSA: { label: 'Aula suspensa', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+  CANCELADA: { label: 'Aula cancelada', className: 'bg-rosa-vibrante/10 text-rosa-vibrante border-rosa-vibrante/30' },
+  EXCLUIDA: { label: 'Aula removida', className: 'bg-bege-suave text-cinza-texto border-bege-cartao' },
+  ADIADA: { label: 'Aula adiada', className: 'bg-amber-50 text-amber-700 border-amber-200' },
+}
+
 function formatarData(d: string) {
   return new Date(d).toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+function formatarDataHora(d: string) {
+  return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
 
 export function AlunoAgendaPage() {
@@ -87,8 +99,9 @@ export function AlunoAgendaPage() {
         <div className="space-y-4">
           {aulas.map((aula) => {
             const tag = CATEGORIA_TAG[aula.categoria ?? 'GERAL']
+            const aviso = STATUS_AVISO[aula.status]
             return (
-              <Card key={aula.id}>
+              <Card key={aula.id} className={cn(aviso && 'opacity-95')}>
                 <CardContent className="p-5">
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-1">
@@ -112,6 +125,23 @@ export function AlunoAgendaPage() {
                       <Badge variant="outline">{aula.tipo}</Badge>
                     </div>
                   </div>
+
+                  {aula.dataHoraAnterior && (
+                    <p className="mt-3 text-xs text-cinza-texto">
+                      <CalendarDays className="inline w-3.5 h-3.5 mr-1 -mt-0.5" />
+                      Reagendada de {formatarDataHora(aula.dataHoraAnterior)} para {formatarDataHora(`${aula.data}T${aula.horaInicio}`)}
+                    </p>
+                  )}
+
+                  {aviso && (
+                    <div className={cn('mt-3 flex items-start gap-2 rounded-lg border px-3 py-2 text-sm', aviso.className)}>
+                      <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-medium">{aviso.label}</p>
+                        {aula.justificativa && <p className="text-xs mt-0.5 opacity-90">Motivo: {aula.justificativa}</p>}
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )

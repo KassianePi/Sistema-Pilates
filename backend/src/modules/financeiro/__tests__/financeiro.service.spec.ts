@@ -12,16 +12,20 @@ vi.mock('../../../events/event-bus', () => ({
   eventBus: { emit: vi.fn() },
 }))
 
+vi.mock('../../auditoria/auditoria.service', () => ({
+  registrarLog: vi.fn(),
+}))
+
+vi.mock('../../notificacoes/notificacoes.service', () => ({
+  notificacoesService: { criar: vi.fn(), notificarAdmins: vi.fn() },
+}))
+
 describe('FinanceiroService', () => {
   let service: FinanceiroService
   let mockRepo: any
 
   beforeEach(() => {
     mockRepo = {
-      findCaixaAtivo: vi.fn(),
-      findCaixaById: vi.fn(),
-      abrirCaixa: vi.fn(),
-      fecharCaixa: vi.fn(),
       findMensalidadeById: vi.fn(),
       findMensalidades: vi.fn(),
       createMensalidade: vi.fn(),
@@ -33,40 +37,42 @@ describe('FinanceiroService', () => {
     service = new FinanceiroService(mockRepo)
   })
 
-  describe('abrirCaixa', () => {
-    it('deve abrir caixa quando não há caixa aberto', async () => {
-      mockRepo.findCaixaAtivo.mockResolvedValue(null)
-      const caixaFake = { id: 'c-1', saldoAbertura: '0' }
-      mockRepo.abrirCaixa.mockResolvedValue(caixaFake)
-
-      const result = await service.abrirCaixa('usuario-1', { saldoAbertura: 0 })
-      expect(result.id).toBe('c-1')
-    })
-
-    it('deve lançar erro se já há caixa aberto', async () => {
-      mockRepo.findCaixaAtivo.mockResolvedValue({ id: 'c-existente' })
-      await expect(service.abrirCaixa('usuario-1', { saldoAbertura: 0 })).rejects.toThrow('aberto')
-    })
-  })
-
-  describe('fecharCaixa', () => {
-    it('deve lançar erro se caixa não existe', async () => {
-      mockRepo.findCaixaById.mockResolvedValue(null)
-      await expect(service.fecharCaixa('c-1', 'usuario-1', { saldoFechamento: 100 })).rejects.toThrow('Caixa')
-    })
-
-    it('deve lançar erro se caixa já fechado', async () => {
-      mockRepo.findCaixaById.mockResolvedValue({ id: 'c-1', dataFechamento: new Date() })
-      await expect(service.fecharCaixa('c-1', 'usuario-1', { saldoFechamento: 100 })).rejects.toThrow('fechado')
-    })
-  })
-
   describe('registrarPagamento', () => {
-    it('deve lançar erro se mensalidade já paga', async () => {
-      mockRepo.findMensalidadeById.mockResolvedValue({ id: 'm-1', status: 'PAGO', valor: '200', desconto: '0', alunoId: 'a-1' })
-      mockRepo.findCaixaById.mockResolvedValue({ id: 'c-1', dataFechamento: null })
+    const MENS_ID = '11111111-1111-1111-1111-111111111111'
+
+    it('deve registrar pagamento sem depender de caixa aberto', async () => {
+      mockRepo.findMensalidadeById.mockResolvedValue({
+        id: MENS_ID, status: 'PENDENTE', alunoId: 'a-1',
+        valor: { toNumber: () => 200 }, desconto: { toNumber: () => 0 },
+      })
+      mockRepo.createPagamento.mockResolvedValue({ id: 'p-1' })
+      mockRepo.updateMensalidadeStatus.mockResolvedValue({ id: MENS_ID, status: 'PAGO' })
+
+      const result = await service.registrarPagamento('usuario-1', {
+        mensalidadeId: MENS_ID, valor: 200, metodo: 'PIX',
+      })
+
+      expect(result.id).toBe('p-1')
+      // caixaId deve ser nulo quando não informado
+      expect(mockRepo.createPagamento).toHaveBeenCalledWith(expect.objectContaining({ caixaId: null }))
+      // mensalidade quitada (valor >= total)
+      expect(mockRepo.updateMensalidadeStatus).toHaveBeenCalledWith(MENS_ID, 'PAGO')
+    })
+
+    it('deve lançar erro se mensalidade não encontrada', async () => {
+      mockRepo.findMensalidadeById.mockResolvedValue(null)
       await expect(service.registrarPagamento('usuario-1', {
-        mensalidadeId: 'm-1', caixaId: 'c-1', valor: 200, metodo: 'PIX',
+        mensalidadeId: MENS_ID, valor: 200, metodo: 'PIX',
+      })).rejects.toThrow()
+    })
+
+    it('deve lançar erro se mensalidade já paga', async () => {
+      mockRepo.findMensalidadeById.mockResolvedValue({
+        id: MENS_ID, status: 'PAGO', alunoId: 'a-1',
+        valor: { toNumber: () => 200 }, desconto: { toNumber: () => 0 },
+      })
+      await expect(service.registrarPagamento('usuario-1', {
+        mensalidadeId: MENS_ID, valor: 200, metodo: 'PIX',
       })).rejects.toThrow('paga')
     })
   })

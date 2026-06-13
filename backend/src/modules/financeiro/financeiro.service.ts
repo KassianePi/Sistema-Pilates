@@ -2,7 +2,6 @@ import { FinanceiroRepository } from './financeiro.repository'
 import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo } from '../../shared/utils'
 import {
-  abrirCaixaSchema, fecharCaixaSchema,
   createMensalidadeSchema, updateMensalidadeSchema, listMensalidadesSchema,
   createPagamentoSchema, listPagamentosSchema,
 } from '../../shared/schemas'
@@ -11,37 +10,10 @@ import { prisma } from '../../database/prisma.client'
 import { eventBus } from '../../events/event-bus'
 import { registrarLog } from '../auditoria/auditoria.service'
 import { notificacoesService } from '../notificacoes/notificacoes.service'
-import type { Caixa, Mensalidade, Pagamento } from './financeiro.types'
+import type { Mensalidade, Pagamento } from './financeiro.types'
 
 export class FinanceiroService {
   constructor(private repository: FinanceiroRepository) {}
-
-  // ===================== CAIXA =====================
-
-  async abrirCaixa(usuarioId: string, data: { saldoAbertura: number; observacoes?: string | null }): Promise<Caixa> {
-    const validado = abrirCaixaSchema.parse(data)
-    const caixaAberto = await this.repository.findCaixaAtivo()
-    if (caixaAberto) throw AppError.conflict(FINANCEIRO_ERRORS.CAIXA_JA_ABERTO)
-
-    const caixa = await this.repository.abrirCaixa({ usuarioId, ...validado })
-    logInfo('Caixa aberto', { id: caixa.id, usuarioId })
-    return caixa
-  }
-
-  async fecharCaixa(caixaId: string, usuarioId: string, data: { saldoFechamento: number; observacoes?: string | null }): Promise<Caixa> {
-    const validado = fecharCaixaSchema.parse(data)
-    const caixa = await this.repository.findCaixaById(caixaId)
-    if (!caixa) throw AppError.notFound('Caixa', caixaId)
-    if (caixa.dataFechamento) throw AppError.badRequest(FINANCEIRO_ERRORS.CAIXA_JA_FECHADO)
-
-    const caixaFechado = await this.repository.fecharCaixa(caixaId, usuarioId, validado)
-    logInfo('Caixa fechado', { id: caixaId })
-    return caixaFechado
-  }
-
-  async buscarCaixaAtivo(): Promise<Caixa | null> {
-    return this.repository.findCaixaAtivo()
-  }
 
   // ===================== MENSALIDADES =====================
 
@@ -143,22 +115,19 @@ export class FinanceiroService {
 
   // ===================== PAGAMENTOS =====================
 
-  async registrarPagamento(usuarioId: string, data: { mensalidadeId: string; caixaId: string; valor: number; metodo: string; dataPagamento?: string; referencia?: string | null; observacoes?: string | null }): Promise<Pagamento> {
+  async registrarPagamento(usuarioId: string, data: { mensalidadeId: string; caixaId?: string | null; valor: number; metodo: string; dataPagamento?: string; referencia?: string | null; observacoes?: string | null }): Promise<Pagamento> {
     const validado = createPagamentoSchema.parse(data)
 
-    const [mensalidade, caixa] = await Promise.all([
-      this.repository.findMensalidadeById(validado.mensalidadeId),
-      this.repository.findCaixaById(validado.caixaId),
-    ])
+    // Operações financeiras não dependem mais de caixa aberto: o pagamento é
+    // registrado como movimentação autônoma (caixaId opcional/nulo).
+    const mensalidade = await this.repository.findMensalidadeById(validado.mensalidadeId)
 
     if (!mensalidade) throw ValidationError.forField('mensalidadeId', FINANCEIRO_ERRORS.MENSALIDADE_NOT_FOUND)
-    if (!caixa) throw ValidationError.forField('caixaId', FINANCEIRO_ERRORS.CAIXA_NOT_FOUND)
-    if (caixa.dataFechamento) throw AppError.badRequest(FINANCEIRO_ERRORS.CAIXA_JA_FECHADO)
     if (mensalidade.status === 'PAGO') throw AppError.badRequest(FINANCEIRO_ERRORS.MENSALIDADE_JA_PAGA)
 
     const pagamento = await this.repository.createPagamento({
       mensalidadeId: validado.mensalidadeId,
-      caixaId: validado.caixaId,
+      caixaId: validado.caixaId ?? null,
       usuarioId,
       valor: validado.valor,
       metodo: validado.metodo as any,

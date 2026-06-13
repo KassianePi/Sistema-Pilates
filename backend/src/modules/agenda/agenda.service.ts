@@ -1,12 +1,15 @@
 import { AgendaRepository } from './agenda.repository'
 import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo } from '../../shared/utils'
-import { createAulaSchema, updateAulaSchema, listAulasSchema } from '../../shared/schemas'
+import { createAulaSchema, updateAulaSchema, listAulasSchema, justificativaAulaSchema, reagendarAulaSchema } from '../../shared/schemas'
 import { AGENDA_ERRORS } from './agenda.constants'
 import { prisma } from '../../database/prisma.client'
 import { eventBus } from '../../events/event-bus'
 import { notificacoesService } from '../notificacoes/notificacoes.service'
 import type { Aula, UpdateAulaData } from './agenda.types'
+
+/** Status em que a aula é considerada encerrada e não admite novas ações de gestão. */
+const STATUS_ENCERRADOS: ReadonlyArray<string> = ['REALIZADA', 'CANCELADA', 'EXCLUIDA']
 
 export class AgendaService {
   constructor(private repository: AgendaRepository) {}
@@ -126,16 +129,132 @@ export class AgendaService {
     return aula
   }
 
-  async cancelar(id: string): Promise<Aula> {
+  /**
+   * Notifica os alunos inscritos (com presença na aula) e os administradores
+   * sobre uma alteração de status da aula, incluindo a justificativa.
+   */
+  private async notificarEnvolvidos(aulaId: string, tituloAluno: string, mensagemAluno: string, tituloAdmin: string, mensagemAdmin: string): Promise<void> {
+    try {
+      const presencas = await prisma.presenca.findMany({
+        where: { aulaId } as any,
+        select: { aluno: { select: { usuarioId: true } } },
+      })
+      await Promise.all(
+        presencas.map((p) =>
+          notificacoesService.criar({
+            usuarioId: p.aluno.usuarioId,
+            tipo: 'AULA_AGENDADA',
+            titulo: tituloAluno,
+            mensagem: mensagemAluno,
+          }),
+        ),
+      )
+      await notificacoesService.notificarAdmins(tituloAdmin, mensagemAdmin)
+    } catch { /* notificação não deve bloquear a operação principal */ }
+  }
+
+  async cancelar(id: string, usuarioId: string, data: { justificativa: string }): Promise<Aula> {
+    const aulaAtual = await this.buscarPorId(id)
+    if (aulaAtual.status !== 'AGENDADA' && aulaAtual.status !== 'ADIADA' && aulaAtual.status !== 'SUSPENSA') {
+      throw AppError.badRequest(AGENDA_ERRORS.AULA_ENCERRADA)
+    }
+    const { justificativa } = justificativaAulaSchema.parse(data)
+
+    const aula = await this.repository.update(id, {
+      status: 'CANCELADA', justificativa, statusAlteradoEm: new Date(), statusAlteradoPorId: usuarioId,
+    })
+    eventBus.emit('aula.cancelada', { id: aula.id })
+    logInfo('Aula cancelada', { id })
+
+    const dataFmt = aulaAtual.dataHoraInicio.toLocaleDateString('pt-BR')
+    await this.notificarEnvolvidos(
+      id,
+      'Aula cancelada',
+      `A aula do dia ${dataFmt} foi cancelada. Motivo: ${justificativa}`,
+      'Aula cancelada',
+      `A aula do dia ${dataFmt} foi cancelada. Motivo: ${justificativa}`,
+    )
+    return aula
+  }
+
+  async suspender(id: string, usuarioId: string, data: { justificativa: string }): Promise<Aula> {
     const aulaAtual = await this.buscarPorId(id)
     if (aulaAtual.status !== 'AGENDADA' && aulaAtual.status !== 'ADIADA') {
       throw AppError.badRequest(AGENDA_ERRORS.AULA_ENCERRADA)
     }
-    const aula = await this.repository.update(id, { status: 'CANCELADA' })
-    eventBus.emit('aula.cancelada', { id: aula.id })
-    logInfo('Aula cancelada', { id })
+    const { justificativa } = justificativaAulaSchema.parse(data)
+
+    const aula = await this.repository.update(id, {
+      status: 'SUSPENSA', justificativa, statusAlteradoEm: new Date(), statusAlteradoPorId: usuarioId,
+    })
+    logInfo('Aula suspensa', { id })
+
     const dataFmt = aulaAtual.dataHoraInicio.toLocaleDateString('pt-BR')
-    await notificacoesService.notificarAdmins('Aula cancelada', `A aula do dia ${dataFmt} foi cancelada.`).catch(() => {/* silencioso */})
+    await this.notificarEnvolvidos(
+      id,
+      'Aula suspensa',
+      `A aula do dia ${dataFmt} foi suspensa temporariamente. Motivo: ${justificativa}`,
+      'Aula suspensa',
+      `A aula do dia ${dataFmt} foi suspensa. Motivo: ${justificativa}`,
+    )
+    return aula
+  }
+
+  async reagendar(id: string, usuarioId: string, data: { dataHoraInicio: string; justificativa: string }): Promise<Aula> {
+    const aulaAtual = await this.buscarPorId(id)
+    if (STATUS_ENCERRADOS.includes(aulaAtual.status)) {
+      throw AppError.badRequest(AGENDA_ERRORS.AULA_ENCERRADA)
+    }
+    const { dataHoraInicio, justificativa } = reagendarAulaSchema.parse(data)
+
+    const novaData = new Date(dataHoraInicio)
+    const conflito = await this.repository.findConflito(aulaAtual.professorId, novaData, aulaAtual.duracao, id)
+    if (conflito) throw AppError.conflict(AGENDA_ERRORS.CONFLITO_HORARIO)
+
+    const aula = await this.repository.update(id, {
+      status: 'AGENDADA',
+      dataHoraInicio: novaData,
+      dataHoraAnterior: aulaAtual.dataHoraInicio,
+      justificativa,
+      statusAlteradoEm: new Date(),
+      statusAlteradoPorId: usuarioId,
+    })
+    logInfo('Aula reagendada', { id })
+
+    const antesFmt = aulaAtual.dataHoraInicio.toLocaleString('pt-BR')
+    const depoisFmt = novaData.toLocaleString('pt-BR')
+    await this.notificarEnvolvidos(
+      id,
+      'Aula reagendada',
+      `A aula de ${antesFmt} foi reagendada para ${depoisFmt}. Motivo: ${justificativa}`,
+      'Aula reagendada',
+      `A aula de ${antesFmt} foi reagendada para ${depoisFmt}. Motivo: ${justificativa}`,
+    )
+    return aula
+  }
+
+  /** Exclusão lógica (soft delete): a aula deixa de aparecer nas listagens ativas,
+   *  mas o registro e a justificativa permanecem visíveis ao aluno. */
+  async excluir(id: string, usuarioId: string, data: { justificativa: string }): Promise<Aula> {
+    const aulaAtual = await this.buscarPorId(id)
+    if (aulaAtual.status === 'EXCLUIDA') {
+      throw AppError.badRequest('Aula já excluída')
+    }
+    const { justificativa } = justificativaAulaSchema.parse(data)
+
+    const aula = await this.repository.update(id, {
+      status: 'EXCLUIDA', justificativa, statusAlteradoEm: new Date(), statusAlteradoPorId: usuarioId,
+    })
+    logInfo('Aula excluída (soft delete)', { id })
+
+    const dataFmt = aulaAtual.dataHoraInicio.toLocaleDateString('pt-BR')
+    await this.notificarEnvolvidos(
+      id,
+      'Aula excluída',
+      `A aula do dia ${dataFmt} foi removida da agenda. Motivo: ${justificativa}`,
+      'Aula excluída',
+      `A aula do dia ${dataFmt} foi removida da agenda. Motivo: ${justificativa}`,
+    )
     return aula
   }
 }

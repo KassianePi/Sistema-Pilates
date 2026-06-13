@@ -24,6 +24,7 @@ export const ROLE_PERMISSIONS = {
     pagamentos: ['create', 'read', 'update', 'delete', 'refund'],
     relatorios: ['create', 'read', 'delete'],
     auditoria: ['read'],
+    acompanhamento: ['read'],
     presenca: ['create', 'read', 'update', 'delete'],
     sistema: ['create', 'read', 'update', 'delete', 'config', 'logs', 'maintenance'],
   },

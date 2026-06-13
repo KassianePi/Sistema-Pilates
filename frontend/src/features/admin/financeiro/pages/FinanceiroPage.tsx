@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { DollarSign, ArrowDownCircle, ArrowUpCircle, CheckCircle2, Clock, AlertTriangle, X, RotateCcw, FileCheck, FileX, Loader2, Eye } from 'lucide-react'
+import { ArrowDownCircle, ArrowUpCircle, CheckCircle2, Clock, AlertTriangle, X, RotateCcw, FileCheck, FileX, Loader2, Eye } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -15,7 +15,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import {
-  useCaixaAtivo, useAbrirCaixa, useFecharCaixa,
   useMensalidades, useCreateMensalidade,
   usePagamentos, useRegistrarPagamento,
 } from '../hooks/useFinanceiro'
@@ -62,10 +61,6 @@ const METODOS_PAGAMENTO: { value: MetodoPagamento; label: string }[] = [
   { value: 'TRANSFERENCIA', label: 'Transferência' },
 ]
 
-const abrirCaixaSchema = z.object({
-  saldoAbertura: z.number().min(0, 'Saldo deve ser positivo'),
-})
-
 const mensalidadeSchema = z.object({
   tipo: z.enum(['MENSAL', 'AVULSO']).default('MENSAL'),
   alunoId: z.string().min(1, 'Selecione um aluno'),
@@ -94,14 +89,9 @@ export function FinanceiroPage() {
   const [modalRejeitarId, setModalRejeitarId] = useState<string | null>(null)
   const [motivoRejeicao, setMotivoRejeicao] = useState('')
   const [modalVisualizarComprovante, setModalVisualizarComprovante] = useState<{ arquivo: string; nomeArquivo: string; tipoArquivo: string } | null>(null)
-  const [modalCaixaAbrir, setModalCaixaAbrir] = useState(false)
-  const [modalFecharCaixa, setModalFecharCaixa] = useState(false)
   const [modalMensalidade, setModalMensalidade] = useState(false)
   const [modalPagamento, setModalPagamento] = useState<Mensalidade | null>(null)
 
-  const { data: caixa, isLoading: loadingCaixa } = useCaixaAtivo()
-  const abrirCaixa = useAbrirCaixa()
-  const fecharCaixa = useFecharCaixa()
   const { data: mensalidadesData, isLoading: loadingMensalidades } = useMensalidades({ status: filtroStatusMensalidade || undefined, limite: 20 })
   const { data: pagamentosData, isLoading: loadingPagamentos } = usePagamentos({ limite: 20 })
   const createMensalidade = useCreateMensalidade()
@@ -143,10 +133,9 @@ export function FinanceiroPage() {
     onSuccess: (_data, vars) => {
       toast.success(vars.acao === 'APROVADO' ? 'Comprovante aprovado! Mensalidade quitada.' : 'Comprovante rejeitado.')
       queryClient.invalidateQueries({ queryKey: ['comprovantes-admin'] })
-      // Aprovação baixa a mensalidade (e registra pagamento se houver caixa aberto)
+      // Aprovação baixa a mensalidade e registra a movimentação de pagamento
       queryClient.invalidateQueries({ queryKey: ['mensalidades'] })
       queryClient.invalidateQueries({ queryKey: ['pagamentos'] })
-      queryClient.invalidateQueries({ queryKey: ['caixa-ativo'] })
       setModalRejeitarId(null)
       setMotivoRejeicao('')
     },
@@ -156,8 +145,6 @@ export function FinanceiroPage() {
   const alunos = alunosData?.data ?? []
   const planos = planosData?.data ?? []
 
-  const formCaixa = useForm<z.infer<typeof abrirCaixaSchema>>({ resolver: zodResolver(abrirCaixaSchema), defaultValues: { saldoAbertura: 0 } })
-  const formFecharCaixa = useForm<{ saldoFechamento: number }>({ defaultValues: { saldoFechamento: 0 } })
   const formMensalidade = useForm<z.infer<typeof mensalidadeSchema>>({
     resolver: zodResolver(mensalidadeSchema),
     defaultValues: { tipo: 'MENSAL', alunoId: '', planoId: '', vencimento: '', valor: 0 },
@@ -166,12 +153,6 @@ export function FinanceiroPage() {
     resolver: zodResolver(pagamentoSchema),
     defaultValues: { metodo: 'PIX', dataPagamento: new Date().toISOString().split('T')[0] },
   })
-
-  async function onAbrirCaixa(values: z.infer<typeof abrirCaixaSchema>) {
-    await abrirCaixa.mutateAsync(values.saldoAbertura)
-    setModalCaixaAbrir(false)
-    formCaixa.reset()
-  }
 
   async function onCriarMensalidade(values: z.infer<typeof mensalidadeSchema>) {
     await createMensalidade.mutateAsync({
@@ -183,8 +164,7 @@ export function FinanceiroPage() {
   }
 
   async function onRegistrarPagamento(values: z.infer<typeof pagamentoSchema>) {
-    if (!caixa) return
-    await registrarPagamento.mutateAsync({ ...values, caixaId: caixa.id })
+    await registrarPagamento.mutateAsync(values)
     setModalPagamento(null)
     formPagamento.reset()
   }
@@ -199,44 +179,8 @@ export function FinanceiroPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-cinza-forte">Financeiro</h1>
-        <p className="text-sm text-cinza-texto mt-1">Controle de caixa, mensalidades e pagamentos.</p>
+        <p className="text-sm text-cinza-texto mt-1">Mensalidades, pagamentos, reembolsos e comprovantes.</p>
       </div>
-
-      {/* Caixa */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="w-5 h-5" />
-            Caixa
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {loadingCaixa ? (
-            <p className="text-cinza-medio text-sm">Verificando caixa...</p>
-          ) : caixa ? (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse" />
-                <div>
-                  <p className="font-medium text-cinza-forte">Caixa aberto</p>
-                  <p className="text-sm text-cinza-texto">
-                    Desde {formatarData(caixa.dataAbertura)} — Saldo inicial: {formatarValor(Number(caixa.saldoAbertura))}
-                  </p>
-                </div>
-              </div>
-              <Button variant="outline" onClick={() => setModalFecharCaixa(true)}>Fechar caixa</Button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-2.5 h-2.5 rounded-full bg-cinza-medio" />
-                <p className="text-cinza-texto">Caixa fechado</p>
-              </div>
-              <Button onClick={() => setModalCaixaAbrir(true)}>Abrir caixa</Button>
-            </div>
-          )}
-        </CardContent>
-      </Card>
 
       {/* Abas Mensalidades / Pagamentos */}
       <div>
@@ -325,7 +269,7 @@ export function FinanceiroPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           {(m.status === 'PENDENTE' || m.status === 'VENCIDO') && (
-                            <Button size="sm" variant="outline" onClick={() => abrirModalPagamento(m)} disabled={!caixa}>
+                            <Button size="sm" variant="outline" onClick={() => abrirModalPagamento(m)}>
                               <ArrowDownCircle className="w-3.5 h-3.5" />Registrar pagamento
                             </Button>
                           )}
@@ -665,48 +609,6 @@ export function FinanceiroPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Modal: Abrir Caixa */}
-      <Dialog open={modalCaixaAbrir} onOpenChange={(v) => !v && setModalCaixaAbrir(false)}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader><DialogTitle>Abrir Caixa</DialogTitle></DialogHeader>
-          <form onSubmit={formCaixa.handleSubmit(onAbrirCaixa)} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Saldo inicial (R$)</Label>
-              <Input type="number" step="0.01" min="0" {...formCaixa.register('saldoAbertura', { valueAsNumber: true })} />
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setModalCaixaAbrir(false)}>Cancelar</Button>
-              <Button type="submit" disabled={abrirCaixa.isPending}>Abrir</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Fechar caixa */}
-      <Dialog open={modalFecharCaixa} onOpenChange={(v) => { if (!v) { setModalFecharCaixa(false); formFecharCaixa.reset() } }}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Fechar caixa</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={formFecharCaixa.handleSubmit(async (values) => {
-            if (!caixa) return
-            await fecharCaixa.mutateAsync({ id: caixa.id, saldoFechamento: values.saldoFechamento })
-            setModalFecharCaixa(false)
-            formFecharCaixa.reset()
-          })} className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Saldo de fechamento (R$)</Label>
-              <Input type="number" step="0.01" min="0" {...formFecharCaixa.register('saldoFechamento', { valueAsNumber: true })} />
-              <p className="text-xs text-cinza-medio">Informe o valor em caixa ao fechar. Use 0 se não desejar informar.</p>
-            </div>
-            <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => { setModalFecharCaixa(false); formFecharCaixa.reset() }}>Cancelar</Button>
-              <Button type="submit" disabled={fecharCaixa.isPending}>Fechar caixa</Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-
       {/* Modal: Nova Mensalidade */}
       <Dialog open={modalMensalidade} onOpenChange={(v) => !v && setModalMensalidade(false)}>
         <DialogContent className="max-w-md">
@@ -804,9 +706,6 @@ export function FinanceiroPage() {
               </p>
             )}
           </DialogHeader>
-          {!caixa && (
-            <p className="text-sm text-amber-600 bg-amber-50 rounded p-2">Abra o caixa antes de registrar pagamentos.</p>
-          )}
           <form onSubmit={formPagamento.handleSubmit(onRegistrarPagamento as never)} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
@@ -832,7 +731,7 @@ export function FinanceiroPage() {
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setModalPagamento(null)}>Cancelar</Button>
-              <Button type="submit" disabled={registrarPagamento.isPending || !caixa}>Confirmar pagamento</Button>
+              <Button type="submit" disabled={registrarPagamento.isPending}>Confirmar pagamento</Button>
             </DialogFooter>
           </form>
         </DialogContent>

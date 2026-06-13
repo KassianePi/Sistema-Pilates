@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Pencil, X, CalendarDays, Users, Zap, ClipboardCheck } from 'lucide-react'
+import { Plus, Search, Pencil, X, CalendarDays, Users, Zap, ClipboardCheck, PauseCircle, CalendarClock, Ban, Trash2 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -11,17 +11,16 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
 import { AulaFormModal } from '../components/AulaFormModal'
 import { PresencaModal } from '../components/PresencaModal'
-import { useAulas, useCancelarAula } from '../hooks/useAgenda'
+import { JustificativaModal } from '../components/JustificativaModal'
+import { ReagendarModal } from '../components/ReagendarModal'
+import { useAulas, useCancelarAula, useSuspenderAula, useReagendarAula, useExcluirAula } from '../hooks/useAgenda'
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { useCreateMensalidade } from '@/features/admin/financeiro/hooks/useFinanceiro'
 import type { Aula, StatusAula } from '@/types/domain.types'
+
+type AcaoJustificada = 'cancelar' | 'suspender' | 'excluir'
 
 const avulsoSchema = z.object({
   alunoId: z.string().min(1, 'Selecione um aluno'),
@@ -34,6 +33,14 @@ const STATUS_BADGE: Record<StatusAula, { label: string; variant: 'success' | 'wa
   REALIZADA: { label: 'Realizada', variant: 'success' },
   CANCELADA: { label: 'Cancelada', variant: 'destructive' },
   ADIADA: { label: 'Adiada', variant: 'warning' },
+  SUSPENSA: { label: 'Suspensa', variant: 'warning' },
+  EXCLUIDA: { label: 'Excluída', variant: 'outline' },
+}
+
+const ACAO_CONFIG: Record<AcaoJustificada, { titulo: string; confirmLabel: string; destructive: boolean }> = {
+  cancelar: { titulo: 'Cancelar aula', confirmLabel: 'Cancelar aula', destructive: true },
+  suspender: { titulo: 'Suspender aula', confirmLabel: 'Suspender', destructive: false },
+  excluir: { titulo: 'Excluir aula', confirmLabel: 'Excluir', destructive: true },
 }
 
 function formatarData(data: string) {
@@ -46,7 +53,8 @@ export function AgendaPage() {
   const [pagina, setPagina] = useState(1)
   const [modalOpen, setModalOpen] = useState(false)
   const [aulaEditando, setAulaEditando] = useState<Aula | null>(null)
-  const [aulaCancelando, setAulaCancelando] = useState<Aula | null>(null)
+  const [acaoJustificada, setAcaoJustificada] = useState<{ aula: Aula; tipo: AcaoJustificada } | null>(null)
+  const [aulaReagendando, setAulaReagendando] = useState<Aula | null>(null)
   const [modalAvulso, setModalAvulso] = useState(false)
   const [aulaPresenca, setAulaPresenca] = useState<Aula | null>(null)
 
@@ -57,6 +65,9 @@ export function AgendaPage() {
     limite: 15,
   })
   const cancelarAula = useCancelarAula()
+  const suspenderAula = useSuspenderAula()
+  const reagendarAula = useReagendarAula()
+  const excluirAula = useExcluirAula()
   const createMensalidade = useCreateMensalidade()
   const { data: alunosData } = useAlunos({ limite: 200 })
   const alunos = (alunosData?.data ?? []).filter((a) => a.status !== 'INATIVO' && a.status !== 'FORMADO')
@@ -76,11 +87,22 @@ export function AgendaPage() {
     setModalOpen(true)
   }
 
-  async function confirmarCancelamento() {
-    if (!aulaCancelando) return
-    await cancelarAula.mutateAsync({ id: aulaCancelando.id })
-    setAulaCancelando(null)
+  async function confirmarAcaoJustificada(justificativa: string) {
+    if (!acaoJustificada) return
+    const { aula, tipo } = acaoJustificada
+    if (tipo === 'cancelar') await cancelarAula.mutateAsync({ id: aula.id, justificativa })
+    else if (tipo === 'suspender') await suspenderAula.mutateAsync({ id: aula.id, justificativa })
+    else await excluirAula.mutateAsync({ id: aula.id, justificativa })
+    setAcaoJustificada(null)
   }
+
+  async function confirmarReagendamento(dataHoraInicio: string, justificativa: string) {
+    if (!aulaReagendando) return
+    await reagendarAula.mutateAsync({ id: aulaReagendando.id, dataHoraInicio, justificativa })
+    setAulaReagendando(null)
+  }
+
+  const acaoPendente = cancelarAula.isPending || suspenderAula.isPending || excluirAula.isPending
 
   function fecharModalAvulso() {
     setModalAvulso(false)
@@ -139,6 +161,7 @@ export function AgendaPage() {
                 <SelectItem value="all">Todos</SelectItem>
                 <SelectItem value="AGENDADA">Agendada</SelectItem>
                 <SelectItem value="REALIZADA">Realizada</SelectItem>
+                <SelectItem value="SUSPENSA">Suspensa</SelectItem>
                 <SelectItem value="CANCELADA">Cancelada</SelectItem>
               </SelectContent>
             </Select>
@@ -215,15 +238,33 @@ export function AgendaPage() {
                           </Button>
                         )}
                         {aula.status === 'AGENDADA' && (
-                          <>
-                            <Button size="icon" variant="ghost" onClick={() => { setAulaEditando(aula); setModalOpen(true) }} title="Editar">
-                              <Pencil className="w-4 h-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => setAulaCancelando(aula)} title="Cancelar aula"
-                              className="hover:text-red-600 hover:bg-red-50">
-                              <X className="w-4 h-4" />
-                            </Button>
-                          </>
+                          <Button size="icon" variant="ghost" onClick={() => { setAulaEditando(aula); setModalOpen(true) }} title="Editar">
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {(aula.status === 'AGENDADA' || aula.status === 'ADIADA' || aula.status === 'SUSPENSA') && (
+                          <Button size="icon" variant="ghost" onClick={() => setAulaReagendando(aula)} title="Reagendar"
+                            className="hover:text-lilas-medio hover:bg-lilas-claro/40">
+                            <CalendarClock className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {(aula.status === 'AGENDADA' || aula.status === 'ADIADA') && (
+                          <Button size="icon" variant="ghost" onClick={() => setAcaoJustificada({ aula, tipo: 'suspender' })} title="Suspender aula"
+                            className="hover:text-amber-600 hover:bg-amber-50">
+                            <PauseCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {(aula.status === 'AGENDADA' || aula.status === 'ADIADA' || aula.status === 'SUSPENSA') && (
+                          <Button size="icon" variant="ghost" onClick={() => setAcaoJustificada({ aula, tipo: 'cancelar' })} title="Cancelar aula"
+                            className="hover:text-red-600 hover:bg-red-50">
+                            <Ban className="w-4 h-4" />
+                          </Button>
+                        )}
+                        {aula.status !== 'EXCLUIDA' && (
+                          <Button size="icon" variant="ghost" onClick={() => setAcaoJustificada({ aula, tipo: 'excluir' })} title="Excluir aula"
+                            className="hover:text-red-600 hover:bg-red-50">
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
                         )}
                       </div>
                     </TableCell>
@@ -300,22 +341,25 @@ export function AgendaPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!aulaCancelando} onOpenChange={(v) => !v && setAulaCancelando(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar aula?</AlertDialogTitle>
-            <AlertDialogDescription>
-              A aula <strong>{aulaCancelando?.titulo}</strong> do dia {aulaCancelando ? formatarData(aulaCancelando.data) : ''} será cancelada. Os alunos inscritos serão notificados automaticamente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Voltar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmarCancelamento} disabled={cancelarAula.isPending}>
-              {cancelarAula.isPending ? 'Cancelando...' : 'Cancelar aula'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <JustificativaModal
+        open={!!acaoJustificada}
+        onClose={() => setAcaoJustificada(null)}
+        titulo={acaoJustificada ? ACAO_CONFIG[acaoJustificada.tipo].titulo : ''}
+        descricao={acaoJustificada
+          ? `${acaoJustificada.aula.titulo} — ${formatarData(acaoJustificada.aula.data)}. Os alunos inscritos serão notificados com o motivo informado.`
+          : undefined}
+        confirmLabel={acaoJustificada ? ACAO_CONFIG[acaoJustificada.tipo].confirmLabel : ''}
+        destructive={acaoJustificada ? ACAO_CONFIG[acaoJustificada.tipo].destructive : false}
+        pending={acaoPendente}
+        onConfirm={confirmarAcaoJustificada}
+      />
+
+      <ReagendarModal
+        aula={aulaReagendando}
+        onClose={() => setAulaReagendando(null)}
+        pending={reagendarAula.isPending}
+        onConfirm={confirmarReagendamento}
+      />
     </div>
   )
 }
