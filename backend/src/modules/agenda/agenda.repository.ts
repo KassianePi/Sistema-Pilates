@@ -64,6 +64,10 @@ export class AgendaRepository {
     try {
       const { alunoId, escopo, page, limit } = params
       const agora = new Date()
+      // Limite inferior = início do dia de hoje, para que uma aula agendada para hoje
+      // continue visível mesmo após seu horário já ter passado (ou estar em andamento).
+      const inicioHoje = new Date(agora)
+      inicioHoje.setHours(0, 0, 0, 0)
       let where: Record<string, unknown>
       let orderBy: Record<string, 'asc' | 'desc'> = { dataHoraInicio: 'asc' }
 
@@ -71,7 +75,7 @@ export class AgendaRepository {
         where = {
           categoria: 'GERAL',
           status: 'AGENDADA',
-          dataHoraInicio: { gte: agora },
+          dataHoraInicio: { gte: inicioHoje },
         }
       } else if (escopo === 'historico') {
         where = {
@@ -83,11 +87,11 @@ export class AgendaRepository {
         }
         orderBy = { dataHoraInicio: 'desc' }
       } else {
-        // 'minhas' — próximas aulas do aluno: a grade GERAL (que todos frequentam) +
+        // 'minhas' — aulas de hoje em diante: a grade GERAL (que todos frequentam) +
         // aulas específicas em que ele está inscrito (tem presença). Mantém todos os status,
         // para que SUSPENSA/CANCELADA/EXCLUIDA apareçam com o motivo (justificativa).
         where = {
-          dataHoraInicio: { gte: agora },
+          dataHoraInicio: { gte: inicioHoje },
           OR: [
             { categoria: 'GERAL' },
             { presencas: { some: { alunoId } } },
