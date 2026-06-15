@@ -473,6 +473,49 @@ export class AuthService {
       return { ...base, professorId: professor?.id ?? null, especialidade: professor?.especialidade ?? null, bio: professor?.bio ?? null }
     }
 
+    if (usuario.funcao === 'ALUNO') {
+      const aluno = await prisma.aluno.findUnique({
+        where: { usuarioId: usuario.id },
+        include: { planoAtual: { select: { nome: true, aulas: true } } },
+      })
+
+      // modalidade/categoria/professorPrincipal não são campos do Aluno — derivamos
+      // (best-effort) da aula mais recente em que o aluno teve presença registrada.
+      let modalidade: string | null = null
+      let categoria: string | null = null
+      let professorPrincipal: string | null = null
+      if (aluno) {
+        const ultimaPresenca = await prisma.presenca.findFirst({
+          where: { alunoId: aluno.id },
+          orderBy: { dataRegistro: 'desc' },
+          select: {
+            aula: {
+              select: {
+                categoria: true,
+                modalidade: { select: { nome: true } },
+                professor: { select: { usuario: { select: { nomeCompleto: true } } } },
+              },
+            },
+          },
+        })
+        modalidade = ultimaPresenca?.aula?.modalidade?.nome ?? null
+        categoria = ultimaPresenca?.aula?.categoria ?? null
+        professorPrincipal = ultimaPresenca?.aula?.professor?.usuario?.nomeCompleto ?? null
+      }
+
+      return {
+        ...base,
+        alunoId: aluno?.id ?? null,
+        plano: aluno?.planoAtual?.nome ?? null,
+        aulasPlano: aluno?.planoAtual?.aulas ?? null,
+        dataInicio: aluno?.dataInicio ?? null,
+        statusMatricula: aluno?.status ?? null,
+        modalidade,
+        categoria,
+        professorPrincipal,
+      }
+    }
+
     return base
   }
 

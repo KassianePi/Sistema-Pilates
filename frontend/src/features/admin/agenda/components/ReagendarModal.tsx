@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { CalendarClock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { formatarData } from '@/lib/datetime'
 import type { Aula } from '@/types/domain.types'
 
 interface ReagendarModalProps {
-  aula: Aula | null
+  aula: Aula
   onClose: () => void
   pending?: boolean
   onConfirm: (dataHoraInicio: string, justificativa: string) => void
@@ -16,21 +17,17 @@ interface ReagendarModalProps {
 
 const MIN_CHARS = 5
 
-/** Modal de reagendamento: nova data/hora + justificativa obrigatória. */
+/**
+ * Modal de reagendamento: nova data/hora + justificativa obrigatória.
+ *
+ * Deve ser montado apenas quando há aula selecionada (ex.: `{aula && <ReagendarModal .../>}`),
+ * permitindo inicializar o formulário diretamente das props — sem efeito de sincronização.
+ */
 export function ReagendarModal({ aula, onClose, pending, onConfirm }: ReagendarModalProps) {
-  const [data, setData] = useState('')
-  const [hora, setHora] = useState('')
+  const [data, setData] = useState(() => aula.data)
+  const [hora, setHora] = useState(() => aula.horaInicio)
   const [justificativa, setJustificativa] = useState('')
   const [tocado, setTocado] = useState(false)
-
-  useEffect(() => {
-    if (aula) {
-      setData(aula.data)
-      setHora(aula.horaInicio)
-      setJustificativa('')
-      setTocado(false)
-    }
-  }, [aula])
 
   const semData = !data || !hora
   const justInvalida = justificativa.trim().length < MIN_CHARS
@@ -43,18 +40,16 @@ export function ReagendarModal({ aula, onClose, pending, onConfirm }: ReagendarM
   }
 
   return (
-    <Dialog open={!!aula} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CalendarClock className="w-4 h-4 text-lilas-medio" /> Reagendar aula
           </DialogTitle>
         </DialogHeader>
-        {aula && (
-          <p className="text-sm text-cinza-texto -mt-1">
-            {aula.titulo} — atualmente em {new Date(aula.data).toLocaleDateString('pt-BR')} às {aula.horaInicio}
-          </p>
-        )}
+        <p className="text-sm text-cinza-texto -mt-1">
+          {aula.titulo} — atualmente em {formatarData(aula.data)} às {aula.horaInicio}
+        </p>
         <div className="grid grid-cols-2 gap-4 mt-2">
           <div className="space-y-1.5">
             <Label>Nova data <span className="text-rosa-vibrante">*</span></Label>

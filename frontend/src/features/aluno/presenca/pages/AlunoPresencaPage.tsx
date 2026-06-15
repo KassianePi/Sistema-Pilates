@@ -1,108 +1,112 @@
-import { useQuery } from '@tanstack/react-query'
-import { ClipboardList, CheckCircle2, XCircle, MinusCircle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { api } from '@/services/api'
-import type { ApiResponse, Presenca, StatusPresenca } from '@/types/domain.types'
-
-type PresencasResponse = {
-  presencas: Presenca[]
-  total: number
-  page: number
-  limit: number
-  totalPages: number
-}
-
-function useMinhasPresencas() {
-  return useQuery({
-    queryKey: ['presencas-aluno'],
-    queryFn: async () => {
-      const { data } = await api.get<ApiResponse<PresencasResponse>>('/aluno/presencas', {
-        params: { limit: 50 },
-      })
-      return data.data
-    },
-  })
-}
-
-function formatarData(d: string) {
-  return new Date(d).toLocaleDateString('pt-BR')
-}
-
-const STATUS_PRESENCA: Record<StatusPresenca, { label: string; variant: 'success' | 'destructive' | 'warning'; Icon: React.ElementType }> = {
-  PRESENTE: { label: 'Presente', variant: 'success', Icon: CheckCircle2 },
-  AUSENTE: { label: 'Ausente', variant: 'destructive', Icon: XCircle },
-  JUSTIFICADO: { label: 'Justificado', variant: 'warning', Icon: MinusCircle },
-}
+import { useMemo, useState } from 'react'
+import { ClipboardList, CheckCircle2, Percent, CalendarCheck, X, CalendarDays, TrendingUp } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { PageHeader } from '../../components/PageHeader'
+import { KpiCard } from '../../components/KpiCard'
+import { SectionCard } from '../../components/SectionCard'
+import { LoadingState } from '../../components/LoadingState'
+import { EmptyState } from '../../components/EmptyState'
+import { StatusBadge } from '../../components/StatusBadge'
+import { CalendarioPresenca } from '../../components/CalendarioPresenca'
+import { EvolucaoFrequencia } from '../../components/EvolucaoFrequencia'
+import { useAlunoFrequencia } from '../../hooks/useAlunoFrequencia'
+import { calcularKpisFrequencia, calcularEvolucaoMensal } from '../../utils/frequencia'
+import { formatarData } from '../../utils/format'
 
 export function AlunoPresencaPage() {
-  const { data, isLoading } = useMinhasPresencas()
-  const presencas = data?.presencas ?? []
+  const [dataInicio, setDataInicio] = useState('')
+  const [dataFim, setDataFim] = useState('')
 
-  const totalPresente = presencas.filter((p) => p.status === 'PRESENTE').length
-  const percentual = presencas.length > 0 ? Math.round((totalPresente / presencas.length) * 100) : 0
+  const { data, isLoading } = useAlunoFrequencia()
+  const presencas = useMemo(() => data ?? [], [data])
+
+  const kpis = useMemo(() => calcularKpisFrequencia(presencas), [presencas])
+  const evolucao = useMemo(() => calcularEvolucaoMensal(presencas, 6), [presencas])
+
+  const lista = useMemo(
+    () =>
+      presencas.filter((p) => {
+        if (dataInicio && p.aula.data < dataInicio) return false
+        if (dataFim && p.aula.data > dataFim) return false
+        return true
+      }),
+    [presencas, dataInicio, dataFim],
+  )
+
+  const temFiltro = !!dataInicio || !!dataFim
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-cinza-forte">Minha Presença</h1>
-        <p className="text-sm text-cinza-texto mt-1">Histórico de frequência nas aulas.</p>
-      </div>
+      <PageHeader title="Frequência" subtitle="Acompanhe sua presença e evolução nas aulas." icon={ClipboardList} />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-cinza-texto">Taxa de presença</p>
-            <p className={`text-2xl font-bold mt-1 ${percentual >= 75 ? 'text-green-700' : 'text-amber-600'}`}>{percentual}%</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-cinza-texto">Aulas presentes</p>
-            <p className="text-2xl font-bold text-cinza-forte mt-1">{totalPresente}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-cinza-texto">Total registrado</p>
-            <p className="text-2xl font-bold text-cinza-forte mt-1">{presencas.length}</p>
-          </CardContent>
-        </Card>
-      </div>
+      {isLoading ? (
+        <LoadingState />
+      ) : (
+        <>
+          {/* KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <KpiCard label="Aulas realizadas" icon={CheckCircle2} tone="success" value={kpis.totalPresente} />
+            <KpiCard
+              label="Taxa de presença"
+              icon={Percent}
+              tone={kpis.percentual >= 75 ? 'success' : 'warning'}
+              value={`${kpis.percentual}%`}
+            />
+            <KpiCard label="Presenças no mês" icon={CalendarCheck} tone="roxo" value={kpis.presencasMes} />
+          </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Frequência</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="text-cinza-medio text-sm py-6 text-center">Carregando...</p>
-          ) : presencas.length === 0 ? (
-            <div className="flex flex-col items-center py-10 text-cinza-medio">
-              <ClipboardList className="w-10 h-10 mb-3 opacity-30" />
-              <p className="text-sm">Nenhum registro de presença.</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-bege-cartao">
-              {presencas.map((p) => {
-                const { label, variant, Icon } = STATUS_PRESENCA[p.status]
-                return (
-                  <li key={p.id} className="flex items-center justify-between py-3">
-                    <div>
+          {/* Calendário + Evolução */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <SectionCard title="Calendário de comparecimento" icon={CalendarDays}>
+              <CalendarioPresenca presencas={presencas} />
+            </SectionCard>
+            <SectionCard title="Evolução mensal" icon={TrendingUp}>
+              <EvolucaoFrequencia pontos={evolucao} />
+            </SectionCard>
+          </div>
+
+          {/* Histórico filtrável */}
+          <SectionCard
+            title="Histórico de frequência"
+            icon={ClipboardList}
+            action={
+              <div className="flex items-end gap-2 flex-wrap">
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-cinza-medio">De</Label>
+                  <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-36 h-8" />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] text-cinza-medio">Até</Label>
+                  <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-36 h-8" />
+                </div>
+                {temFiltro && (
+                  <Button variant="ghost" size="sm" onClick={() => { setDataInicio(''); setDataFim('') }}>
+                    <X className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
+            }
+          >
+            {lista.length === 0 ? (
+              <EmptyState icon={ClipboardList} message="Nenhum registro de presença no período." />
+            ) : (
+              <ul className="divide-y divide-bege-cartao -my-2">
+                {lista.map((p) => (
+                  <li key={p.id} className="flex items-center justify-between py-3 gap-3">
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-cinza-forte">{p.aula.titulo}</p>
-                      <p className="text-xs text-cinza-medio">{formatarData(p.aula.data)} — {p.aula.horaInicio}</p>
+                      <p className="text-xs text-cinza-medio">{formatarData(p.aula.data)}{p.aula.horaInicio ? ` — ${p.aula.horaInicio}` : ''}</p>
                     </div>
-                    <Badge variant={variant}>
-                      <Icon className="w-3 h-3 mr-1" />
-                      {label}
-                    </Badge>
+                    <StatusBadge domain="presenca" status={p.status} />
                   </li>
-                )
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </>
+      )}
     </div>
   )
 }

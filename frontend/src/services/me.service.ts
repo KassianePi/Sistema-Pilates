@@ -7,9 +7,19 @@ export interface MeuPerfil {
   telefone: string | null
   funcao: string
   cpf: string
+  // Professor
   professorId?: string | null
   especialidade?: string | null
   bio?: string | null
+  // Aluno
+  alunoId?: string | null
+  plano?: string | null
+  aulasPlano?: number | null
+  dataInicio?: string | null
+  statusMatricula?: string | null
+  modalidade?: string | null
+  categoria?: string | null
+  professorPrincipal?: string | null
 }
 
 export interface AtualizarPerfilData {

@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Badge } from '@/components/ui/badge'
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { useRegistrarPresencasBatch } from '../hooks/useAgenda'
+import { formatarData } from '@/lib/datetime'
 import type { Aula } from '@/types/domain.types'
 
 interface Props {
@@ -61,7 +62,7 @@ export function PresencaModal({ aula, onClose }: Props) {
         <div className="space-y-1 -mt-2 mb-2">
           <p className="text-sm font-medium text-cinza-forte">{aula.titulo}</p>
           <p className="text-xs text-cinza-texto">
-            {new Date(aula.data).toLocaleDateString('pt-BR')} · {aula.horaInicio} – {aula.horaFim}
+            {formatarData(aula.data)} · {aula.horaInicio} – {aula.horaFim}
           </p>
           <div className="flex items-center gap-2 mt-1">
             <Badge variant="secondary">{totalPresentes} presente{totalPresentes !== 1 ? 's' : ''}</Badge>

@@ -85,7 +85,10 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
   }
 
   async function onSubmit(values: FormData) {
-    const dataHoraInicio = `${values.data}T${values.horaInicio}:00`
+    // Converte a data/hora LOCAL escolhida pelo admin para ISO/UTC, para que o instante
+    // absoluto seja preservado (evita que o backend, em UTC, interprete o horário 3h atrás
+    // e o job marque a aula como REALIZADA indevidamente).
+    const dataHoraInicio = new Date(`${values.data}T${values.horaInicio}:00`).toISOString()
     const duracao = calcDuracao(values.horaInicio, values.horaFim)
 
     if (isEditing && aula) {

@@ -130,23 +130,29 @@ export class AgendaService {
   }
 
   /**
-   * Notifica os alunos inscritos (com presença na aula) e os administradores
-   * sobre uma alteração de status da aula, incluindo a justificativa.
+   * Notifica os alunos afetados e os administradores sobre uma alteração de status
+   * da aula, incluindo a justificativa. Para aulas da grade GERAL (que todos frequentam)
+   * notifica todos os alunos ativos; para aulas específicas, apenas os inscritos (presença).
    */
-  private async notificarEnvolvidos(aulaId: string, tituloAluno: string, mensagemAluno: string, tituloAdmin: string, mensagemAdmin: string): Promise<void> {
+  private async notificarEnvolvidos(
+    aula: { id: string; categoria: string },
+    tituloAluno: string, mensagemAluno: string, tituloAdmin: string, mensagemAdmin: string,
+  ): Promise<void> {
     try {
-      const presencas = await prisma.presenca.findMany({
-        where: { aulaId } as any,
-        select: { aluno: { select: { usuarioId: true } } },
-      })
+      let usuarioIds: string[]
+      if (aula.categoria === 'GERAL') {
+        const alunos = await prisma.aluno.findMany({ where: { status: 'ATIVO' }, select: { usuarioId: true } })
+        usuarioIds = alunos.map((a) => a.usuarioId)
+      } else {
+        const presencas = await prisma.presenca.findMany({
+          where: { aulaId: aula.id } as any,
+          select: { aluno: { select: { usuarioId: true } } },
+        })
+        usuarioIds = presencas.map((p) => p.aluno.usuarioId)
+      }
       await Promise.all(
-        presencas.map((p) =>
-          notificacoesService.criar({
-            usuarioId: p.aluno.usuarioId,
-            tipo: 'AULA_AGENDADA',
-            titulo: tituloAluno,
-            mensagem: mensagemAluno,
-          }),
+        usuarioIds.map((usuarioId) =>
+          notificacoesService.criar({ usuarioId, tipo: 'AULA_AGENDADA', titulo: tituloAluno, mensagem: mensagemAluno }),
         ),
       )
       await notificacoesService.notificarAdmins(tituloAdmin, mensagemAdmin)
@@ -168,7 +174,7 @@ export class AgendaService {
 
     const dataFmt = aulaAtual.dataHoraInicio.toLocaleDateString('pt-BR')
     await this.notificarEnvolvidos(
-      id,
+      aulaAtual,
       'Aula cancelada',
       `A aula do dia ${dataFmt} foi cancelada. Motivo: ${justificativa}`,
       'Aula cancelada',
@@ -191,7 +197,7 @@ export class AgendaService {
 
     const dataFmt = aulaAtual.dataHoraInicio.toLocaleDateString('pt-BR')
     await this.notificarEnvolvidos(
-      id,
+      aulaAtual,
       'Aula suspensa',
       `A aula do dia ${dataFmt} foi suspensa temporariamente. Motivo: ${justificativa}`,
       'Aula suspensa',
@@ -224,7 +230,7 @@ export class AgendaService {
     const antesFmt = aulaAtual.dataHoraInicio.toLocaleString('pt-BR')
     const depoisFmt = novaData.toLocaleString('pt-BR')
     await this.notificarEnvolvidos(
-      id,
+      aulaAtual,
       'Aula reagendada',
       `A aula de ${antesFmt} foi reagendada para ${depoisFmt}. Motivo: ${justificativa}`,
       'Aula reagendada',
@@ -249,7 +255,7 @@ export class AgendaService {
 
     const dataFmt = aulaAtual.dataHoraInicio.toLocaleDateString('pt-BR')
     await this.notificarEnvolvidos(
-      id,
+      aulaAtual,
       'Aula excluída',
       `A aula do dia ${dataFmt} foi removida da agenda. Motivo: ${justificativa}`,
       'Aula excluída',

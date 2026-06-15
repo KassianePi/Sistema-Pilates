@@ -1,11 +1,10 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 
 interface JustificativaModalProps {
-  open: boolean
   onClose: () => void
   titulo: string
   descricao?: string
@@ -20,16 +19,15 @@ const MIN_CHARS = 5
 /**
  * Modal genérico para ações de agenda que exigem justificativa
  * (suspender, cancelar, excluir). A justificativa é obrigatória.
+ *
+ * Deve ser montado apenas quando aberto (ex.: `{acao && <JustificativaModal .../>}`),
+ * para que o estado nasça limpo a cada abertura — sem efeito de reset.
  */
 export function JustificativaModal({
-  open, onClose, titulo, descricao, confirmLabel, destructive, pending, onConfirm,
+  onClose, titulo, descricao, confirmLabel, destructive, pending, onConfirm,
 }: JustificativaModalProps) {
   const [justificativa, setJustificativa] = useState('')
   const [tocado, setTocado] = useState(false)
-
-  useEffect(() => {
-    if (open) { setJustificativa(''); setTocado(false) }
-  }, [open])
 
   const invalido = justificativa.trim().length < MIN_CHARS
 
@@ -40,7 +38,7 @@ export function JustificativaModal({
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{titulo}</DialogTitle>

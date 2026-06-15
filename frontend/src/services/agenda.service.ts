@@ -40,7 +40,8 @@ type BackendListResponse = { aulas: BackendAula[]; total: number; page: number; 
 
 function mapAula(raw: BackendAula): Aula {
   const dt = new Date(raw.dataHoraInicio)
-  const data = dt.toISOString().split('T')[0]
+  // Data e hora em horário LOCAL (consistentes entre si — evita divergência perto da meia-noite)
+  const data = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`
   const horaInicio = `${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`
   const dtFim = new Date(dt.getTime() + raw.duracao * 60 * 1000)
   const horaFim = `${String(dtFim.getHours()).padStart(2, '0')}:${String(dtFim.getMinutes()).padStart(2, '0')}`

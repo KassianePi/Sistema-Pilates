@@ -20,8 +20,8 @@ import { notificacoesService } from '@/services/notificacoes.service'
 
 const navItems = [
   { label: 'Início', to: '/aluno/dashboard', icon: LayoutDashboard },
-  { label: 'Minhas Aulas', to: '/aluno/agenda', icon: CalendarDays },
-  { label: 'Presença', to: '/aluno/presenca', icon: ClipboardList },
+  { label: 'Agenda', to: '/aluno/agenda', icon: CalendarDays },
+  { label: 'Frequência', to: '/aluno/presenca', icon: ClipboardList },
   { label: 'Financeiro', to: '/aluno/financeiro', icon: Receipt },
   { label: 'Notificações', to: '/aluno/notificacoes', icon: Bell },
   { label: 'Meu Perfil', to: '/aluno/perfil', icon: User },

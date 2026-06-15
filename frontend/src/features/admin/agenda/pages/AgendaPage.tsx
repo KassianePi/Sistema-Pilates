@@ -18,6 +18,7 @@ import { ReagendarModal } from '../components/ReagendarModal'
 import { useAulas, useCancelarAula, useSuspenderAula, useReagendarAula, useExcluirAula } from '../hooks/useAgenda'
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { useCreateMensalidade } from '@/features/admin/financeiro/hooks/useFinanceiro'
+import { formatarData } from '@/lib/datetime'
 import type { Aula, StatusAula } from '@/types/domain.types'
 
 type AcaoJustificada = 'cancelar' | 'suspender' | 'excluir'
@@ -41,10 +42,6 @@ const ACAO_CONFIG: Record<AcaoJustificada, { titulo: string; confirmLabel: strin
   cancelar: { titulo: 'Cancelar aula', confirmLabel: 'Cancelar aula', destructive: true },
   suspender: { titulo: 'Suspender aula', confirmLabel: 'Suspender', destructive: false },
   excluir: { titulo: 'Excluir aula', confirmLabel: 'Excluir', destructive: true },
-}
-
-function formatarData(data: string) {
-  return new Date(data).toLocaleDateString('pt-BR')
 }
 
 export function AgendaPage() {
@@ -341,25 +338,26 @@ export function AgendaPage() {
         </DialogContent>
       </Dialog>
 
-      <JustificativaModal
-        open={!!acaoJustificada}
-        onClose={() => setAcaoJustificada(null)}
-        titulo={acaoJustificada ? ACAO_CONFIG[acaoJustificada.tipo].titulo : ''}
-        descricao={acaoJustificada
-          ? `${acaoJustificada.aula.titulo} — ${formatarData(acaoJustificada.aula.data)}. Os alunos inscritos serão notificados com o motivo informado.`
-          : undefined}
-        confirmLabel={acaoJustificada ? ACAO_CONFIG[acaoJustificada.tipo].confirmLabel : ''}
-        destructive={acaoJustificada ? ACAO_CONFIG[acaoJustificada.tipo].destructive : false}
-        pending={acaoPendente}
-        onConfirm={confirmarAcaoJustificada}
-      />
+      {acaoJustificada && (
+        <JustificativaModal
+          onClose={() => setAcaoJustificada(null)}
+          titulo={ACAO_CONFIG[acaoJustificada.tipo].titulo}
+          descricao={`${acaoJustificada.aula.titulo} — ${formatarData(acaoJustificada.aula.data)}. Os alunos inscritos serão notificados com o motivo informado.`}
+          confirmLabel={ACAO_CONFIG[acaoJustificada.tipo].confirmLabel}
+          destructive={ACAO_CONFIG[acaoJustificada.tipo].destructive}
+          pending={acaoPendente}
+          onConfirm={confirmarAcaoJustificada}
+        />
+      )}
 
-      <ReagendarModal
-        aula={aulaReagendando}
-        onClose={() => setAulaReagendando(null)}
-        pending={reagendarAula.isPending}
-        onConfirm={confirmarReagendamento}
-      />
+      {aulaReagendando && (
+        <ReagendarModal
+          aula={aulaReagendando}
+          onClose={() => setAulaReagendando(null)}
+          pending={reagendarAula.isPending}
+          onConfirm={confirmarReagendamento}
+        />
+      )}
     </div>
   )
 }

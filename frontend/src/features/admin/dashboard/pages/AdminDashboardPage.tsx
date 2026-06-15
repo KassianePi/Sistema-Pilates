@@ -9,13 +9,11 @@ import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { useProfessores } from '@/features/admin/professores/hooks/useProfessores'
 import { useAulas } from '@/features/admin/agenda/hooks/useAgenda'
 import { useMensalidades, usePagamentos } from '@/features/admin/financeiro/hooks/useFinanceiro'
+import { formatarData } from '@/lib/datetime'
 import type { AdminUser } from '@/types/auth.types'
 
 function formatarValor(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
-}
-function formatarData(d: string) {
-  return new Date(d).toLocaleDateString('pt-BR')
 }
 
 export function AdminDashboardPage() {

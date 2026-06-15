@@ -1,650 +1,285 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
-  DollarSign, CheckCircle2, Clock, AlertTriangle, QrCode, Copy,
-  RotateCcw, Info, ChevronDown, ChevronUp, Send, Zap, Upload, FileCheck, XCircle,
+  Wallet, CreditCard, CheckCircle2, AlertTriangle, Send, Upload, RotateCcw, Zap,
+  FileCheck, XCircle, History, Receipt,
 } from 'lucide-react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Input } from '@/components/ui/input'
-import { financeiroService } from '@/services/financeiro.service'
-import { configuracaoService } from '@/services/configuracao.service'
-import { estornosService } from '@/services/estornos.service'
-import type { StatusMensalidade, StatusComprovante } from '@/types/domain.types'
-import type { Estorno, StatusEstorno } from '@/services/estornos.service'
+import { PageHeader } from '../../components/PageHeader'
+import { KpiCard, type KpiTone } from '../../components/KpiCard'
+import { SectionCard } from '../../components/SectionCard'
+import { LoadingState } from '../../components/LoadingState'
+import { EmptyState } from '../../components/EmptyState'
+import { StatusBadge } from '../../components/StatusBadge'
+import { PixCard } from '../../components/PixCard'
+import { TimelineFinanceira } from '../../components/TimelineFinanceira'
+import { EnviarComprovanteModal } from '../../components/EnviarComprovanteModal'
+import { ReembolsoModal } from '../../components/ReembolsoModal'
+import { NotificarPagamentoModal } from '../../components/NotificarPagamentoModal'
+import { SolicitarAvulsaModal } from '../../components/SolicitarAvulsaModal'
+import {
+  useMinhasMensalidades, useMeusComprovantes, useMeusEstornos, useConfiguracaoStudio,
+} from '../../hooks/useAlunoFinanceiro'
+import { getStatusMeta } from '../../constants/status'
+import { formatarValor, formatarData } from '../../utils/format'
+import { montarTimelineFinanceira } from '../../utils/timelineFinanceira'
+import type { MensalidadeAluno, ComprovanteAluno } from '../../utils/tipos'
+import type { Estorno } from '@/services/estornos.service'
 
-function formatarValor(v: number) {
-  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
-}
-function formatarData(d: string) {
-  return new Date(d).toLocaleDateString('pt-BR')
-}
+type Aba = 'resumo' | 'comprovantes' | 'reembolsos' | 'avulsa'
 
-const STATUS_MENSALIDADE: Record<StatusMensalidade, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline'; Icon: React.ElementType }> = {
-  PAGO: { label: 'Pago', variant: 'success', Icon: CheckCircle2 },
-  PENDENTE: { label: 'Pendente', variant: 'warning', Icon: Clock },
-  VENCIDO: { label: 'Vencido', variant: 'destructive', Icon: AlertTriangle },
-  CANCELADO: { label: 'Cancelado', variant: 'outline', Icon: () => null },
-  PARCIAL: { label: 'Parcial', variant: 'warning', Icon: Clock },
-}
+const ABAS: { key: Aba; label: string }[] = [
+  { key: 'resumo', label: 'Resumo' },
+  { key: 'comprovantes', label: 'Comprovantes' },
+  { key: 'reembolsos', label: 'Reembolsos' },
+  { key: 'avulsa', label: 'Aula Avulsa' },
+]
 
-const STATUS_ESTORNO: Record<StatusEstorno, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
-  SOLICITADO: { label: 'Aguardando análise', variant: 'warning' },
-  APROVADO: { label: 'Aprovado', variant: 'success' },
-  PROCESSADO: { label: 'Concluído', variant: 'success' },
-  NEGADO: { label: 'Negado', variant: 'destructive' },
-}
-
-const TIPO_CHAVE: Record<string, string> = {
-  CPF: 'CPF',
-  EMAIL: 'E-mail',
-  CELULAR: 'Celular',
-  ALEATORIA: 'Chave aleatória',
-}
-
-function CardPix({ chavePix, tipoChavePix, nomeRecebedor, qrCodeBase64 }: {
-  chavePix?: string | null; tipoChavePix?: string | null
-  nomeRecebedor?: string | null; qrCodeBase64?: string | null
-}) {
-  function copiar() {
-    if (chavePix) {
-      navigator.clipboard.writeText(chavePix)
-      toast.success('Chave PIX copiada!')
-    }
-  }
-
-  return (
-    <Card className="border-lilas-medio/30 bg-lilas-claro/30">
-      <CardHeader className="pb-2">
-        <CardTitle className="flex items-center gap-2 text-base text-roxo-profundo">
-          <QrCode className="w-4 h-4" /> Como pagar
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-sm text-cinza-texto">
-          Realize o pagamento via PIX e aguarde a confirmação do seu studio.
-        </p>
-
-        {chavePix && (
-          <div className="bg-branco-puro rounded-lg p-3 border border-lilas-medio/20 space-y-1">
-            <p className="text-xs text-cinza-medio">{tipoChavePix ? TIPO_CHAVE[tipoChavePix] ?? tipoChavePix : 'Chave PIX'}</p>
-            <div className="flex items-center gap-2">
-              <p className="font-mono text-sm font-semibold text-cinza-forte flex-1 break-all">{chavePix}</p>
-              <Button variant="outline" size="sm" onClick={copiar} className="shrink-0">
-                <Copy className="w-3.5 h-3.5 mr-1" /> Copiar
-              </Button>
-            </div>
-            {nomeRecebedor && <p className="text-xs text-cinza-texto">Recebedor: <strong>{nomeRecebedor}</strong></p>}
-          </div>
-        )}
-
-        {qrCodeBase64 && (
-          <div className="flex justify-center">
-            <img src={qrCodeBase64} alt="QR Code PIX" className="w-40 h-40 object-contain border border-bege-cartao rounded-lg" />
-          </div>
-        )}
-
-        <p className="text-xs text-cinza-medio flex items-center gap-1">
-          <Info className="w-3 h-3" />
-          Após o pagamento, avise seu studio. A confirmação é feita manualmente.
-        </p>
-      </CardContent>
-    </Card>
-  )
-}
-
-function ModalReembolso({ mensalidadeId, onClose }: { mensalidadeId: string; onClose: () => void }) {
-  const queryClient = useQueryClient()
-  const [motivo, setMotivo] = useState('')
-
-  const mutation = useMutation({
-    mutationFn: () => estornosService.solicitar(mensalidadeId, motivo.trim() || undefined),
-    onSuccess: () => {
-      toast.success('Solicitação de reembolso enviada. Aguarde a análise do studio.')
-      queryClient.invalidateQueries({ queryKey: ['mensalidades-aluno'] })
-      queryClient.invalidateQueries({ queryKey: ['estornos-aluno'] })
-      onClose()
-    },
-    onError: (err: any) => {
-      const msg = err?.response?.data?.message ?? 'Erro ao solicitar reembolso.'
-      toast.error(msg)
-    },
-  })
-
-  return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <RotateCcw className="w-4 h-4 text-rosa-vibrante" /> Solicitar Reembolso
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800 space-y-1">
-            <p className="font-medium">Como funciona o reembolso proporcional:</p>
-            <p>O valor devolvido é calculado com base nos dias contratados no plano menos os dias em que você compareceu neste mês.</p>
-            <p className="text-xs">Exemplo: se o plano tem 12 aulas e você foi a 8, o reembolso cobre 4 aulas.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Motivo <span className="text-cinza-medio text-xs">(opcional)</span></Label>
-            <Textarea
-              placeholder="Descreva o motivo da solicitação..."
-              rows={3}
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending} className="bg-rosa-vibrante hover:bg-rosa-vibrante/90">
-              {mutation.isPending ? 'Enviando...' : 'Solicitar reembolso'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function ModalNotificarPagamento({ mensalidadeId, nomePlano, onClose }: {
-  mensalidadeId: string; nomePlano: string; onClose: () => void
-}) {
-  const [observacoes, setObservacoes] = useState('')
-
-  const mutation = useMutation({
-    mutationFn: () => financeiroService.notificarPagamento(mensalidadeId, observacoes.trim() || undefined),
-    onSuccess: () => {
-      toast.success('Studio notificado! Aguarde a confirmação do pagamento.')
-      onClose()
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Erro ao enviar notificação.')
-    },
-  })
-
-  return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Send className="w-4 h-4 text-roxo-profundo" /> Notificar Pagamento
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="bg-lilas-claro/40 border border-lilas-medio/20 rounded-lg p-3 space-y-1 text-sm">
-            <p className="font-medium text-cinza-forte">{nomePlano}</p>
-            <p className="text-cinza-texto">
-              Após realizar o pagamento via PIX, clique em <strong>Enviar notificação</strong> para avisar o studio. O pagamento será confirmado manualmente pelo studio.
-            </p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Observação <span className="text-cinza-medio text-xs">(opcional)</span></Label>
-            <Textarea
-              placeholder="Ex: PIX enviado às 14h30 de R$ 120,00 para a chave..."
-              rows={3}
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button
-              onClick={() => mutation.mutate()}
-              disabled={mutation.isPending}
-              className="bg-roxo-profundo hover:bg-roxo-profundo/90"
-            >
-              {mutation.isPending ? 'Enviando...' : 'Enviar notificação'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function ModalSolicitarAvulsa({ onClose }: { onClose: () => void }) {
-  const [dataDesejada, setDataDesejada] = useState('')
-  const [observacoes, setObservacoes] = useState('')
-
-  const mutation = useMutation({
-    mutationFn: () => financeiroService.solicitarAulaAvulsa(dataDesejada || undefined, observacoes.trim() || undefined),
-    onSuccess: () => {
-      toast.success('Solicitação enviada! O studio entrará em contato para confirmar.')
-      onClose()
-    },
-    onError: (err: any) => {
-      toast.error(err?.response?.data?.message ?? 'Erro ao enviar solicitação.')
-    },
-  })
-
-  return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Zap className="w-4 h-4 text-lilas-medio" /> Solicitar Aula Avulsa
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <p className="text-sm text-cinza-texto">
-            Solicite uma aula avulsa ao studio. O administrador criará a cobrança e confirmará a data.
-          </p>
-          <div className="space-y-1.5">
-            <Label>Data desejada <span className="text-cinza-medio text-xs">(opcional)</span></Label>
-            <Input
-              type="date"
-              value={dataDesejada}
-              onChange={(e) => setDataDesejada(e.target.value)}
-              min={new Date().toISOString().split('T')[0]}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Observação <span className="text-cinza-medio text-xs">(opcional)</span></Label>
-            <Textarea
-              placeholder="Ex: horário preferido, modalidade, professor..."
-              rows={3}
-              value={observacoes}
-              onChange={(e) => setObservacoes(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button
-              onClick={() => mutation.mutate()}
-              disabled={mutation.isPending}
-              className="bg-lilas-medio hover:bg-roxo-profundo text-branco-puro"
-            >
-              {mutation.isPending ? 'Enviando...' : 'Enviar solicitação'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-const STATUS_COMPROVANTE: Record<StatusComprovante, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
-  PENDENTE: { label: 'Em análise', variant: 'warning' },
-  APROVADO: { label: 'Aprovado', variant: 'success' },
-  REJEITADO: { label: 'Rejeitado', variant: 'destructive' },
-}
-
-function ModalEnviarComprovante({ mensalidadeId, nomePlano, onClose }: {
-  mensalidadeId: string; nomePlano: string; onClose: () => void
-}) {
-  const queryClient = useQueryClient()
-  const [arquivo, setArquivo] = useState<{ base64: string; nome: string; tipo: string } | null>(null)
-
-  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 5MB.')
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => {
-      setArquivo({ base64: reader.result as string, nome: file.name, tipo: file.type })
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const mutation = useMutation({
-    mutationFn: () => financeiroService.enviarComprovante({
-      mensalidadeId,
-      arquivo: arquivo!.base64,
-      nomeArquivo: arquivo!.nome,
-      tipoArquivo: arquivo!.tipo,
-    }),
-    onSuccess: () => {
-      toast.success('Comprovante enviado! Aguarde a análise do studio.')
-      queryClient.invalidateQueries({ queryKey: ['comprovantes-aluno'] })
-      onClose()
-    },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Erro ao enviar comprovante.'),
-  })
-
-  return (
-    <Dialog open onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Upload className="w-4 h-4 text-roxo-profundo" /> Enviar Comprovante
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 mt-2">
-          <div className="bg-lilas-claro/40 border border-lilas-medio/20 rounded-lg p-3 text-sm">
-            <p className="font-medium text-cinza-forte">{nomePlano}</p>
-            <p className="text-cinza-texto mt-0.5">Envie a foto ou PDF do comprovante do pagamento PIX.</p>
-          </div>
-          <div className="space-y-1.5">
-            <Label>Arquivo <span className="text-cinza-medio text-xs">(máx. 5MB — JPG, PNG, PDF)</span></Label>
-            <input
-              type="file"
-              accept="image/jpeg,image/png,image/webp,application/pdf"
-              onChange={handleFile}
-              className="block w-full text-sm text-cinza-texto file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-bege-cartao file:text-xs file:font-medium file:bg-branco-puro hover:file:bg-bege-cartao/50 cursor-pointer"
-            />
-            {arquivo && <p className="text-xs text-green-700">✓ {arquivo.nome}</p>}
-          </div>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button
-              onClick={() => mutation.mutate()}
-              disabled={mutation.isPending || !arquivo}
-              className="bg-roxo-profundo hover:bg-roxo-profundo/90"
-            >
-              {mutation.isPending ? 'Enviando...' : 'Enviar comprovante'}
-            </Button>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-function SecaoComprovantes({ comprovantes }: { comprovantes: ReturnType<typeof Array.prototype.map> }) {
-  if (!comprovantes || comprovantes.length === 0) return null
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileCheck className="w-4 h-4 text-roxo-profundo" /> Comprovantes Enviados
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="divide-y divide-bege-cartao">
-          {comprovantes.map((c: any) => {
-            const info = STATUS_COMPROVANTE[c.status as StatusComprovante] ?? STATUS_COMPROVANTE.PENDENTE
-            return (
-              <li key={c.id} className="py-3 flex items-start justify-between gap-3 flex-wrap">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-cinza-forte">{c.mensalidade?.plano?.nome ?? 'Avulso'}</p>
-                  <p className="text-xs text-cinza-medio">{c.nomeArquivo}</p>
-                  <p className="text-xs text-cinza-texto">Enviado em {formatarData(c.dataEnvio)}</p>
-                  {c.observacoes && c.status === 'REJEITADO' && (
-                    <p className="text-xs text-red-600 flex items-center gap-1"><XCircle className="w-3 h-3" /> {c.observacoes}</p>
-                  )}
-                </div>
-                <Badge variant={info.variant}>{info.label}</Badge>
-              </li>
-            )
-          })}
-        </ul>
-      </CardContent>
-    </Card>
-  )
-}
-
-function SecaoReembolsos({ estornos }: { estornos: Estorno[] }) {
-  const [expandido, setExpandido] = useState(false)
-  if (estornos.length === 0) return null
-
-  const visiveis = expandido ? estornos : estornos.slice(0, 3)
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <RotateCcw className="w-4 h-4 text-rosa-vibrante" /> Solicitações de Reembolso
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ul className="divide-y divide-bege-cartao">
-          {visiveis.map((e) => {
-            const info = STATUS_ESTORNO[e.status]
-            const mesRef = e.mensalidade?.mesReferencia ? formatarData(e.mensalidade.mesReferencia) : '—'
-            return (
-              <li key={e.id} className="py-3 flex items-start justify-between gap-3 flex-wrap">
-                <div className="space-y-0.5">
-                  <p className="text-sm font-medium text-cinza-forte">
-                    {e.mensalidade?.plano?.nome ?? 'Avulso'} — ref. {mesRef}
-                  </p>
-                  <p className="text-xs text-cinza-medio">
-                    {e.diasComparecidos} de {e.diasContratados} aulas comparecidas
-                    {e.motivo && ` · ${e.motivo}`}
-                  </p>
-                  <p className="text-xs text-cinza-texto">Solicitado em {formatarData(e.criadoEm)}</p>
-                </div>
-                <div className="flex flex-col items-end gap-1">
-                  <span className="font-semibold text-cinza-forte">{formatarValor(e.valorEstorno)}</span>
-                  <Badge variant={info.variant}>{info.label}</Badge>
-                </div>
-              </li>
-            )
-          })}
-        </ul>
-        {estornos.length > 3 && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="mt-2 w-full text-cinza-texto"
-            onClick={() => setExpandido(!expandido)}
-          >
-            {expandido ? <><ChevronUp className="w-4 h-4 mr-1" /> Ver menos</> : <><ChevronDown className="w-4 h-4 mr-1" /> Ver todos ({estornos.length})</>}
-          </Button>
-        )}
-      </CardContent>
-    </Card>
-  )
+function toneFromVariant(v: string): KpiTone {
+  if (v === 'success') return 'success'
+  if (v === 'warning') return 'warning'
+  if (v === 'destructive') return 'danger'
+  return 'default'
 }
 
 export function AlunoFinanceiroPage() {
-  const [estornoMensalidadeId, setEstornoMensalidadeId] = useState<string | null>(null)
-  const [notificarMensalidade, setNotificarMensalidade] = useState<{ id: string; nomePlano: string } | null>(null)
-  const [modalAvulso, setModalAvulso] = useState(false)
+  const [params, setParams] = useSearchParams()
+  const abaParam = params.get('tab')
+  const abaInicial: Aba = abaParam === 'comprovantes' || abaParam === 'reembolsos' || abaParam === 'avulsa' ? abaParam : 'resumo'
+  const [aba, setAba] = useState<Aba>(abaInicial)
+
   const [comprovanteModal, setComprovanteModal] = useState<{ id: string; nomePlano: string } | null>(null)
+  const [reembolsoId, setReembolsoId] = useState<string | null>(null)
+  const [notificarModal, setNotificarModal] = useState<{ id: string; nomePlano: string } | null>(null)
+  const [modalAvulso, setModalAvulso] = useState(false)
 
-  const { data: mensalidadesData, isLoading } = useQuery({
-    queryKey: ['mensalidades-aluno'],
-    queryFn: () => financeiroService.listarMinhasMensalidades({ limite: 24 }),
-  })
+  const { data: mensData, isLoading } = useMinhasMensalidades(50)
+  const { data: comprovantesData } = useMeusComprovantes()
+  const { data: estornosData } = useMeusEstornos()
+  const { data: config } = useConfiguracaoStudio()
 
-  const { data: config } = useQuery({
-    queryKey: ['configuracao-studio'],
-    queryFn: configuracaoService.buscar,
-  })
+  const mensalidades: MensalidadeAluno[] = useMemo(() => mensData?.data ?? [], [mensData])
+  const comprovantes: ComprovanteAluno[] = useMemo(() => comprovantesData ?? [], [comprovantesData])
+  const estornos: Estorno[] = useMemo(() => estornosData?.estornos ?? [], [estornosData])
 
-  const { data: estornosData } = useQuery({
-    queryKey: ['estornos-aluno'],
-    queryFn: () => estornosService.listarMeusEstornos({ limit: 50 }),
-  })
-
-  const { data: comprovantesData } = useQuery({
-    queryKey: ['comprovantes-aluno'],
-    queryFn: () => financeiroService.listarMeusComprovantes(),
-  })
-
-  const mensalidades = mensalidadesData?.data ?? []
-  const estornos: Estorno[] = estornosData?.estornos ?? []
-  const comprovantes = comprovantesData ?? []
-
-  // Mensalidades que já têm comprovante pendente ou aprovado
-  const mensalidadesComComprovante = new Set(
-    comprovantes.filter((c: any) => c.status === 'PENDENTE' || c.status === 'APROVADO').map((c: any) => c.mensalidadeId)
+  const comComprovante = useMemo(
+    () => new Set(comprovantes.filter((c) => c.status === 'PENDENTE' || c.status === 'APROVADO').map((c) => c.mensalidadeId)),
+    [comprovantes],
+  )
+  const comEstorno = useMemo(
+    () => new Set(estornos.filter((e) => e.status !== 'NEGADO').map((e) => e.mensalidadeId)),
+    [estornos],
   )
 
-  const pendentes = mensalidades.filter((m: any) => m.status === 'PENDENTE' || m.status === 'VENCIDO')
-  const totalPago = mensalidades.reduce((acc: number, m: any) => m.status === 'PAGO' ? acc + m.valor : acc, 0)
+  const pendentes = mensalidades.filter((m) => m.status === 'PENDENTE' || m.status === 'VENCIDO')
+  const elegiveisReembolso = mensalidades.filter((m) => (m.status === 'PAGO' || m.status === 'PARCIAL') && !comEstorno.has(m.id))
+  const valorPendente = pendentes.reduce((acc, m) => acc + Number(m.valor), 0)
+  const totalPago = mensalidades.reduce((acc, m) => (m.status === 'PAGO' ? acc + Number(m.valor) : acc), 0)
+  const mensalidadeAtual = pendentes.slice().sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())[0] ?? mensalidades[0] ?? null
+  const proximaCobranca = pendentes.slice().sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())[0] ?? null
   const temPix = !!(config?.chavePix || config?.qrCodeBase64)
+  const timeline = useMemo(() => montarTimelineFinanceira({ mensalidades, comprovantes }), [mensalidades, comprovantes])
+  const mensStatus = mensalidadeAtual ? getStatusMeta('mensalidade', mensalidadeAtual.status) : null
 
-  // Mensalidades que já têm estorno ativo (não negado) — desabilita botão
-  const mensalidadesComEstorno = new Set(
-    estornos.filter((e) => e.status !== 'NEGADO').map((e) => e.mensalidadeId)
-  )
+  function trocarAba(nova: Aba) {
+    setAba(nova)
+    setParams(nova === 'resumo' ? {} : { tab: nova }, { replace: true })
+  }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-cinza-forte">Meu Financeiro</h1>
-        <p className="text-sm text-cinza-texto mt-1">Histórico de mensalidades e pagamentos.</p>
-      </div>
+      <PageHeader title="Meu Financeiro" subtitle="Mensalidades, comprovantes, reembolsos e aula avulsa." icon={Wallet} />
 
-      {/* KPIs */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-cinza-texto">Total pago</p>
-            <p className="text-2xl font-bold text-green-700 mt-1">{formatarValor(totalPago)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-cinza-texto">Pendentes / Vencidos</p>
-            <p className="text-2xl font-bold text-amber-600 mt-1">{pendentes.length}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <p className="text-sm text-cinza-texto">Total de registros</p>
-            <p className="text-2xl font-bold text-cinza-forte mt-1">{mensalidades.length}</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Solicitar aula avulsa */}
-      <Card className="border-lilas-medio/30">
-        <CardContent className="flex items-center justify-between gap-4 p-5">
-          <div>
-            <p className="font-medium text-cinza-forte">Aula Avulsa</p>
-            <p className="text-sm text-cinza-texto mt-0.5">Sem plano mensal? Solicite uma aula avulsa ao studio.</p>
-          </div>
-          <Button
-            variant="outline"
-            className="border-lilas-medio text-roxo-profundo hover:bg-lilas-claro shrink-0"
-            onClick={() => setModalAvulso(true)}
+      {/* Abas */}
+      <div className="flex gap-1 bg-bege-suave p-1 rounded-lg w-fit flex-wrap">
+        {ABAS.map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => trocarAba(key)}
+            className={cn(
+              'px-4 py-1.5 rounded-md text-sm font-medium transition-colors',
+              aba === key ? 'bg-branco-puro text-cinza-forte shadow-sm' : 'text-cinza-texto hover:text-cinza-forte',
+            )}
           >
-            <Zap className="w-4 h-4 mr-1" /> Solicitar
-          </Button>
-        </CardContent>
-      </Card>
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {/* PIX (só exibe quando há pendências e PIX configurado) */}
-      {pendentes.length > 0 && temPix && (
-        <CardPix
-          chavePix={config?.chavePix}
-          tipoChavePix={config?.tipoChavePix}
-          nomeRecebedor={config?.nomeRecebedor}
-          qrCodeBase64={config?.qrCodeBase64}
-        />
-      )}
+      {isLoading ? (
+        <LoadingState />
+      ) : aba === 'resumo' ? (
+        <div className="space-y-6">
+          {/* KPIs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <KpiCard label="Mensalidade atual" icon={Receipt} tone={mensStatus ? toneFromVariant(mensStatus.variant) : 'default'} value={mensStatus ? mensStatus.label : 'Em dia'} />
+            <KpiCard label="Próximo vencimento" icon={Wallet} tone={proximaCobranca ? 'warning' : 'default'} value={proximaCobranca ? formatarData(proximaCobranca.vencimento) : '—'} hint={proximaCobranca ? formatarValor(proximaCobranca.valor) : 'Nada em aberto'} />
+            <KpiCard label="Valor em aberto" icon={AlertTriangle} tone={valorPendente > 0 ? 'danger' : 'default'} value={formatarValor(valorPendente)} />
+            <KpiCard label="Total pago" icon={CheckCircle2} tone="success" value={formatarValor(totalPago)} />
+          </div>
 
-      {/* Histórico de mensalidades */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Histórico de Mensalidades</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <p className="text-cinza-medio text-sm py-6 text-center">Carregando...</p>
-          ) : mensalidades.length === 0 ? (
-            <div className="flex flex-col items-center py-10 text-cinza-medio">
-              <DollarSign className="w-10 h-10 mb-3 opacity-30" />
-              <p className="text-sm">Nenhuma mensalidade encontrada.</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-bege-cartao">
-              {mensalidades.map((m: any) => {
-                const statusInfo = STATUS_MENSALIDADE[m.status as StatusMensalidade] ?? STATUS_MENSALIDADE.PENDENTE
-                const { label, variant, Icon } = statusInfo
-                const podeSolicitarEstorno = (m.status === 'PAGO' || m.status === 'PARCIAL') && !mensalidadesComEstorno.has(m.id)
-                const temEstornoAtivo = mensalidadesComEstorno.has(m.id)
-                return (
-                  <li key={m.id} className="flex items-start justify-between py-3 gap-3 flex-wrap">
-                    <div className="space-y-0.5">
+          {pendentes.length > 0 && temPix && (
+            <PixCard chavePix={config?.chavePix} tipoChavePix={config?.tipoChavePix} nomeRecebedor={config?.nomeRecebedor} qrCodeBase64={config?.qrCodeBase64} />
+          )}
+
+          {/* Histórico de mensalidades */}
+          <SectionCard title="Histórico de mensalidades" icon={CreditCard} noPadding>
+            {mensalidades.length === 0 ? (
+              <EmptyState icon={CreditCard} message="Nenhuma mensalidade encontrada." />
+            ) : (
+              <ul className="divide-y divide-bege-cartao">
+                {mensalidades.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-3 px-6 py-3 flex-wrap">
+                    <div className="min-w-0">
                       <p className="text-sm font-medium text-cinza-forte">{m.plano?.nome ?? 'Avulso'}</p>
-                      <p className="text-xs text-cinza-medio">Vencimento: {formatarData(m.vencimento ?? m.dataVencimento)}</p>
+                      <p className="text-xs text-cinza-medio">Vencimento: {formatarData(m.vencimento)}</p>
                       {m.status === 'PAGO' && m.pagamentos?.length > 0 && (
-                        <p className="text-xs text-green-700">
-                          Pago em {formatarData(m.pagamentos[m.pagamentos.length - 1].dataPagamento)}
-                        </p>
+                        <p className="text-xs text-green-700">Pago em {formatarData(m.pagamentos[m.pagamentos.length - 1].dataPagamento)}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap justify-end">
-                      <span className="font-semibold text-cinza-forte">{formatarValor(m.valor)}</span>
-                      <Badge variant={variant}>
-                        <Icon className="w-3 h-3 mr-1" />
-                        {label}
-                      </Badge>
-                      {(m.status === 'PENDENTE' || m.status === 'VENCIDO') && (
-                        <>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5"
-                            onClick={() => setNotificarMensalidade({ id: m.id, nomePlano: m.plano?.nome ?? 'Avulso' })}
-                          >
-                            <Send className="w-3 h-3 mr-1" /> Notificar
-                          </Button>
-                          {!mensalidadesComComprovante.has(m.id) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5"
-                              onClick={() => setComprovanteModal({ id: m.id, nomePlano: m.plano?.nome ?? 'Avulso' })}
-                            >
-                              <Upload className="w-3 h-3 mr-1" /> Comprovante
-                            </Button>
-                          )}
-                          {mensalidadesComComprovante.has(m.id) && (
-                            <span className="text-xs text-amber-600 italic">Comprovante enviado</span>
-                          )}
-                        </>
-                      )}
-                      {podeSolicitarEstorno && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-xs text-rosa-vibrante border-rosa-vibrante/30 hover:bg-rosa-vibrante/5"
-                          onClick={() => setEstornoMensalidadeId(m.id)}
-                        >
-                          <RotateCcw className="w-3 h-3 mr-1" /> Reembolso
-                        </Button>
-                      )}
-                      {temEstornoAtivo && (
-                        <span className="text-xs text-cinza-medio italic">Reembolso solicitado</span>
-                      )}
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-cinza-forte text-sm">{formatarValor(m.valor)}</span>
+                      <StatusBadge domain="mensalidade" status={m.status} />
                     </div>
                   </li>
-                )
-              })}
-            </ul>
-          )}
-        </CardContent>
-      </Card>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
 
-      {/* Comprovantes enviados */}
-      <SecaoComprovantes comprovantes={comprovantes} />
+          {/* Timeline financeira */}
+          <SectionCard title="Linha do tempo financeira" icon={History}>
+            <TimelineFinanceira eventos={timeline} />
+          </SectionCard>
+        </div>
+      ) : aba === 'comprovantes' ? (
+        <div className="space-y-6">
+          {/* Cobranças em aberto para enviar comprovante */}
+          <SectionCard title="Cobranças em aberto" icon={Upload} noPadding>
+            {pendentes.length === 0 ? (
+              <EmptyState icon={CheckCircle2} message="Nenhuma cobrança em aberto. Tudo certo!" />
+            ) : (
+              <ul className="divide-y divide-bege-cartao">
+                {pendentes.map((m) => {
+                  const jaEnviou = comComprovante.has(m.id)
+                  const nomePlano = m.plano?.nome ?? 'Avulso'
+                  return (
+                    <li key={m.id} className="flex items-center justify-between gap-3 px-6 py-3 flex-wrap">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-cinza-forte">{nomePlano}</p>
+                        <p className="text-xs text-cinza-medio">{formatarValor(m.valor)} · vence {formatarData(m.vencimento)}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        <Button size="sm" variant="outline" className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5" onClick={() => setNotificarModal({ id: m.id, nomePlano })}>
+                          <Send className="w-3 h-3 mr-1" /> Notificar
+                        </Button>
+                        {jaEnviou ? (
+                          <span className="text-xs text-amber-600 italic">Comprovante enviado</span>
+                        ) : (
+                          <Button size="sm" variant="outline" className="text-xs text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5" onClick={() => setComprovanteModal({ id: m.id, nomePlano })}>
+                            <Upload className="w-3 h-3 mr-1" /> Enviar comprovante
+                          </Button>
+                        )}
+                      </div>
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
+          </SectionCard>
 
-      {/* Histórico de reembolsos */}
-      <SecaoReembolsos estornos={estornos} />
+          {/* Comprovantes enviados */}
+          <SectionCard title="Comprovantes enviados" icon={FileCheck} noPadding>
+            {comprovantes.length === 0 ? (
+              <EmptyState icon={FileCheck} message="Você ainda não enviou comprovantes." />
+            ) : (
+              <ul className="divide-y divide-bege-cartao">
+                {comprovantes.map((c) => (
+                  <li key={c.id} className="flex items-start justify-between gap-3 px-6 py-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-cinza-forte">{c.mensalidade?.plano?.nome ?? 'Avulso'}</p>
+                      <p className="text-xs text-cinza-medio">{c.nomeArquivo}</p>
+                      <p className="text-xs text-cinza-texto">Enviado em {formatarData(c.dataEnvio)}</p>
+                      {c.status === 'REJEITADO' && c.observacoes && (
+                        <p className="text-xs text-rosa-vibrante flex items-center gap-1 mt-0.5"><XCircle className="w-3 h-3" /> {c.observacoes}</p>
+                      )}
+                    </div>
+                    <StatusBadge domain="comprovante" status={c.status} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </div>
+      ) : aba === 'reembolsos' ? (
+        <div className="space-y-6">
+          {/* Mensalidades elegíveis */}
+          <SectionCard title="Solicitar reembolso" icon={RotateCcw} noPadding>
+            {elegiveisReembolso.length === 0 ? (
+              <EmptyState icon={RotateCcw} message="Nenhuma mensalidade elegível para reembolso no momento." />
+            ) : (
+              <ul className="divide-y divide-bege-cartao">
+                {elegiveisReembolso.map((m) => (
+                  <li key={m.id} className="flex items-center justify-between gap-3 px-6 py-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-cinza-forte">{m.plano?.nome ?? 'Avulso'}</p>
+                      <p className="text-xs text-cinza-medio">{formatarValor(m.valor)} · {formatarData(m.vencimento)}</p>
+                    </div>
+                    <Button size="sm" variant="outline" className="text-xs text-rosa-vibrante border-rosa-vibrante/30 hover:bg-rosa-vibrante/5" onClick={() => setReembolsoId(m.id)}>
+                      <RotateCcw className="w-3 h-3 mr-1" /> Solicitar
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
 
-      {estornoMensalidadeId && (
-        <ModalReembolso mensalidadeId={estornoMensalidadeId} onClose={() => setEstornoMensalidadeId(null)} />
+          {/* Minhas solicitações */}
+          <SectionCard title="Minhas solicitações" icon={History} noPadding>
+            {estornos.length === 0 ? (
+              <EmptyState icon={RotateCcw} message="Você não tem solicitações de reembolso." />
+            ) : (
+              <ul className="divide-y divide-bege-cartao">
+                {estornos.map((e) => (
+                  <li key={e.id} className="flex items-start justify-between gap-3 px-6 py-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-cinza-forte">{e.mensalidade?.plano?.nome ?? 'Avulso'}</p>
+                      <p className="text-xs text-cinza-medio">
+                        {e.diasComparecidos} de {e.diasContratados} aulas comparecidas
+                        {e.motivo ? ` · ${e.motivo}` : ''}
+                      </p>
+                      <p className="text-xs text-cinza-texto">Solicitado em {formatarData(e.criadoEm)}</p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className="font-semibold text-cinza-forte text-sm">{formatarValor(Number(e.valorEstorno))}</span>
+                      <StatusBadge domain="estorno" status={e.status} />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </SectionCard>
+        </div>
+      ) : (
+        /* Aula Avulsa */
+        <SectionCard title="Aula Avulsa" icon={Zap}>
+          <div className="flex flex-col items-start gap-4">
+            <p className="text-sm text-cinza-texto">
+              Sem plano mensal ou quer uma aula extra? Solicite uma aula avulsa ao studio. O administrador criará a cobrança e confirmará a data com você.
+            </p>
+            <Button className="bg-lilas-medio hover:bg-roxo-profundo text-branco-puro" onClick={() => setModalAvulso(true)}>
+              <Zap className="w-4 h-4 mr-1" /> Solicitar aula avulsa
+            </Button>
+          </div>
+        </SectionCard>
       )}
 
-      {notificarMensalidade && (
-        <ModalNotificarPagamento
-          mensalidadeId={notificarMensalidade.id}
-          nomePlano={notificarMensalidade.nomePlano}
-          onClose={() => setNotificarMensalidade(null)}
-        />
-      )}
-
-      {modalAvulso && <ModalSolicitarAvulsa onClose={() => setModalAvulso(false)} />}
-
-      {comprovanteModal && (
-        <ModalEnviarComprovante
-          mensalidadeId={comprovanteModal.id}
-          nomePlano={comprovanteModal.nomePlano}
-          onClose={() => setComprovanteModal(null)}
-        />
-      )}
+      {/* Modais */}
+      {comprovanteModal && <EnviarComprovanteModal mensalidadeId={comprovanteModal.id} nomePlano={comprovanteModal.nomePlano} onClose={() => setComprovanteModal(null)} />}
+      {reembolsoId && <ReembolsoModal mensalidadeId={reembolsoId} onClose={() => setReembolsoId(null)} />}
+      {notificarModal && <NotificarPagamentoModal mensalidadeId={notificarModal.id} nomePlano={notificarModal.nomePlano} onClose={() => setNotificarModal(null)} />}
+      {modalAvulso && <SolicitarAvulsaModal onClose={() => setModalAvulso(false)} />}
     </div>
   )
 }

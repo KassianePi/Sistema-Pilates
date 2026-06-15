@@ -1,0 +1,60 @@
+import { useMemo } from 'react'
+import { useAlunoAgenda } from './useAlunoAgenda'
+import { useMinhasMensalidades, useMeusComprovantes, useMeusEstornos } from './useAlunoFinanceiro'
+import { useAlunoFrequencia } from './useAlunoFrequencia'
+import { useAlunoPerfil } from './useAlunoPerfil'
+import { useNotificacoes } from './useAlunoNotificacoes'
+import { calcularAulasDisponiveis, type AulasDisponiveisResult } from '../utils/aulasDisponiveis'
+import type { Aula } from '@/types/domain.types'
+
+/** Agrega os dados das demais queries e calcula os KPIs do dashboard do aluno. */
+export function useAlunoDashboard() {
+  const agenda = useAlunoAgenda('minhas')
+  const mensalidades = useMinhasMensalidades(50)
+  const comprovantes = useMeusComprovantes()
+  const estornos = useMeusEstornos()
+  const frequencia = useAlunoFrequencia()
+  const perfil = useAlunoPerfil()
+  const notificacoes = useNotificacoes()
+
+  const dados = useMemo(() => {
+    // O escopo 'minhas' já vem do backend apenas com aulas futuras, ordenadas por data.
+    const aulas = agenda.data?.data ?? []
+    const proximaAula: Aula | null = aulas.find((a) => a.status === 'AGENDADA') ?? null
+
+    const presencas = frequencia.data ?? []
+    const aulasDisponiveis: AulasDisponiveisResult = calcularAulasDisponiveis({
+      aulasPlano: perfil.data?.aulasPlano,
+      presencas,
+    })
+
+    const mens = mensalidades.data?.data ?? []
+    const emAberto = mens
+      .filter((m) => m.status === 'PENDENTE' || m.status === 'VENCIDO')
+      .sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())
+    const mensalidadeAtual = emAberto[0] ?? mens[0] ?? null
+    const proximaCobranca = emAberto[0] ?? null
+
+    const comps = comprovantes.data ?? []
+    const ests = estornos.data?.estornos ?? []
+    const solicitacoesPendentes =
+      comps.filter((c) => c.status === 'PENDENTE').length +
+      ests.filter((e) => e.status === 'SOLICITADO').length
+
+    const ultimasNotificacoes = (notificacoes.data?.data ?? []).filter((n) => !n.arquivada).slice(0, 5)
+
+    return {
+      proximaAula,
+      aulasRealizadasMes: aulasDisponiveis.realizadas,
+      aulasDisponiveis,
+      mensalidadeAtual,
+      proximaCobranca,
+      solicitacoesPendentes,
+      ultimasNotificacoes,
+    }
+  }, [agenda.data, mensalidades.data, comprovantes.data, estornos.data, frequencia.data, perfil.data, notificacoes.data])
+
+  const isLoading = agenda.isLoading || mensalidades.isLoading || frequencia.isLoading || perfil.isLoading
+
+  return { ...dados, perfil: perfil.data, isLoading }
+}

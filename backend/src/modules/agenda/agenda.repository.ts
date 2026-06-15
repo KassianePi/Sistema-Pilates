@@ -53,7 +53,8 @@ export class AgendaRepository {
 
   /**
    * Lista aulas para o portal do aluno segmentadas por escopo:
-   * - 'minhas': aulas futuras AGENDADAS em que o aluno está inscrito (tem presença)
+   * - 'minhas': próximas aulas do aluno — a grade GERAL (que todos frequentam) + aulas
+   *   específicas em que ele está inscrito (tem presença). Inclui todos os status.
    * - 'gerais': aulas GERAIS futuras AGENDADAS (grade aberta, somente visualização)
    * - 'historico': aulas passadas ou encerradas em que o aluno esteve inscrito
    */
@@ -82,11 +83,15 @@ export class AgendaRepository {
         }
         orderBy = { dataHoraInicio: 'desc' }
       } else {
-        // 'minhas' — todas as aulas futuras em que o aluno está inscrito, independentemente
-        // do status, para que SUSPENSA/CANCELADA/EXCLUIDA apareçam com o motivo (justificativa).
+        // 'minhas' — próximas aulas do aluno: a grade GERAL (que todos frequentam) +
+        // aulas específicas em que ele está inscrito (tem presença). Mantém todos os status,
+        // para que SUSPENSA/CANCELADA/EXCLUIDA apareçam com o motivo (justificativa).
         where = {
-          presencas: { some: { alunoId } },
           dataHoraInicio: { gte: agora },
+          OR: [
+            { categoria: 'GERAL' },
+            { presencas: { some: { alunoId } } },
+          ],
         }
       }
 
