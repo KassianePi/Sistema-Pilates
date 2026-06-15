@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, Search, Pencil, X, CalendarDays, Users, Zap, ClipboardCheck, PauseCircle, CalendarClock, Ban, Trash2 } from 'lucide-react'
+import { Plus, Search, Pencil, X, CalendarDays, Users, Zap, ClipboardCheck, PauseCircle, CalendarClock, Ban, Trash2, UserPlus } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -15,6 +15,7 @@ import { AulaFormModal } from '../components/AulaFormModal'
 import { PresencaModal } from '../components/PresencaModal'
 import { JustificativaModal } from '../components/JustificativaModal'
 import { ReagendarModal } from '../components/ReagendarModal'
+import { MatriculaModal } from '../components/MatriculaModal'
 import { useAulas, useCancelarAula, useSuspenderAula, useReagendarAula, useExcluirAula } from '../hooks/useAgenda'
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { useCreateMensalidade } from '@/features/admin/financeiro/hooks/useFinanceiro'
@@ -52,6 +53,7 @@ export function AgendaPage() {
   const [aulaEditando, setAulaEditando] = useState<Aula | null>(null)
   const [acaoJustificada, setAcaoJustificada] = useState<{ aula: Aula; tipo: AcaoJustificada } | null>(null)
   const [aulaReagendando, setAulaReagendando] = useState<Aula | null>(null)
+  const [aulaMatricula, setAulaMatricula] = useState<Aula | null>(null)
   const [modalAvulso, setModalAvulso] = useState(false)
   const [aulaPresenca, setAulaPresenca] = useState<Aula | null>(null)
 
@@ -234,6 +236,12 @@ export function AgendaPage() {
                             <ClipboardCheck className="w-4 h-4" />
                           </Button>
                         )}
+                        {(aula.status === 'AGENDADA' || aula.status === 'ADIADA' || aula.status === 'SUSPENSA') && (
+                          <Button size="icon" variant="ghost" onClick={() => setAulaMatricula(aula)} title="Matricular alunos"
+                            className="hover:text-roxo-profundo hover:bg-lilas-claro/40">
+                            <UserPlus className="w-4 h-4" />
+                          </Button>
+                        )}
                         {aula.status === 'AGENDADA' && (
                           <Button size="icon" variant="ghost" onClick={() => { setAulaEditando(aula); setModalOpen(true) }} title="Editar">
                             <Pencil className="w-4 h-4" />
@@ -357,6 +365,10 @@ export function AgendaPage() {
           pending={reagendarAula.isPending}
           onConfirm={confirmarReagendamento}
         />
+      )}
+
+      {aulaMatricula && (
+        <MatriculaModal aula={aulaMatricula} onClose={() => setAulaMatricula(null)} />
       )}
     </div>
   )

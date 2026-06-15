@@ -20,7 +20,12 @@ export function useAlunoDashboard() {
   const dados = useMemo(() => {
     // O escopo 'minhas' já vem do backend apenas com aulas futuras, ordenadas por data.
     const aulas = agenda.data?.data ?? []
-    const proximaAula: Aula | null = aulas.find((a) => a.status === 'AGENDADA') ?? null
+    const agendadas = aulas.filter((a) => a.status === 'AGENDADA')
+    // Matriculadas: aulas em que o aluno está inscrito. Grade geral: GERAL não-matriculadas.
+    const minhasAulas = agendadas.filter((a) => a.matriculado)
+    const gradeGeral = agendadas.filter((a) => !a.matriculado && (a.categoria ?? 'GERAL') === 'GERAL')
+    // Próxima aula prioriza a matriculada; se não houver, a próxima da grade.
+    const proximaAula: Aula | null = minhasAulas[0] ?? agendadas[0] ?? null
 
     const presencas = frequencia.data ?? []
     const aulasDisponiveis: AulasDisponiveisResult = calcularAulasDisponiveis({
@@ -45,6 +50,8 @@ export function useAlunoDashboard() {
 
     return {
       proximaAula,
+      minhasAulas,
+      gradeGeral,
       aulasRealizadasMes: aulasDisponiveis.realizadas,
       aulasDisponiveis,
       mensalidadeAtual,

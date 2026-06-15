@@ -73,6 +73,17 @@ export class PresencaService {
     if (!aula) throw AppError.notFound('Aula', aulaId)
     if (aula.status === 'CANCELADA') throw AppError.badRequest('Não é possível registrar presenças em aula cancelada')
 
+    // Segurança: só é permitido registrar presença de alunos matriculados (inscrição ATIVA).
+    const inscritos = await prisma.inscricaoAula.findMany({
+      where: { aulaId, status: 'ATIVA' } as any,
+      select: { alunoId: true },
+    })
+    const matriculados = new Set(inscritos.map((i) => i.alunoId))
+    const naoMatriculados = presencas.filter((p) => !matriculados.has(p.alunoId))
+    if (naoMatriculados.length > 0) {
+      throw AppError.badRequest('Só é possível registrar presença de alunos matriculados na aula.')
+    }
+
     const agora = new Date()
     await prisma.$transaction(async (tx) => {
       for (const item of presencas) {

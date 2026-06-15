@@ -113,6 +113,33 @@ export async function excluir(request: FastifyRequest, reply: FastifyReply) {
   }
 }
 
+export async function listarInscritos(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.params as { id: string }
+    const inscritos = await agendaService.listarInscritos(id)
+    return reply.code(200).send({ success: true, data: inscritos })
+  } catch (error: any) {
+    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    logWarn('Erro ao listar matriculados', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao listar matriculados', code: 'INTERNAL_ERROR' })
+  }
+}
+
+export async function matricular(request: FastifyRequest, reply: FastifyReply) {
+  try {
+    const { id } = request.params as { id: string }
+    const inscritos = await agendaService.matricular(id, request.body as any)
+    return reply.code(200).send({ success: true, data: inscritos })
+  } catch (error: any) {
+    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error?.name === 'ZodError') return reply.code(400).send({ success: false, message: error.errors?.[0]?.message ?? 'Dados inválidos', code: 'VALIDATION_ERROR' })
+    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    logWarn('Erro ao matricular alunos', { error: String(error) })
+    return reply.code(500).send({ success: false, message: 'Erro ao matricular alunos', code: 'INTERNAL_ERROR' })
+  }
+}
+
 // Endpoint público para o portal do aluno — retorna agenda de aulas AGENDADAS
 export async function listarAulasAluno(request: FastifyRequest, reply: FastifyReply) {
   try {

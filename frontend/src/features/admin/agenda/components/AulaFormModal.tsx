@@ -1,17 +1,19 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useQuery } from '@tanstack/react-query'
+import { Info } from 'lucide-react'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { useCreateAula, useUpdateAula } from '../hooks/useAgenda'
+import { useCreateAula, useUpdateAula, useMatricular } from '../hooks/useAgenda'
 import { useProfessores } from '@/features/admin/professores/hooks/useProfessores'
 import { modalidadesService } from '@/services/modalidades.service'
+import { SeletorAlunos } from './SeletorAlunos'
 import type { Aula } from '@/types/domain.types'
 
 const schema = z.object({
@@ -45,6 +47,13 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
   const isEditing = !!aula
   const createAula = useCreateAula()
   const updateAula = useUpdateAula()
+  const matricular = useMatricular()
+  const [matriculados, setMatriculados] = useState<string[]>([])
+
+  function handleClose() {
+    setMatriculados([])
+    onClose()
+  }
   const { data: profData } = useProfessores({ limite: 100 })
   const professores = profData?.data ?? []
 
@@ -97,7 +106,7 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
         dto: { dataHoraInicio, duracao, capacidade: values.capacidade, sala: values.sala, tipo: values.tipo, categoria: values.categoria, modalidadeId: values.modalidadeId, observacoes: values.observacoes },
       })
     } else {
-      await createAula.mutateAsync({
+      const novaAula = await createAula.mutateAsync({
         professorId: values.professorId,
         dataHoraInicio,
         duracao,
@@ -108,12 +117,16 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
         modalidadeId: values.modalidadeId,
         observacoes: values.observacoes,
       })
+      // Matricula os alunos selecionados na aula recém-criada.
+      if (matriculados.length > 0) {
+        await matricular.mutateAsync({ aulaId: novaAula.id, alunoIds: matriculados })
+      }
     }
-    onClose()
+    handleClose()
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Aula' : 'Nova Aula'}</DialogTitle>
@@ -210,9 +223,22 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
             <Textarea id="observacoes" {...register('observacoes')} rows={2} placeholder="Observações adicionais..." />
           </div>
 
+          {/* Matrícula de alunos */}
+          {isEditing ? (
+            <div className="flex items-start gap-2 text-xs text-cinza-texto bg-lilas-claro/30 border border-lilas-medio/20 rounded-lg px-3 py-2">
+              <Info className="w-3.5 h-3.5 mt-0.5 shrink-0 text-roxo-profundo" />
+              Para gerenciar os alunos matriculados nesta aula, use a ação <strong>Matricular alunos</strong> na agenda.
+            </div>
+          ) : (
+            <div className="space-y-1.5 border-t border-bege-cartao pt-4">
+              <Label>Matricular alunos <span className="text-cinza-medio text-xs font-normal">(opcional)</span></Label>
+              <SeletorAlunos value={matriculados} onChange={setMatriculados} capacidade={watch('capacidade') || 0} />
+            </div>
+          )}
+
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting || createAula.isPending || updateAula.isPending}>
+            <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
+            <Button type="submit" disabled={isSubmitting || createAula.isPending || updateAula.isPending || matricular.isPending}>
               {isEditing ? 'Salvar alterações' : 'Agendar aula'}
             </Button>
           </DialogFooter>

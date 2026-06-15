@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify'
-import { criar, listar, buscarPorId, atualizar, cancelar, suspender, reagendar, excluir, listarAulasAluno } from './agenda.controller'
+import { criar, listar, buscarPorId, atualizar, cancelar, suspender, reagendar, excluir, listarInscritos, matricular, listarAulasAluno } from './agenda.controller'
 import { authenticateToken, requireRole } from '../../shared/middlewares/auth.middleware'
 import { authorize } from '../../shared/middlewares/rbac.middleware'
 
@@ -18,4 +18,8 @@ export async function agendaRoutes(fastify: FastifyInstance) {
   fastify.patch('/api/v1/aulas/:id/suspender', { onRequest: [authenticateToken, authorize('agenda', 'update')] }, suspender)
   fastify.patch('/api/v1/aulas/:id/reagendar', { onRequest: [authenticateToken, authorize('agenda', 'update')] }, reagendar)
   fastify.delete('/api/v1/aulas/:id', { onRequest: [authenticateToken, authorize('agenda', 'delete')] }, excluir)
+
+  // Matrícula de alunos na aula
+  fastify.get('/api/v1/aulas/:id/inscricoes', { onRequest: [authenticateToken, authorize('agenda', 'read')] }, listarInscritos)
+  fastify.put('/api/v1/aulas/:id/inscricoes', { onRequest: [authenticateToken, authorize('agenda', 'update')] }, matricular)
 }

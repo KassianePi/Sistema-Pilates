@@ -4,6 +4,7 @@ import {
   CalendarDays, ClipboardCheck, CreditCard, Receipt, RotateCcw, Upload, Zap,
   Bell, ChevronRight, CalendarClock, Wallet, AlertCircle, CheckCircle2,
 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { KpiCard, type KpiTone } from '../../components/KpiCard'
 import { QuickActions, type QuickAction } from '../../components/QuickActions'
 import { SectionCard } from '../../components/SectionCard'
@@ -26,10 +27,21 @@ function formatarHora(d: string) {
   return new Date(d).toLocaleString('pt-BR', { hour: '2-digit', minute: '2-digit' })
 }
 
+function AulaLinha({ aula }: { aula: { id: string; titulo: string; data: string; horaInicio: string; professor: { usuario: { nomeCompleto: string } } } }) {
+  return (
+    <li className="flex items-start justify-between gap-3 py-2.5">
+      <div className="min-w-0">
+        <p className="text-sm font-medium text-cinza-forte truncate">{aula.titulo}</p>
+        <p className="text-xs text-cinza-medio">{formatarData(aula.data)} · {aula.horaInicio} · {aula.professor.usuario.nomeCompleto}</p>
+      </div>
+    </li>
+  )
+}
+
 export function AlunoDashboardPage() {
   const [modalAvulso, setModalAvulso] = useState(false)
   const {
-    proximaAula, aulasRealizadasMes, aulasDisponiveis, mensalidadeAtual,
+    proximaAula, minhasAulas, gradeGeral, aulasRealizadasMes, aulasDisponiveis, mensalidadeAtual,
     proximaCobranca, solicitacoesPendentes, ultimasNotificacoes, perfil, isLoading,
   } = useAlunoDashboard()
 
@@ -120,6 +132,57 @@ export function AlunoDashboardPage() {
           <section>
             <h2 className="text-sm font-semibold text-cinza-medio uppercase tracking-wider mb-4">Ações rápidas</h2>
             <QuickActions actions={quickActions} />
+          </section>
+
+          {/* Minha agenda — Próxima aula / Minhas aulas / Grade geral */}
+          <section className="space-y-4">
+            <h2 className="text-sm font-semibold text-cinza-medio uppercase tracking-wider">Minha agenda</h2>
+
+            {/* Próxima aula (destaque) */}
+            <SectionCard title="Próxima aula" icon={CalendarClock}>
+              {proximaAula ? (
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-cinza-forte">{proximaAula.titulo}</p>
+                    <p className="text-sm text-cinza-texto capitalize">{formatarData(proximaAula.data)} · {proximaAula.horaInicio}</p>
+                    <p className="text-xs text-cinza-medio mt-0.5">{proximaAula.professor.usuario.nomeCompleto}</p>
+                  </div>
+                  {proximaAula.matriculado && <Badge variant="secondary">Matriculado</Badge>}
+                </div>
+              ) : (
+                <EmptyState icon={CalendarDays} message="Você não tem aulas agendadas." />
+              )}
+            </SectionCard>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <SectionCard
+                title="Minhas aulas"
+                icon={ClipboardCheck}
+                action={<Link to="/aluno/agenda" className="text-xs text-lilas-medio hover:underline flex items-center gap-1">Ver agenda <ChevronRight className="w-3 h-3" /></Link>}
+              >
+                {minhasAulas.length === 0 ? (
+                  <EmptyState icon={CalendarDays} message="Você não está matriculado em aulas futuras." />
+                ) : (
+                  <ul className="divide-y divide-bege-cartao -my-2">
+                    {minhasAulas.slice(0, 5).map((a) => <AulaLinha key={a.id} aula={a} />)}
+                  </ul>
+                )}
+              </SectionCard>
+
+              <SectionCard
+                title="Grade geral"
+                icon={CalendarDays}
+                action={<Link to="/aluno/agenda" className="text-xs text-lilas-medio hover:underline flex items-center gap-1">Ver grade <ChevronRight className="w-3 h-3" /></Link>}
+              >
+                {gradeGeral.length === 0 ? (
+                  <EmptyState icon={CalendarDays} message="Nenhuma aula na grade aberta." />
+                ) : (
+                  <ul className="divide-y divide-bege-cartao -my-2">
+                    {gradeGeral.slice(0, 5).map((a) => <AulaLinha key={a.id} aula={a} />)}
+                  </ul>
+                )}
+              </SectionCard>
+            </div>
           </section>
 
           {/* Últimas notificações */}

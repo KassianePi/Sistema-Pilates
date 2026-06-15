@@ -89,6 +89,7 @@ model Aluno {
   usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   planoAtual      Plano?        @relation("PlanoAtualAluno", fields: [planoId], references: [id])
   presencas       Presenca[]
+  inscricoes      InscricaoAula[]
   mensalidades    Mensalidade[]
   reposicoes      Reposicao[]
   estornos        Estorno[]
@@ -218,6 +219,7 @@ model Aula {
   modalidade       Modalidade? @relation(fields: [modalidadeId], references: [id], onDelete: SetNull)
   statusAlteradoPor Usuario?   @relation("AulaAlteradaPor", fields: [statusAlteradoPorId], references: [id], onDelete: SetNull)
   presencas        Presenca[]
+  inscricoes       InscricaoAula[]
   reposicoesOrigem Reposicao[] @relation("AulaOriginal")
   reposicoesAlvo   Reposicao[] @relation("ReposicaoAula")
 
@@ -256,6 +258,33 @@ model Presenca {
   @@index([alunoId])
   @@index([aulaId])
   @@map("presencas")
+}
+
+// ============================================================================
+// 📝 MÓDULO MATRÍCULA — Inscrição de alunos em aulas
+// ============================================================================
+
+enum StatusInscricao {
+  ATIVA
+  CANCELADA
+}
+
+model InscricaoAula {
+  id           String          @id @default(uuid()) @db.VarChar(36)
+  alunoId      String          @db.VarChar(36)
+  aulaId       String          @db.VarChar(36)
+  status       StatusInscricao @default(ATIVA)
+  criadoEm     DateTime        @default(now()) @map("criado_em")
+  atualizadoEm DateTime        @default(now()) @updatedAt @map("atualizado_em")
+
+  aluno        Aluno           @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  aula         Aula            @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+
+  @@unique([alunoId, aulaId])
+  @@index([aulaId])
+  @@index([alunoId])
+  @@index([status])
+  @@map("inscricoes_aula")
 }
 
 // ============================================================================

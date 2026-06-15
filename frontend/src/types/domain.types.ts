@@ -103,6 +103,7 @@ export interface Aula {
   observacoes?: string
   justificativa?: string | null
   dataHoraAnterior?: string | null
+  matriculado?: boolean
   createdAt: string
   updatedAt: string
   professor: {

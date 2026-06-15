@@ -27,19 +27,22 @@ describe('PresencaService', () => {
     service = new PresencaService(mockRepo)
   })
 
+  const ALUNO_ID = '11111111-1111-1111-1111-111111111111'
+  const AULA_ID = '22222222-2222-2222-2222-222222222222'
+
   describe('registrar', () => {
     it('deve registrar presença com dados válidos', async () => {
       mockRepo.findByAlunoAula.mockResolvedValue(null)
-      const presencaFake = { id: 'p-1', alunoId: 'aluno-1', aulaId: 'aula-1', status: 'PRESENTE' }
+      const presencaFake = { id: 'p-1', alunoId: ALUNO_ID, aulaId: AULA_ID, status: 'PRESENTE' }
       mockRepo.create.mockResolvedValue(presencaFake)
 
-      const result = await service.registrar({ alunoId: 'aluno-1', aulaId: 'aula-1' })
+      const result = await service.registrar({ alunoId: ALUNO_ID, aulaId: AULA_ID })
       expect(result.status).toBe('PRESENTE')
     })
 
     it('deve lançar erro se presença já registrada', async () => {
       mockRepo.findByAlunoAula.mockResolvedValue({ id: 'p-existente' })
-      await expect(service.registrar({ alunoId: 'aluno-1', aulaId: 'aula-1' })).rejects.toThrow()
+      await expect(service.registrar({ alunoId: ALUNO_ID, aulaId: AULA_ID })).rejects.toThrow()
     })
   })
 

@@ -116,6 +116,11 @@ function AulaCard({ aula, onClick }: { aula: Aula; onClick: () => void }) {
             </div>
             <div className="flex flex-col items-end gap-2 shrink-0">
               <StatusBadge domain="aula" status={aula.status} />
+              {aula.matriculado && (
+                <span className="text-[11px] px-2 py-0.5 rounded-full border font-medium bg-lilas-claro text-roxo-profundo border-lilas-medio/30">
+                  Matriculado
+                </span>
+              )}
               <span
                 className={cn(
                   "text-[11px] px-2 py-0.5 rounded-full border font-medium",

@@ -33,7 +33,14 @@ type BackendAula = {
   createdAt: string
   updatedAt: string
   professor: { id: string; usuario: { nomeCompleto: string; email?: string } }
-  _count?: { presencas: number }
+  _count?: { presencas: number; inscricoes: number }
+  inscricoes?: { id: string }[]
+}
+
+export interface AlunoInscrito {
+  id: string
+  usuario: { nomeCompleto: string }
+  planoAtual: { nome: string } | null
 }
 
 type BackendListResponse = { aulas: BackendAula[]; total: number; page: number; limit: number; totalPages: number }
@@ -56,7 +63,8 @@ function mapAula(raw: BackendAula): Aula {
     horaInicio,
     horaFim,
     vagas: raw.capacidade,
-    vagasOcupadas: raw._count?.presencas ?? 0,
+    vagasOcupadas: raw._count?.inscricoes ?? 0,
+    matriculado: (raw.inscricoes?.length ?? 0) > 0,
     tipo: raw.tipo as TipoAula,
     categoria: (raw.categoria as CategoriaAula) ?? 'GERAL',
     status: raw.status as StatusAula,
@@ -120,6 +128,16 @@ export const agendaService = {
   async excluir(id: string, justificativa: string) {
     const { data } = await api.delete<ApiResponse<BackendAula>>(`/aulas/${id}`, { data: { justificativa } })
     return mapAula(data.data)
+  },
+
+  async listarInscritos(aulaId: string): Promise<AlunoInscrito[]> {
+    const { data } = await api.get<ApiResponse<AlunoInscrito[]>>(`/aulas/${aulaId}/inscricoes`)
+    return data.data
+  },
+
+  async matricular(aulaId: string, alunoIds: string[]): Promise<AlunoInscrito[]> {
+    const { data } = await api.put<ApiResponse<AlunoInscrito[]>>(`/aulas/${aulaId}/inscricoes`, { alunoIds })
+    return data.data
   },
 
   // Endpoint exclusivo para o portal do aluno — segmentado por escopo

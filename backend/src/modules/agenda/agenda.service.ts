@@ -1,7 +1,7 @@
 import { AgendaRepository } from './agenda.repository'
 import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo } from '../../shared/utils'
-import { createAulaSchema, updateAulaSchema, listAulasSchema, justificativaAulaSchema, reagendarAulaSchema } from '../../shared/schemas'
+import { createAulaSchema, updateAulaSchema, listAulasSchema, justificativaAulaSchema, reagendarAulaSchema, matricularAulaSchema } from '../../shared/schemas'
 import { AGENDA_ERRORS } from './agenda.constants'
 import { prisma } from '../../database/prisma.client'
 import { eventBus } from '../../events/event-bus'
@@ -104,6 +104,14 @@ export class AgendaService {
       const modalidade = await prisma.modalidade.findUnique({ where: { id: validado.modalidadeId } })
       if (!modalidade) throw ValidationError.forField('modalidadeId', 'Modalidade não encontrada')
       if (!modalidade.ativo) throw ValidationError.forField('modalidadeId', 'A modalidade selecionada está inativa')
+    }
+
+    // Não permitir reduzir a capacidade abaixo do número de matriculados ativos.
+    if (validado.capacidade !== undefined) {
+      const matriculados = await this.repository.countInscricoesAtivas(id)
+      if (validado.capacidade < matriculados) {
+        throw ValidationError.forField('capacidade', `A aula já tem ${matriculados} aluno(s) matriculado(s). Reduza as matrículas antes de diminuir a capacidade.`)
+      }
     }
 
     const aula = await this.repository.update(id, {
@@ -262,6 +270,27 @@ export class AgendaService {
       `A aula do dia ${dataFmt} foi removida da agenda. Motivo: ${justificativa}`,
     )
     return aula
+  }
+
+  // ===================== MATRÍCULA =====================
+
+  async listarInscritos(aulaId: string) {
+    await this.buscarPorId(aulaId)
+    return this.repository.findInscritos(aulaId)
+  }
+
+  async matricular(aulaId: string, data: { alunoIds: string[] }) {
+    const aula = await this.buscarPorId(aulaId)
+    if (aula.status === 'CANCELADA' || aula.status === 'EXCLUIDA') {
+      throw AppError.badRequest('Não é possível matricular alunos em uma aula cancelada ou excluída')
+    }
+    const { alunoIds } = matricularAulaSchema.parse(data)
+    if (alunoIds.length > aula.capacidade) {
+      throw ValidationError.forField('alunoIds', `Capacidade da aula é ${aula.capacidade}. Selecione no máximo ${aula.capacidade} aluno(s).`)
+    }
+    await this.repository.setInscricoes(aulaId, alunoIds)
+    logInfo('Matrículas atualizadas', { aulaId, total: alunoIds.length })
+    return this.repository.findInscritos(aulaId)
   }
 }
 

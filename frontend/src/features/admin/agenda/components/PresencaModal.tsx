@@ -3,8 +3,7 @@ import { CheckSquare2, Square, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
-import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
-import { useRegistrarPresencasBatch } from '../hooks/useAgenda'
+import { useRegistrarPresencasBatch, useInscricoes } from '../hooks/useAgenda'
 import { formatarData } from '@/lib/datetime'
 import type { Aula } from '@/types/domain.types'
 
@@ -15,10 +14,10 @@ interface Props {
 
 export function PresencaModal({ aula, onClose }: Props) {
   const [presentes, setPresentes] = useState<Set<string>>(new Set())
-  const { data: alunosData } = useAlunos({ limite: 200 })
+  const { data: inscritos } = useInscricoes(aula?.id ?? null)
   const registrarBatch = useRegistrarPresencasBatch()
 
-  const alunos = (alunosData?.data ?? []).filter((a) => a.status !== 'INATIVO' && a.status !== 'FORMADO')
+  const alunos = inscritos ?? []
 
   function toggle(alunoId: string) {
     setPresentes((prev) => {
@@ -76,7 +75,9 @@ export function PresencaModal({ aula, onClose }: Props) {
 
         <div className="overflow-y-auto flex-1 divide-y divide-bege-cartao border border-bege-cartao rounded-md">
           {alunos.length === 0 ? (
-            <p className="text-sm text-cinza-medio text-center py-8">Nenhum aluno ativo encontrado.</p>
+            <p className="text-sm text-cinza-medio text-center py-8 px-4">
+              Nenhum aluno matriculado nesta aula.<br />Matricule alunos antes de registrar presença.
+            </p>
           ) : (
             alunos.map((aluno) => {
               const marcado = presentes.has(aluno.id)

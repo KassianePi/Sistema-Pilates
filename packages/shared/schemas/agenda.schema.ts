@@ -43,6 +43,12 @@ export const reagendarAulaSchema = justificativaAulaSchema.extend({
 })
 export type ReagendarAulaDTO = z.infer<typeof reagendarAulaSchema>
 
+// Matrícula: define o conjunto de alunos inscritos na aula
+export const matricularAulaSchema = z.object({
+  alunoIds: z.array(z.string().uuid()),
+})
+export type MatricularAulaDTO = z.infer<typeof matricularAulaSchema>
+
 export const listAulasSchema = z.object({
   professorId: z.string().uuid().optional(),
   status: z.enum(['AGENDADA', 'REALIZADA', 'CANCELADA', 'ADIADA', 'SUSPENSA', 'EXCLUIDA']).optional(),

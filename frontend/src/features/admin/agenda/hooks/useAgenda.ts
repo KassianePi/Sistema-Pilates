@@ -85,6 +85,27 @@ export function useExcluirAula() {
   })
 }
 
+export function useInscricoes(aulaId: string | null) {
+  return useQuery({
+    queryKey: [QUERY_KEY, 'inscricoes', aulaId],
+    queryFn: () => agendaService.listarInscritos(aulaId as string),
+    enabled: !!aulaId,
+  })
+}
+
+export function useMatricular() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ aulaId, alunoIds }: { aulaId: string; alunoIds: string[] }) => agendaService.matricular(aulaId, alunoIds),
+    onSuccess: (_data, { aulaId }) => {
+      qc.invalidateQueries({ queryKey: [QUERY_KEY] })
+      qc.invalidateQueries({ queryKey: [QUERY_KEY, 'inscricoes', aulaId] })
+      toast.success('Matrículas atualizadas!')
+    },
+    onError: () => toast.error('Erro ao salvar matrículas.'),
+  })
+}
+
 export function useRegistrarPresencasBatch() {
   const qc = useQueryClient()
   return useMutation({
