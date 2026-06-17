@@ -31,7 +31,7 @@ function ActionBody({ action }: { action: QuickAction }) {
         <p className="font-semibold text-cinza-forte text-sm">{action.label}</p>
         {action.description && <p className="text-cinza-texto text-xs mt-0.5">{action.description}</p>}
       </div>
-      <ChevronRight className="w-4 h-4 text-cinza-medio group-hover:text-lilas-medio transition-colors" />
+      <ChevronRight className="w-4 h-4 text-cinza-texto group-hover:text-lilas-medio transition-colors" />
     </>
   )
 }

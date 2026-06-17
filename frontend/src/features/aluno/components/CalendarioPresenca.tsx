@@ -45,7 +45,7 @@ export function CalendarioPresenca({ presencas }: { presencas: PresencaAluno[] }
       </div>
 
       <div className="grid grid-cols-7 gap-1 text-center">
-        {DIAS.map((d, i) => <span key={i} className="text-[11px] text-cinza-medio font-medium py-1">{d}</span>)}
+        {DIAS.map((d, i) => <span key={i} className="text-[11px] text-cinza-texto font-medium py-1">{d}</span>)}
         {celulas.map((dia, i) => {
           if (dia === null) return <span key={i} />
           const status = mapa[`${ano}-${pad(mes + 1)}-${pad(dia)}`]
@@ -63,7 +63,7 @@ export function CalendarioPresenca({ presencas }: { presencas: PresencaAluno[] }
         })}
       </div>
 
-      <div className="flex flex-wrap gap-3 mt-3 text-[11px] text-cinza-medio">
+      <div className="flex flex-wrap gap-3 mt-3 text-[11px] text-cinza-texto">
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-green-400 inline-block" /> Presente</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rosa-vibrante inline-block" /> Ausente</span>
         <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block" /> Justificado</span>

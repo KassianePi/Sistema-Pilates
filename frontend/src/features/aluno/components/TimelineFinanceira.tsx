@@ -13,7 +13,7 @@ const META: Record<TipoEventoFinanceiro, { Icon: React.ElementType; color: strin
 
 export function TimelineFinanceira({ eventos }: { eventos: EventoFinanceiro[] }) {
   if (eventos.length === 0) {
-    return <p className="text-sm text-cinza-medio py-4 text-center">Nenhum evento financeiro ainda.</p>
+    return <p className="text-sm text-cinza-texto py-4 text-center">Nenhum evento financeiro ainda.</p>
   }
   return (
     <ol className="relative border-l border-bege-cartao ml-3 space-y-5 py-1">
@@ -26,7 +26,7 @@ export function TimelineFinanceira({ eventos }: { eventos: EventoFinanceiro[] })
             </span>
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <p className="text-sm font-medium text-cinza-forte">{e.titulo}</p>
-              <span className="text-xs text-cinza-medio">{formatarDataHora(e.data)}</span>
+              <span className="text-xs text-cinza-texto">{formatarDataHora(e.data)}</span>
             </div>
             {e.descricao && <p className="text-xs text-cinza-texto mt-0.5">{e.descricao}</p>}
           </li>

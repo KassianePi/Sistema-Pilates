@@ -23,9 +23,9 @@ const STATUS_MATRICULA: Record<string, { label: string; variant: 'success' | 'wa
 function Campo({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
-      <Icon className="w-4 h-4 text-cinza-medio mt-0.5 shrink-0" />
+      <Icon className="w-4 h-4 text-cinza-texto mt-0.5 shrink-0" />
       <div className="min-w-0">
-        <p className="text-xs text-cinza-medio">{label}</p>
+        <p className="text-xs text-cinza-texto">{label}</p>
         <p className="text-sm text-cinza-forte break-words">{value ?? '—'}</p>
       </div>
     </div>
@@ -110,7 +110,7 @@ export function AlunoPerfilPage() {
                 <Input value={nome} onChange={(e) => setNome(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Telefone <span className="text-cinza-medio text-xs">(somente números, com DDD)</span></Label>
+                <Label>Telefone <span className="text-cinza-texto text-xs">(somente números, com DDD)</span></Label>
                 <Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="11999998888" inputMode="numeric" />
               </div>
               <Campo icon={Mail} label="E-mail" value={perfil.email} />
@@ -146,7 +146,7 @@ export function AlunoPerfilPage() {
             <Campo icon={CalendarDays} label="Início da matrícula" value={perfil.dataInicio ? formatarData(perfil.dataInicio) : '—'} />
             <Campo icon={User} label="Status da matrícula" value={statusMat?.label} />
           </div>
-          <p className="text-xs text-cinza-medio">
+          <p className="text-xs text-cinza-texto">
             Para alterar plano, modalidade ou status da matrícula, fale com a recepção do studio.
           </p>
         </CardContent>

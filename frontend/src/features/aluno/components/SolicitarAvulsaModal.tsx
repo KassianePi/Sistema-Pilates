@@ -32,7 +32,7 @@ export function SolicitarAvulsaModal({ onClose }: { onClose: () => void }) {
             Solicite uma aula avulsa ao studio. O administrador criará a cobrança e confirmará a data.
           </p>
           <div className="space-y-1.5">
-            <Label>Data desejada <span className="text-cinza-medio text-xs">(opcional)</span></Label>
+            <Label>Data desejada <span className="text-cinza-texto text-xs">(opcional)</span></Label>
             <Input
               type="date"
               value={dataDesejada}
@@ -41,7 +41,7 @@ export function SolicitarAvulsaModal({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Observação <span className="text-cinza-medio text-xs">(opcional)</span></Label>
+            <Label>Observação <span className="text-cinza-texto text-xs">(opcional)</span></Label>
             <Textarea
               placeholder="Ex: horário preferido, modalidade, professor..."
               rows={3}

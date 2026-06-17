@@ -10,7 +10,7 @@ const STATUS_ALTERADO = ['CANCELADA', 'SUSPENSA', 'EXCLUIDA', 'ADIADA']
 function Linha({ icon: Icon, children }: { icon: React.ElementType; children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 text-sm text-cinza-texto">
-      <Icon className="w-4 h-4 text-cinza-medio shrink-0" />
+      <Icon className="w-4 h-4 text-cinza-texto shrink-0" />
       <span>{children}</span>
     </div>
   )

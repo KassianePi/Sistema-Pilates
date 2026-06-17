@@ -4,7 +4,7 @@ import type { PontoEvolucao } from '../utils/frequencia'
 export function EvolucaoFrequencia({ pontos }: { pontos: PontoEvolucao[] }) {
   const temDados = pontos.some((p) => p.totalRegistros > 0)
   if (!temDados) {
-    return <p className="text-sm text-cinza-medio py-4 text-center">Sem dados de frequência ainda.</p>
+    return <p className="text-sm text-cinza-texto py-4 text-center">Sem dados de frequência ainda.</p>
   }
 
   return (
@@ -24,7 +24,7 @@ export function EvolucaoFrequencia({ pontos }: { pontos: PontoEvolucao[] }) {
                 style={{ height: `${Math.max(p.totalRegistros > 0 ? p.percentual : 0, 3)}%` }}
               />
             </div>
-            <span className="text-[11px] text-cinza-medio capitalize">{p.label}</span>
+            <span className="text-[11px] text-cinza-texto capitalize">{p.label}</span>
           </div>
         )
       })}

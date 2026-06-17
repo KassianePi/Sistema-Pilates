@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -8,8 +7,6 @@ import {
   Receipt,
   User,
   LogOut,
-  Menu,
-  X,
   Bell,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -27,8 +24,10 @@ const navItems = [
   { label: 'Meu Perfil', to: '/aluno/perfil', icon: User },
 ]
 
+// Barra inferior (mobile): destinos do dia a dia. Perfil e Sair ficam no topo.
+const bottomNavItems = navItems.filter((i) => i.to !== '/aluno/perfil')
+
 export function AlunoLayout() {
-  const [mobileOpen, setMobileOpen] = useState(false)
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const alunoUser = user as AlunoUser | null
@@ -104,64 +103,68 @@ export function AlunoLayout() {
             </button>
           </div>
 
-          {/* Botão menu mobile */}
-          <button
-            onClick={() => setMobileOpen((o) => !o)}
-            className="md:hidden p-2 rounded-md hover:bg-white/10 transition-colors"
-          >
-            {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
-
-        {/* Menu mobile dropdown */}
-        {mobileOpen && (
-          <div className="md:hidden border-t border-white/10 px-4 py-3 space-y-1">
-            {navItems.map((item) => {
-              const isNotif = item.to === '/aluno/notificacoes'
-              return (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  onClick={() => setMobileOpen(false)}
-                  className={({ isActive }) =>
-                    cn(
-                      'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
-                      isActive
-                        ? 'bg-rosa-vibrante text-branco-puro'
-                        : 'text-white/70 hover:bg-white/10 hover:text-branco-puro',
-                    )
-                  }
-                >
-                  <item.icon className="w-4 h-4" />
-                  <span className="flex-1">{item.label}</span>
-                  {isNotif && naoLidas > 0 && (
-                    <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-rosa-vibrante text-branco-puro text-[10px] font-bold flex items-center justify-center">
-                      {naoLidas > 9 ? '9+' : naoLidas}
-                    </span>
-                  )}
-                </NavLink>
-              )
-            })}
-            {alunoUser && (
-              <div className="px-3 pt-2 pb-1 border-t border-white/10 mt-2">
-                <p className="text-xs text-white/50">{alunoUser.nome}</p>
-              </div>
-            )}
+          {/* Ações mobile: perfil + sair (navegação fica na barra inferior) */}
+          <div className="flex md:hidden items-center gap-1">
+            <NavLink
+              to="/aluno/perfil"
+              aria-label="Meu perfil"
+              className={({ isActive }) =>
+                cn(
+                  'h-11 w-11 flex items-center justify-center rounded-lg transition-colors',
+                  isActive
+                    ? 'bg-rosa-vibrante text-branco-puro'
+                    : 'text-white/80 hover:bg-white/10 hover:text-branco-puro',
+                )
+              }
+            >
+              <User className="w-5 h-5" />
+            </NavLink>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-white/70 hover:bg-white/10"
+              aria-label="Sair"
+              className="h-11 w-11 flex items-center justify-center rounded-lg text-white/80 hover:bg-white/10 hover:text-branco-puro transition-colors"
             >
-              <LogOut className="w-4 h-4" />
-              Sair
+              <LogOut className="w-5 h-5" />
             </button>
           </div>
-        )}
+        </div>
       </header>
 
-      {/* Conteúdo */}
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      {/* Conteúdo (padding inferior extra no mobile para não ficar atrás da barra) */}
+      <main className="max-w-5xl mx-auto px-4 pt-8 pb-24 md:pb-8">
         <Outlet />
       </main>
+
+      {/* Barra de navegação inferior (mobile) */}
+      <nav className="md:hidden fixed bottom-0 inset-x-0 z-30 bg-branco-puro border-t border-bege-cartao flex shadow-[0_-1px_4px_rgba(0,0,0,0.04)]">
+        {bottomNavItems.map((item) => {
+          const isNotif = item.to === '/aluno/notificacoes'
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                cn(
+                  'flex-1 flex flex-col items-center justify-center gap-0.5 py-2 min-h-[56px] transition-colors',
+                  isActive ? 'text-rosa-vibrante' : 'text-cinza-texto hover:text-cinza-forte',
+                )
+              }
+            >
+              <span className="relative">
+                <item.icon className="w-5 h-5" />
+                {isNotif && naoLidas > 0 && (
+                  <span className="absolute -top-1.5 -right-2 min-w-[15px] h-[15px] px-1 rounded-full bg-rosa-vibrante text-branco-puro text-[10px] font-bold flex items-center justify-center">
+                    {naoLidas > 9 ? '9+' : naoLidas}
+                  </span>
+                )}
+              </span>
+              <span className="text-[10px] font-medium leading-none truncate max-w-full px-0.5">
+                {item.label}
+              </span>
+            </NavLink>
+          )
+        })}
+      </nav>
 
       <ChatSuporte />
     </div>

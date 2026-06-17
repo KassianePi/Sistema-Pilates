@@ -1,39 +1,46 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { Eye, EyeOff, Dumbbell } from 'lucide-react'
-import { toast } from 'sonner'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { useAuth } from '@/hooks/useAuth'
+import { useState } from "react";
+import { useNavigate, Link } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Eye, EyeOff, Dumbbell, KeyRound } from "lucide-react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const loginSchema = z.object({
-  email: z.string().email('E-mail inválido'),
-  senha: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
-})
+  email: z.string().email("E-mail inválido"),
+  senha: z.string().min(6, "Senha deve ter ao menos 6 caracteres"),
+});
 
-type LoginForm = z.infer<typeof loginSchema>
+type LoginForm = z.infer<typeof loginSchema>;
 
 export function AlunoLoginPage() {
-  const [showPassword, setShowPassword] = useState(false)
-  const { loginAluno } = useAuth()
-  const navigate = useNavigate()
+  const [showPassword, setShowPassword] = useState(false);
+  const [showReset, setShowReset] = useState(false);
+  const { loginAluno } = useAuth();
+  const navigate = useNavigate();
 
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
+  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) });
 
   async function onSubmit(data: LoginForm) {
     try {
-      await loginAluno(data.email, data.senha)
-      navigate('/aluno/dashboard')
+      await loginAluno(data.email, data.senha);
+      navigate("/aluno/dashboard");
     } catch {
-      toast.error('E-mail ou senha incorretos.')
+      toast.error("E-mail ou senha incorretos.");
     }
   }
 
@@ -57,15 +64,13 @@ export function AlunoLoginPage() {
               <br />
               <span className="text-rosa-vibrante">Pilates</span>
             </h1>
-            <p className="mt-3 text-white/60 text-lg">
-              Portal do Aluno
-            </p>
+            <p className="mt-3 text-white/60 text-lg">Portal do Aluno</p>
           </div>
           <div className="mt-8 bg-white/5 rounded-xl p-6 max-w-xs mx-auto text-left space-y-4">
             {[
-              { icon: '📅', text: 'Visualize suas aulas e horários' },
-              { icon: '✅', text: 'Acompanhe sua frequência' },
-              { icon: '💳', text: 'Gerencie seus pagamentos' },
+              { icon: "📅", text: "Visualize suas aulas e horários" },
+              { icon: "✅", text: "Acompanhe sua frequência" },
+              { icon: "💳", text: "Gerencie seus pagamentos" },
             ].map((item) => (
               <div key={item.text} className="flex items-center gap-3">
                 <span className="text-xl">{item.icon}</span>
@@ -111,7 +116,7 @@ export function AlunoLoginPage() {
                 type="email"
                 placeholder="seu@email.com"
                 autoComplete="email"
-                {...register('email')}
+                {...register("email")}
               />
               {errors.email && (
                 <p className="text-rosa-vibrante text-xs mt-1">
@@ -121,21 +126,30 @@ export function AlunoLoginPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="senha">Senha</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="senha">Senha</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowReset(true)}
+                  className="text-xs font-medium text-roxo-profundo hover:underline"
+                >
+                  Esqueci minha senha
+                </button>
+              </div>
               <div className="relative">
                 <Input
                   id="senha"
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   autoComplete="current-password"
                   className="pr-10"
-                  {...register('senha')}
+                  {...register("senha")}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((s) => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cinza-medio hover:text-cinza-forte transition-colors"
-                  aria-label={showPassword ? 'Ocultar senha' : 'Mostrar senha'}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cinza-texto hover:text-cinza-forte transition-colors"
+                  aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -156,17 +170,47 @@ export function AlunoLoginPage() {
               className="w-full h-11"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Entrando...' : 'Acessar minha conta'}
+              {isSubmitting ? "Entrando..." : "Acessar minha conta"}
             </Button>
           </form>
 
-          <div className="text-center">
-            <p className="text-xs text-cinza-medio">
+          <div className="text-center space-y-3">
+            <p className="text-xs text-cinza-texto">
               Problemas para entrar? Fale com a recepção do studio.
             </p>
+            <div className="pt-3 border-t border-bege-cartao">
+              <Link
+                to="/admin/login"
+                className="text-xs font-medium text-roxo-profundo hover:underline"
+              >
+                É da equipe? Acessar o painel administrativo
+              </Link>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Recuperação de senha (reset é manual pelo studio) */}
+      <Dialog open={showReset} onOpenChange={setShowReset}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <KeyRound className="w-4 h-4 text-roxo-profundo" /> Recuperar acesso
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-1 text-sm text-cinza-texto">
+            <p>Por segurança, a redefinição de senha é feita pelo studio.</p>
+            <p>
+              Entre em contato com a recepção (pessoalmente ou pelo WhatsApp),
+              informe o e-mail cadastrado e o studio definirá uma nova senha
+              para você.
+            </p>
+            <Button className="w-full" onClick={() => setShowReset(false)}>
+              Entendi
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
-  )
+  );
 }

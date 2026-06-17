@@ -33,7 +33,7 @@ export function ReembolsoModal({ mensalidadeId, onClose }: ReembolsoModalProps) 
             <p>O valor é calculado pelos dias contratados no plano menos os dias em que você compareceu no mês.</p>
           </div>
           <div className="space-y-1.5">
-            <Label>Motivo <span className="text-cinza-medio text-xs">(opcional)</span></Label>
+            <Label>Motivo <span className="text-cinza-texto text-xs">(opcional)</span></Label>
             <Textarea
               placeholder="Descreva o motivo da solicitação..."
               rows={3}

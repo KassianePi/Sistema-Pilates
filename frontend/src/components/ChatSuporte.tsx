@@ -200,7 +200,7 @@ export function ChatSuporte() {
         onClick={() => setAberto((o) => !o)}
         aria-label="Abrir suporte"
         className={cn(
-          'fixed bottom-5 right-5 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all',
+          'fixed bottom-20 md:bottom-5 right-5 z-50 w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-all',
           'bg-roxo-profundo text-branco-puro hover:bg-roxo-profundo/90 active:scale-95',
         )}
       >
@@ -209,7 +209,7 @@ export function ChatSuporte() {
 
       {/* Painel do chat */}
       {aberto && (
-        <div className="fixed bottom-24 right-5 z-50 w-80 max-h-[520px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-bege-cartao bg-branco-puro">
+        <div className="fixed bottom-36 md:bottom-24 right-5 z-50 w-80 max-w-[calc(100vw-2.5rem)] max-h-[520px] flex flex-col rounded-2xl shadow-2xl overflow-hidden border border-bege-cartao bg-branco-puro">
           {/* Cabeçalho */}
           <div className="bg-roxo-profundo text-branco-puro px-4 py-3 flex items-center gap-2">
             <HelpCircle className="w-5 h-5 shrink-0" />
@@ -260,7 +260,7 @@ export function ChatSuporte() {
             {current.resposta && (
               <button
                 onClick={reiniciar}
-                className="w-full text-xs text-cinza-medio hover:text-roxo-profundo py-2 transition-colors"
+                className="w-full text-xs text-cinza-texto hover:text-roxo-profundo py-2 transition-colors"
               >
                 ← Voltar ao início
               </button>

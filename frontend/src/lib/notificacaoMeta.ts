@@ -28,3 +28,27 @@ export const NOTIFICACAO_META: Record<TipoNotificacao, NotificacaoMeta> = {
 export function getNotificacaoMeta(tipo: TipoNotificacao): NotificacaoMeta {
   return NOTIFICACAO_META[tipo] ?? NOTIFICACAO_META.MENSAGEM_ADMIN
 }
+
+/**
+ * Destino de deep-link de uma notificação (área relevante do portal do aluno).
+ * Retorna `null` quando o tipo não tem uma tela específica para abrir.
+ */
+export function getNotificacaoLink(tipo: TipoNotificacao): string | null {
+  switch (tipo) {
+    case 'PAGAMENTO_VENCIDO':
+    case 'MENSALIDADE_CRIADA':
+      return '/aluno/financeiro?tab=comprovantes'
+    case 'PAGAMENTO_CONFIRMADO':
+      return '/aluno/financeiro'
+    case 'ESTORNO_ATUALIZADO':
+      return '/aluno/financeiro?tab=reembolsos'
+    case 'AULA_AGENDADA':
+    case 'REPOSICAO_OFERECIDA':
+      return '/aluno/agenda'
+    case 'PRESENCA_REGISTRADA':
+      return '/aluno/presenca'
+    case 'MENSAGEM_ADMIN':
+    default:
+      return null
+  }
+}

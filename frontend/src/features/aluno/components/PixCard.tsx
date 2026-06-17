@@ -36,7 +36,7 @@ export function PixCard({ chavePix, tipoChavePix, nomeRecebedor, qrCodeBase64 }:
 
         {chavePix && (
           <div className="bg-branco-puro rounded-lg p-3 border border-lilas-medio/20 space-y-1">
-            <p className="text-xs text-cinza-medio">{tipoChavePix ? TIPO_CHAVE[tipoChavePix] ?? tipoChavePix : 'Chave PIX'}</p>
+            <p className="text-xs text-cinza-texto">{tipoChavePix ? TIPO_CHAVE[tipoChavePix] ?? tipoChavePix : 'Chave PIX'}</p>
             <div className="flex items-center gap-2">
               <p className="font-mono text-sm font-semibold text-cinza-forte flex-1 break-all">{chavePix}</p>
               <Button variant="outline" size="sm" onClick={copiar} className="shrink-0">
@@ -53,7 +53,7 @@ export function PixCard({ chavePix, tipoChavePix, nomeRecebedor, qrCodeBase64 }:
           </div>
         )}
 
-        <p className="text-xs text-cinza-medio flex items-center gap-1">
+        <p className="text-xs text-cinza-texto flex items-center gap-1">
           <Info className="w-3 h-3 shrink-0" />
           Após pagar, envie o comprovante pelo portal. A confirmação é feita manualmente pelo studio.
         </p>

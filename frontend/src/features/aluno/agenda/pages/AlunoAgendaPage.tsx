@@ -103,7 +103,7 @@ function AulaCard({ aula, onClick }: { aula: Aula; onClick: () => void }) {
               <p className="text-sm text-cinza-texto capitalize">
                 {formatarDataLonga(aula.data)}
               </p>
-              <div className="flex items-center gap-4 mt-2 text-sm text-cinza-medio flex-wrap">
+              <div className="flex items-center gap-4 mt-2 text-sm text-cinza-texto flex-wrap">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
                   {aula.horaInicio} – {aula.horaFim}
@@ -145,7 +145,7 @@ function AulaCard({ aula, onClick }: { aula: Aula; onClick: () => void }) {
             </p>
           )}
           {aula.observacoes && (
-            <p className="mt-2 text-xs text-cinza-medio line-clamp-2">
+            <p className="mt-2 text-xs text-cinza-texto line-clamp-2">
               Obs.: {aula.observacoes}
             </p>
           )}
@@ -200,7 +200,7 @@ export function AlunoAgendaPage() {
       <SectionCard>
         <div className="flex flex-wrap items-end gap-3">
           <div className="space-y-1">
-            <Label className="text-xs text-cinza-medio">Status</Label>
+            <Label className="text-xs text-cinza-texto">Status</Label>
             <Select value={status} onValueChange={setStatus}>
               <SelectTrigger className="w-44">
                 <SelectValue />
@@ -215,7 +215,7 @@ export function AlunoAgendaPage() {
             </Select>
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-cinza-medio">De</Label>
+            <Label className="text-xs text-cinza-texto">De</Label>
             <Input
               type="date"
               value={dataInicio}
@@ -224,7 +224,7 @@ export function AlunoAgendaPage() {
             />
           </div>
           <div className="space-y-1">
-            <Label className="text-xs text-cinza-medio">Até</Label>
+            <Label className="text-xs text-cinza-texto">Até</Label>
             <Input
               type="date"
               value={dataFim}
@@ -245,7 +245,7 @@ export function AlunoAgendaPage() {
               <X className="w-3 h-3 mr-1" /> Limpar
             </Button>
           )}
-          <span className="text-sm text-cinza-medio ml-auto">
+          <span className="text-sm text-cinza-texto ml-auto">
             {aulas.length} aula{aulas.length !== 1 ? "s" : ""}
           </span>
         </div>
@@ -275,7 +275,7 @@ export function AlunoAgendaPage() {
       <DetalheAulaModal aula={detalhe} onClose={() => setDetalhe(null)} />
 
       {/* Legenda categorias */}
-      <div className="flex flex-wrap gap-4 text-xs text-cinza-medio">
+      <div className="flex flex-wrap gap-4 text-xs text-cinza-texto">
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-lilas-medio inline-block" />{" "}
           Grade regular

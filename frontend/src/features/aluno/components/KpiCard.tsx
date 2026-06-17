@@ -37,7 +37,7 @@ export function KpiCard({ label, value, icon: Icon, hint, tone = 'default', onCl
           )}
         </div>
         <p className={cn('text-2xl font-bold mt-2 leading-tight', t.value)}>{value}</p>
-        {hint && <p className="text-xs text-cinza-medio mt-1">{hint}</p>}
+        {hint && <p className="text-xs text-cinza-texto mt-1">{hint}</p>}
       </CardContent>
     </Card>
   )

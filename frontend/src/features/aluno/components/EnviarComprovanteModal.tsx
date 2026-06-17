@@ -50,7 +50,7 @@ export function EnviarComprovanteModal({ mensalidadeId, nomePlano, onClose }: En
             <p className="text-cinza-texto mt-0.5">Envie a foto ou PDF do comprovante do pagamento PIX desta cobrança.</p>
           </div>
           <div className="space-y-1.5">
-            <Label>Arquivo <span className="text-cinza-medio text-xs">(máx. 5MB — JPG, PNG, PDF)</span></Label>
+            <Label>Arquivo <span className="text-cinza-texto text-xs">(máx. 5MB — JPG, PNG, PDF)</span></Label>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
