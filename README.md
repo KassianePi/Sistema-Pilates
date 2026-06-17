@@ -1,378 +1,349 @@
-# 🎯 Sistema Pilates — Gerenciamento de Studio de Pilates
+# 🧘 Sistema Pilates — Gerenciamento de Studio de Pilates
 
-> Sistema web completo para gerenciamento de studios de pilates com agenda, financeiro, controle de alunos e muito mais.
+> Sistema web completo para gestão de studios de pilates: agenda de aulas, controle de presença, financeiro, alunos, professores, planos, relatórios, notificações, termos de uso e um portal de autoatendimento para o aluno.
 
 [![Docker](https://img.shields.io/badge/Docker-20.10+-blue?logo=docker)](https://www.docker.com/)
 [![Node.js](https://img.shields.io/badge/Node.js-20-green?logo=node.js)](https://nodejs.org/)
-[![React](https://img.shields.io/badge/React-18+-blue?logo=react)](https://react.dev/)
+[![React](https://img.shields.io/badge/React-19-blue?logo=react)](https://react.dev/)
+[![Fastify](https://img.shields.io/badge/Fastify-4-black?logo=fastify)](https://fastify.dev/)
+[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?logo=prisma)](https://www.prisma.io/)
 [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 
 ---
 
-## 📊 Status
+## 📌 Status
 
-| Fase | Status | Descrição |
-|------|--------|-----------|
-| **Fase 0** | ✅ Completa | Documentação, Arquitetura, Docker Setup |
-| **Fase 1** | ✅ Completa | Modelagem (DER, Wireframes) |
-| **Fase 2** | ⏳ Próxima | Backend Fastify + Autenticação |
-| **Fase 3+** | ⏳ Planejada | Frontend React, Features, Deploy |
+Backend e frontend implementados e funcionais em ambiente de desenvolvimento (Docker). Deploy em produção (VPS Hostinger) ainda pendente — ver seção [Deploy em Produção](#-deploy-em-produção-vps-hostinger).
 
----
-
-## 🚀 Quick Start
-
-### 1. Pré-requisitos
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop) (versão 20.10+)
-- Docker Compose (vem junto)
-
-### 2. Iniciar em 3 comandos
-
-```bash
-# Entrar no diretório
-cd ~/Sistema-pilates
-
-# Copiar configuração
-cp .env.example .env
-
-# Iniciar tudo
-docker compose up --build -d
-```
-
-### 3. Acessar
-
-```
-Frontend:  http://localhost:5173
-API:       http://localhost:3000/api/v1/
-Swagger:   http://localhost:3000/documentation
-```
+| Área | Status |
+|------|--------|
+| Backend (API Fastify + Prisma + MySQL) | ✅ Implementado |
+| Frontend administrativo (React) | ✅ Implementado |
+| Portal do aluno (autoatendimento) | ✅ Implementado |
+| Autenticação JWT + RBAC (4 perfis) | ✅ Implementado |
+| Termos de uso e aceite eletrônico | ✅ Implementado |
+| Deploy em produção (VPS Hostinger) | ⏳ Pendente |
 
 ---
 
-## 📦 Serviços
+## ✨ Funcionalidades
 
-```
-┌─────────────────────────────────────────┐
-│         NGINX (Proxy Reverso)           │
-│            localhost:80                 │
-└────────────┬────────────────────────────┘
-             │
-    ┌────────┴────────┐
-    ▼                 ▼
-┌─────────────┐  ┌─────────────┐
-│  Frontend   │  │   Backend   │
-│   React     │  │  Fastify    │
-│ :5173       │  │  :3000      │
-└─────────────┘  └──────┬──────┘
-                        │
-                   ┌────▼────┐
-                   │  MySQL   │
-                   │  :3306   │
-                   └──────────┘
-```
+### Painel administrativo
+- **Dashboard** — visão geral com indicadores do studio.
+- **Alunos** — cadastro, edição, status e histórico.
+- **Professores** — cadastro e gestão de professores.
+- **Planos** — planos de aula e regras de contratação.
+- **Modalidades** — modalidades oferecidas pelo studio.
+- **Agenda** — criação de aulas, matrícula de alunos nas aulas e controle de capacidade.
+- **Presença** — registro de presença restrito aos alunos matriculados na aula.
+- **Acompanhamento** — evolução e frequência dos alunos.
+- **Financeiro** — mensalidades, pagamentos, caixa e estornos.
+- **Relatórios** — geração e exportação de dados (inclui exportação em Excel).
+- **Notificações** — comunicação com alunos.
+- **Termos de Uso** — versionamento de termos, publicação e registro de aceite eletrônico.
+- **Usuários** — gestão de usuários e perfis de acesso.
+- **Auditoria** — log de ações sensíveis no sistema.
 
----
-
-## 📚 Documentação
-
-### Começar Agora
-
-- **[QUICKSTART.md](QUICKSTART.md)** — 5 passos para rodar (3-5 min)
-- **[COMO_RODAR.txt](COMO_RODAR.txt)** — Visual com passo a passo
-
-### Guias Completos
-
-- **[DOCKER_SETUP.md](DOCKER_SETUP.md)** — Guia completo de Docker (11 seções)
-- **[STATUS_PROJETO.md](STATUS_PROJETO.md)** — Status + Roadmap + Checklist
-- **[RESUMO_EXECUTIVO.md](RESUMO_EXECUTIVO.md)** — Resumo visual
-
-### Desenvolvimento Futuro
-
-- **[PLANO_EXECUCAO_FASE_2.md](PLANO_EXECUCAO_FASE_2.md)** — Como implementar Backend (19h em 10 partes)
-- **[ANALISE_FASE_2.md](ANALISE_FASE_2.md)** — Análise técnica detalhada
+### Portal do aluno (autoatendimento)
+- **Dashboard** pessoal do aluno.
+- **Agenda** — aulas do dia e próximas aulas.
+- **Presença** — visualização do próprio histórico.
+- **Financeiro** — mensalidades e pagamentos.
+- **Notificações** recebidas.
+- **Perfil** — dados pessoais.
+- **Termos** — leitura e aceite da versão vigente do termo de uso.
 
 ---
 
-## 🎯 Arquitetura
+## 🧰 Stack Tecnológico
 
-### Stack Tecnológico
-
-**Frontend:**
-- React 18 + TypeScript
-- Tailwind CSS + Shadcn/UI
-- Vite (build rápido)
-- React Query + Axios
+**Frontend**
+- React 19 + TypeScript
+- Vite (build/dev server)
+- Tailwind CSS + componentes Radix UI (padrão Shadcn/UI)
+- React Router 7
+- TanStack Query (React Query) + Axios
 - React Hook Form + Zod
+- Recharts (gráficos), jsPDF (PDF), Sonner (toasts), Lucide (ícones)
 
-**Backend:**
+**Backend**
 - Node.js 20 + TypeScript
-- Fastify (framework web rápido)
-- Prisma ORM + MySQL 8
-- JWT (autenticação)
+- Fastify 4
+- Prisma ORM 5 + MySQL 8
+- JWT (`@fastify/jwt`) com refresh token + Bcrypt
+- Zod (validação), ExcelJS (relatórios), Pino (logs)
 - Vitest + Supertest (testes)
+- Segurança: `@fastify/helmet`, `@fastify/cors`, `@fastify/rate-limit`, Swagger/OpenAPI
 
-**Infraestrutura:**
+**Compartilhado**
+- `packages/shared` — schemas/contratos (`@pilates/shared`) usados por backend e frontend.
+
+**Infraestrutura**
 - Docker + Docker Compose
 - Nginx (proxy reverso)
-- MySQL (banco de dados)
+- MySQL 8 (`utf8mb4`, timezone UTC)
 
-### Padrão de Arquitetura
+---
+
+## 🏛️ Arquitetura
+
+Padrão em camadas no backend:
 
 ```
 Request → Controller → Service → Repository → Prisma → MySQL
 ```
 
-**Camadas:**
-- **Controller:** Recebe request, valida, chama service
-- **Service:** Lógica de negócio, orquestra operações
-- **Repository:** Acesso ao banco de dados (Prisma)
+- **Controller:** recebe a requisição, valida e chama o service.
+- **Service:** regra de negócio e orquestração das operações.
+- **Repository:** acesso ao banco via Prisma.
+
+Cada feature do backend é um módulo isolado em `backend/src/modules/`.
+
+### Perfis de acesso (RBAC)
+
+| Perfil | Descrição |
+|--------|-----------|
+| `ADMIN` | Acesso total ao sistema |
+| `PROFESSOR` | Agenda, presença e acompanhamento |
+| `RECEPCIONISTA` | Alunos, agenda e operação do dia a dia |
+| `FINANCEIRO` | Mensalidades, pagamentos, caixa e estornos |
+
+Alunos acessam o **portal do aluno** com login próprio (autoatendimento), separado dos usuários administrativos.
 
 ---
 
-## 📁 Estrutura
+## 📁 Estrutura do Projeto
 
 ```
 Sistema-pilates/
-├── docker-compose.yml          ← Orquestra containers
-├── .env                        ← Variáveis (desenvolvimento)
-├── .env.example                ← Template
+├── docker-compose.yml          → Orquestra os containers
+├── .env.example                → Template de variáveis de ambiente
 │
-├── backend/                    ← Node.js + Fastify
+├── backend/                    → API Node.js + Fastify
 │   ├── Dockerfile
-│   ├── src/
-│   │   ├── modules/            ← Features (auth, alunos, etc)
-│   │   ├── shared/             ← Utilitários, errors, middlewares
-│   │   └── database/           ← Prisma ORM
-│   └── package.json
+│   ├── prisma/
+│   │   ├── schema.prisma        → 20 modelos (MySQL)
+│   │   ├── migrations/          → Migrações versionadas
+│   │   └── seed.ts              → Usuários e dados iniciais
+│   └── src/
+│       ├── modules/             → auth, alunos, professores, planos,
+│       │                          modalidades, agenda, presenca,
+│       │                          acompanhamento, financeiro, estornos,
+│       │                          relatorios, notificacoes, configuracao,
+│       │                          auditoria, termos
+│       └── shared/              → utilitários, errors, middlewares
 │
-├── frontend/                   ← React + Vite
+├── frontend/                   → React + Vite
 │   ├── Dockerfile
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   ├── hooks/
-│   │   └── features/
-│   └── package.json
+│   └── src/
+│       └── features/
+│           ├── admin/           → painel administrativo
+│           └── aluno/           → portal do aluno
 │
-├── nginx/                      ← Configuração proxy
-│   ├── nginx.conf
-│   └── conf.d/
+├── packages/
+│   └── shared/                 → schemas/contratos (@pilates/shared)
 │
-└── docs/                       ← Documentação
-    └── (modelagem, análise, planos)
+├── nginx/                      → proxy reverso (nginx.conf, conf.d, ssl)
+└── docs/                       → documentação (modelagem, análise, planos)
 ```
 
 ---
 
-## 🔧 Comandos Principais
+## ✅ Pré-requisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop) 20.10+
+- Docker Compose (incluso no Docker Desktop)
+
+> Tudo roda em containers — não é necessário instalar Node.js ou MySQL na máquina para desenvolver.
+
+---
+
+## 🚀 Como Executar (Docker)
+
+### 1. Clonar o repositório
 
 ```bash
-# Iniciar
-docker compose up -d
+git clone https://github.com/AleckDevv/Sistema-pilates.git
+cd Sistema-pilates
+```
 
-# Parar
+### 2. Configurar as variáveis de ambiente
+
+```bash
+cp .env.example .env
+```
+
+Edite o `.env` e, no mínimo, **troque os secrets de JWT** antes de usar em qualquer ambiente exposto:
+
+```bash
+# Gerar um secret seguro
+openssl rand -base64 32
+```
+
+| Variável | Descrição |
+|----------|-----------|
+| `NODE_ENV` | `development` ou `production` |
+| `MYSQL_ROOT_PASSWORD` | Senha root do MySQL |
+| `MYSQL_USER` / `MYSQL_PASSWORD` | Credenciais da aplicação |
+| `MYSQL_DATABASE` | Nome do banco (padrão `pilates_db`) |
+| `JWT_SECRET` | Secret de assinatura do access token (**trocar**) |
+| `JWT_REFRESH_SECRET` | Secret do refresh token (**trocar**) |
+| `BACKEND_PORT` / `FRONTEND_PORT` | Portas expostas |
+| `VITE_API_URL` | URL da API consumida pelo frontend |
+
+### 3. Subir os containers
+
+```bash
+docker compose up --build -d
+```
+
+Na primeira subida o backend executa automaticamente `prisma generate` e `prisma migrate deploy`. Para popular usuários e dados iniciais, rode o seed:
+
+```bash
+docker compose exec backend npm run prisma:seed
+```
+
+### 4. Acessar
+
+| Serviço | URL |
+|---------|-----|
+| Frontend (app React) | http://localhost:5173 |
+| API v1 | http://localhost:3000/api/v1 |
+| Health check | http://localhost:3000/api/v1/health |
+| Swagger / OpenAPI | http://localhost:3000/documentation |
+| Nginx (proxy reverso) | http://localhost |
+| MySQL | localhost:3306 |
+
+### 5. Credenciais padrão (após o seed)
+
+| Perfil | E-mail | Senha |
+|--------|--------|-------|
+| Admin | `admin@pilates.local` | `admin123` |
+| Professora | `professora@pilates.local` | `prof123` |
+| Recepcionista | `recep@pilates.local` | `rec123` |
+| Financeiro | `financeiro@pilates.local` | `fin123` |
+
+> ⚠️ Credenciais apenas para desenvolvimento. **Altere-as antes de qualquer uso real.**
+
+---
+
+## 🔧 Comandos Úteis
+
+```bash
+# Subir / parar
+docker compose up -d
 docker compose down
 
-# Ver status
+# Status e logs
 docker compose ps
-
-# Ver logs
 docker compose logs -f backend
 
-# Entrar no container
+# Acessar o container do backend
 docker compose exec backend sh
 
-# Banco de dados
-docker compose exec mysql mysql -u pilates_user -p
-
-# Rebuild
+# Rebuild apenas do backend
 docker compose up -d --build backend
 
-# Limpar tudo
+# Remover tudo (inclui volume do banco)
 docker compose down -v
 ```
 
----
+### Banco de dados (Prisma)
 
-## 🔐 Segurança
+```bash
+# Aplicar migrações
+docker compose exec backend npm run prisma:migrate
 
-- ✅ CORS configurado
-- ✅ Helmet headers
-- ✅ Rate limiting (100 req/15min)
-- ✅ Validação Zod em entradas
-- ✅ JWT com refresh token rotation
-- ✅ Bcrypt para senhas
-- ✅ Sanitização de inputs
+# Popular dados iniciais
+docker compose exec backend npm run prisma:seed
 
----
+# Abrir o Prisma Studio
+docker compose exec backend npm run prisma:studio
 
-## 📊 Roadmap
+# Resetar o banco (cuidado: apaga dados)
+docker compose exec backend npm run prisma:reset
 
-### Fase 2: Backend Fastify + Auth (19h)
-- [ ] Setup Fastify + TypeScript
-- [ ] Prisma + MySQL
-- [ ] Autenticação JWT
-- [ ] RBAC (4 roles)
-- [ ] Testes unitários
-- [ ] Swagger/OpenAPI
-
-### Fase 3: Frontend React (15h)
-- [ ] Componentes base
-- [ ] Páginas principais
-- [ ] Integração com API
-- [ ] Sistema de temas
-
-### Fase 4-7: Features Completas
-- [ ] Agenda + Presença
-- [ ] Financeiro + Mensalidades
-- [ ] Dashboard
-- [ ] Deploy em produção
+# Acessar o MySQL via CLI
+docker compose exec mysql mysql -u pilates_user -p pilates_db
+```
 
 ---
 
 ## 🧪 Testes
 
-### Rodando testes
-
 ```bash
-# Todos os testes
+# Rodar todos os testes
 docker compose exec backend npm test
 
-# Watch mode
+# Modo watch
 docker compose exec backend npm run test:watch
 
 # Cobertura
 docker compose exec backend npm run test:coverage
 ```
 
-### Metas
-
-- Services: 80%+ cobertura
-- Rotas críticas: 90%+ cobertura
-- Utilitários: 100% cobertura
-
----
-
-## 🌐 URLs Locais
-
-| Serviço | URL | Descrição |
-|---------|-----|-----------|
-| Frontend | http://localhost:5173 | App React |
-| API v1 | http://localhost:3000/api/v1 | Endpoints REST |
-| Health | http://localhost:3000/api/v1/health | Status API |
-| Swagger | http://localhost:3000/documentation | Docs OpenAPI |
-| MySQL | localhost:3306 | Banco de dados |
-| Nginx | http://localhost | Proxy reverso |
-
 ---
 
 ## 💾 Banco de Dados
 
-- **Motor:** MySQL 8.0
-- **Driver:** Prisma ORM
-- **Tabelas:** 13 (usuarios, alunos, professores, aulas, etc)
-- **Migrations:** Automáticas
+- **Motor:** MySQL 8.0 (`utf8mb4` / `utf8mb4_unicode_ci`, timezone UTC)
+- **ORM:** Prisma 5
+- **Modelos:** 20 (usuários, alunos, professores, planos, modalidades, aulas, presenças, inscrições, reposições, caixa, mensalidades, pagamentos, relatórios, notificações, auditoria, comprovantes, configuração do studio, estornos, termos de uso e aceites)
+- **Migrações:** versionadas em `backend/prisma/migrations/` (aplicadas manualmente / via `prisma migrate deploy`)
 
-### Acessar MySQL
+---
 
-```bash
-docker compose exec mysql mysql -u pilates_user -p pilates_db
+## 🌐 Deploy em Produção (VPS Hostinger)
 
-# Senha: pilates_pass (padrão em dev)
-```
+> ⏳ **Seção em construção.** O deploy em VPS da Hostinger ainda não foi configurado.
+
+Planejado para esta etapa:
+- Provisionamento da VPS e instalação do Docker / Docker Compose.
+- Configuração de domínio e DNS.
+- HTTPS via certificado SSL no Nginx (volume `nginx/ssl`).
+- Variáveis de ambiente de produção (`NODE_ENV=production`, secrets JWT fortes, `VITE_API_URL` apontando para o domínio).
+- Build de produção do frontend e do backend.
+- Estratégia de backup do MySQL.
+
+_As instruções detalhadas serão adicionadas aqui assim que o ambiente de produção for configurado._
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Porta já em uso
+**Porta já em uso** — ajuste as portas no `docker-compose.yml` (ex.: backend para `3001:3000`).
 
+**MySQL não conecta** — aguarde a inicialização e confira os logs:
 ```bash
-# Mudar porta em docker-compose.yml
-# Exemplo: backend porta 3001 em vez de 3000
+docker compose logs mysql   # procure por "ready for connections"
 ```
 
-### MySQL não conecta
-
+**Frontend em branco** — abra o DevTools (F12), veja o console e teste a API:
 ```bash
-# Aguardar 30s
-docker compose logs mysql
-# Procure por "ready for connections"
+curl http://localhost:3000/api/v1/health
 ```
-
-### Frontend em branco
-
-```bash
-# Abrir DevTools (F12)
-# Ver console para erros
-# Testar API: curl http://localhost:3000/api/v1/health
-```
-
-Mais detalhes: Ver `DOCKER_SETUP.md` seção "Troubleshooting"
-
----
-
-## 📞 Suporte
-
-| Questão | Resposta |
-|---------|----------|
-| Como rodar? | `docker compose up --build -d` |
-| Como parar? | `docker compose down` |
-| Logs do backend? | `docker compose logs -f backend` |
-| Ver status? | `docker compose ps` |
-| Banco de dados? | `docker compose exec mysql mysql -u pilates_user -p` |
-
----
-
-## 📖 Leitura Recomendada
-
-1. **[QUICKSTART.md](QUICKSTART.md)** (5 min) — Rodar rápido
-2. **[DOCKER_SETUP.md](DOCKER_SETUP.md)** (20 min) — Entender arquitetura
-3. **[STATUS_PROJETO.md](STATUS_PROJETO.md)** (20 min) — Status + roadmap
-4. **[PLANO_EXECUCAO_FASE_2.md](PLANO_EXECUCAO_FASE_2.md)** (40 min) — Próxima implementação
 
 ---
 
 ## 🤝 Contribuindo
 
-Este é um projeto em desenvolvimento. Siga `PLANO_EXECUCAO_FASE_2.md` para implementar novas features.
-
-### Commit padrão (Conventional Commits)
+Padrão de commits (Conventional Commits):
 
 ```bash
-git commit -m "feat: adiciona autenticação JWT"
-git commit -m "fix: corrige login com email duplicado"
-git commit -m "test: adiciona testes do AuthService"
+git commit -m "feat: adiciona matrícula de alunos na agenda"
+git commit -m "fix: corrige fuso horário das aulas de hoje"
+git commit -m "test: adiciona testes do TermosService"
 git commit -m "chore: atualiza dependências"
 ```
 
 ---
 
-## 📄 Licença
-
-MIT License - veja [LICENSE](LICENSE) para detalhes
-
----
-
 ## 👨‍💻 Desenvolvedor
 
-Projeto desenvolvido com ❤️ para gerenciamento de studios de pilates
-
-**Contato:** [as3434126@gmail.com](mailto:as3434126@gmail.com)
+Projeto desenvolvido por **[AleckDevv](https://github.com/AleckDevv)**
 
 ---
 
-## 🎉 Começar Agora
+## 📄 Licença
 
-```bash
-docker compose up --build -d
-sleep 30
-docker compose ps
-
-# Abra: http://localhost:5173
-```
-
-**Status:** ✅ **PRONTO PARA DESENVOLVIMENTO**
-
-Qualquer dúvida, consulte a documentação ou abra uma issue!
+Distribuído sob a licença MIT — veja [LICENSE](LICENSE) para detalhes.
