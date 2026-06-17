@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   User, Mail, Phone, IdCard, CreditCard, CalendarDays, GraduationCap,
-  Layers, Tag, Pencil, Check, X,
+  Layers, Tag, Pencil, Check, X, FileText, ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -149,6 +150,22 @@ export function AlunoPerfilPage() {
           <p className="text-xs text-cinza-texto">
             Para alterar plano, modalidade ou status da matrícula, fale com a recepção do studio.
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Termos de Uso */}
+      <Card>
+        <CardContent className="p-6">
+          <Link to="/aluno/termos" className="flex items-center gap-4 group">
+            <span className="p-3 rounded-xl bg-lilas-claro shrink-0">
+              <FileText className="w-5 h-5 text-roxo-profundo" />
+            </span>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-cinza-forte text-sm">Termos de Uso e Prestação de Serviços</p>
+              <p className="text-xs text-cinza-texto mt-0.5">Veja o documento vigente, baixe o PDF e consulte seu aceite.</p>
+            </div>
+            <ChevronRight className="w-4 h-4 text-cinza-medio group-hover:text-lilas-medio transition-colors shrink-0" />
+          </Link>
         </CardContent>
       </Card>
     </div>

@@ -17,6 +17,7 @@ import {
   Menu,
   UserCircle,
   Layers,
+  FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
@@ -41,6 +42,7 @@ const navItems: NavItem[] = [
   { label: 'Acompanhamento', to: '/admin/acompanhamento', icon: HeartPulse },
   { label: 'Usuários', to: '/admin/usuarios', icon: Settings },
   { label: 'Modalidades', to: '/admin/modalidades', icon: Layers },
+  { label: 'Termos de Uso', to: '/admin/termos', icon: FileText },
   { label: 'Meu Perfil', to: '/admin/perfil', icon: UserCircle },
 ]
 

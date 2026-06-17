@@ -26,6 +26,7 @@ export const ROLE_PERMISSIONS = {
     auditoria: ['read'],
     acompanhamento: ['read'],
     presenca: ['create', 'read', 'update', 'delete'],
+    termos: ['create', 'read', 'update', 'delete'],
     sistema: ['create', 'read', 'update', 'delete', 'config', 'logs', 'maintenance'],
   },
 

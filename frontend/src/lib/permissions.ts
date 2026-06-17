@@ -15,6 +15,7 @@ export const ROLE_ALLOWED_ROUTES: Record<UserRole, string[]> = {
     '/admin/usuarios',
     '/admin/perfil',
     '/admin/modalidades',
+    '/admin/termos',
   ],
   RECEPCIONISTA: [
     '/admin/dashboard',

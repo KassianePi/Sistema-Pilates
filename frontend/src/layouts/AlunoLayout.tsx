@@ -14,6 +14,8 @@ import { useAuth } from '@/hooks/useAuth'
 import type { AlunoUser } from '@/types/auth.types'
 import { ChatSuporte } from '@/components/ChatSuporte'
 import { notificacoesService } from '@/services/notificacoes.service'
+import { useTermoStatus } from '@/features/termos/hooks/useTermos'
+import { AceiteTermosGate } from '@/features/termos/components/AceiteTermosGate'
 
 const navItems = [
   { label: 'Início', to: '/aluno/dashboard', icon: LayoutDashboard },
@@ -40,9 +42,26 @@ export function AlunoLayout() {
   })
   const naoLidas = notifData?.naoLidas ?? 0
 
+  // Gate de 1º acesso: status do aceite dos termos (fail-open em erro/ausência de termo).
+  const { data: termoStatus, isLoading: termoLoading } = useTermoStatus()
+
   async function handleLogout() {
     await logout()
     navigate('/aluno/login')
+  }
+
+  // Aguarda o status na entrada do portal para evitar exibir conteúdo antes do gate.
+  if (termoLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-creme-fundo">
+        <div className="w-8 h-8 rounded-full border-2 border-roxo-profundo border-t-transparent animate-spin" />
+      </div>
+    )
+  }
+
+  // Bloqueia o portal enquanto o termo vigente não for aceito.
+  if (termoStatus?.requerAceite && termoStatus.termo) {
+    return <AceiteTermosGate termo={termoStatus.termo} onSair={handleLogout} />
   }
 
   return (

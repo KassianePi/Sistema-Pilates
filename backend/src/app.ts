@@ -21,6 +21,7 @@ import { relatoriosRoutes } from './modules/relatorios/relatorios.routes'
 import { configuracaoRoutes } from './modules/configuracao/configuracao.routes'
 import { estornosRoutes } from './modules/estornos/estornos.routes'
 import { modalidadesRoutes } from './modules/modalidades/modalidades.routes'
+import { termosRoutes } from './modules/termos/termos.routes'
 
 // Inicializa listeners de eventos dos módulos
 import './modules/notificacoes/notificacoes.service'
@@ -178,6 +179,7 @@ export async function createApp() {
     await app.register(configuracaoRoutes)
     await app.register(estornosRoutes)
     await app.register(modalidadesRoutes)
+    await app.register(termosRoutes)
 
     // ========================================
     // 7. ERROR HANDLING GLOBAL

@@ -30,6 +30,7 @@ const AcompanhamentoPage = lazy(() => import('@/features/admin/acompanhamento/pa
 const UsuariosPage = lazy(() => import('@/features/admin/usuarios/pages/UsuariosPage').then(m => ({ default: m.UsuariosPage })))
 const ProfessorPerfilPage = lazy(() => import('@/features/admin/perfil/pages/ProfessorPerfilPage').then(m => ({ default: m.ProfessorPerfilPage })))
 const ModalidadesPage = lazy(() => import('@/features/admin/modalidades/pages/ModalidadesPage').then(m => ({ default: m.ModalidadesPage })))
+const AdminTermosPage = lazy(() => import('@/features/admin/termos/pages/AdminTermosPage').then(m => ({ default: m.AdminTermosPage })))
 
 // Portal aluno — carregamento lazy por rota
 const AlunoDashboardPage = lazy(() => import('@/features/aluno/dashboard/pages/AlunoDashboardPage').then(m => ({ default: m.AlunoDashboardPage })))
@@ -38,6 +39,7 @@ const AlunoPresencaPage = lazy(() => import('@/features/aluno/presenca/pages/Alu
 const AlunoFinanceiroPage = lazy(() => import('@/features/aluno/financeiro/pages/AlunoFinanceiroPage').then(m => ({ default: m.AlunoFinanceiroPage })))
 const AlunoPerfilPage = lazy(() => import('@/features/aluno/perfil/pages/AlunoPerfilPage').then(m => ({ default: m.AlunoPerfilPage })))
 const AlunoNotificacoesPage = lazy(() => import('@/features/aluno/notificacoes/pages/AlunoNotificacoesPage').then(m => ({ default: m.AlunoNotificacoesPage })))
+const AlunoTermosPage = lazy(() => import('@/features/aluno/termos/pages/AlunoTermosPage').then(m => ({ default: m.AlunoTermosPage })))
 
 function PageLoader() {
   return (
@@ -105,6 +107,7 @@ export default function App() {
                   <Route path="/admin/acompanhamento" element={<RoleGuard path="/admin/acompanhamento"><Suspense fallback={<PageLoader />}><AcompanhamentoPage /></Suspense></RoleGuard>} />
                   <Route path="/admin/usuarios" element={<RoleGuard path="/admin/usuarios"><Suspense fallback={<PageLoader />}><UsuariosPage /></Suspense></RoleGuard>} />
                   <Route path="/admin/modalidades" element={<RoleGuard path="/admin/modalidades"><Suspense fallback={<PageLoader />}><ModalidadesPage /></Suspense></RoleGuard>} />
+                  <Route path="/admin/termos" element={<RoleGuard path="/admin/termos"><Suspense fallback={<PageLoader />}><AdminTermosPage /></Suspense></RoleGuard>} />
 
                   {/* Perfil próprio — PROFESSOR e outros roles com acesso */}
                   <Route path="/admin/perfil" element={<RoleGuard path="/admin/perfil"><Suspense fallback={<PageLoader />}><ProfessorPerfilPage /></Suspense></RoleGuard>} />
@@ -120,6 +123,7 @@ export default function App() {
                   <Route path="/aluno/presenca" element={<Suspense fallback={<PageLoader />}><AlunoPresencaPage /></Suspense>} />
                   <Route path="/aluno/financeiro" element={<Suspense fallback={<PageLoader />}><AlunoFinanceiroPage /></Suspense>} />
                   <Route path="/aluno/notificacoes" element={<Suspense fallback={<PageLoader />}><AlunoNotificacoesPage /></Suspense>} />
+                  <Route path="/aluno/termos" element={<Suspense fallback={<PageLoader />}><AlunoTermosPage /></Suspense>} />
                   <Route path="/aluno/perfil" element={<Suspense fallback={<PageLoader />}><AlunoPerfilPage /></Suspense>} />
                 </Route>
               </Route>

@@ -52,6 +52,7 @@ model Usuario {
   estornosAprovados       Estorno[]     @relation("EstornoAprovador")
   comprovantesAnalisados  ComprovantePagemento[] @relation("ComprovantesAnalisados")
   aulasAlteradas          Aula[]        @relation("AulaAlteradaPor")
+  termosCriados           TermoUso[]    @relation("TermosCriados")
 
   @@index([email])
   @@index([cpf])
@@ -94,6 +95,7 @@ model Aluno {
   reposicoes      Reposicao[]
   estornos        Estorno[]
   comprovantes    ComprovantePagemento[]
+  termosAceites   TermoAceite[]
 
   @@index([usuarioId])
   @@index([status])
@@ -613,4 +615,45 @@ model Estorno {
   @@index([alunoId])
   @@index([status])
   @@map("estornos")
+}
+
+// ============================================================================
+// 📜 MÓDULO TERMOS — Termos de Uso e Prestação de Serviços
+// ============================================================================
+
+model TermoUso {
+  id           String        @id @default(uuid()) @db.VarChar(36)
+  versao       Int           @unique
+  titulo       String        @db.VarChar(255)
+  conteudo     String        @db.LongText
+  publicado    Boolean       @default(false)
+  publicadoEm  DateTime?     @map("publicado_em")
+  criadoPorId  String?       @db.VarChar(36) @map("criado_por_id")
+  criadoEm     DateTime      @default(now()) @map("criado_em")
+  atualizadoEm DateTime      @default(now()) @updatedAt @map("atualizado_em")
+
+  criadoPor    Usuario?      @relation("TermosCriados", fields: [criadoPorId], references: [id], onDelete: SetNull)
+  aceites      TermoAceite[]
+
+  @@index([publicado])
+  @@index([versao])
+  @@map("termos_uso")
+}
+
+model TermoAceite {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  termoId     String   @db.VarChar(36) @map("termo_id")
+  alunoId     String   @db.VarChar(36) @map("aluno_id")
+  versao      Int
+  aceitoEm    DateTime @default(now()) @map("aceito_em")
+  enderecoIp  String?  @db.VarChar(45) @map("endereco_ip")
+  userAgent   String?  @db.LongText    @map("user_agent")
+
+  termo       TermoUso @relation(fields: [termoId], references: [id], onDelete: Cascade)
+  aluno       Aluno    @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+
+  @@unique([termoId, alunoId])
+  @@index([termoId])
+  @@index([alunoId])
+  @@map("termos_aceites")
 }
