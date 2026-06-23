@@ -33,7 +33,9 @@ export function ReembolsoModal({ mensalidadeId, onClose }: ReembolsoModalProps) 
             <p>O valor é calculado pelos dias contratados no plano menos os dias em que você compareceu no mês.</p>
           </div>
           <div className="space-y-1.5">
-            <Label>Motivo <span className="text-cinza-texto text-xs">(opcional)</span></Label>
+            <Label>
+              Motivo <span className="text-cinza-texto text-xs">(opcional)</span>
+            </Label>
             <Textarea
               placeholder="Descreva o motivo da solicitação..."
               rows={3}
@@ -42,8 +44,14 @@ export function ReembolsoModal({ mensalidadeId, onClose }: ReembolsoModalProps) 
             />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={submit} disabled={solicitar.isPending} className="bg-rosa-vibrante hover:bg-rosa-vibrante/90">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={submit}
+              disabled={solicitar.isPending}
+              className="bg-rosa-vibrante hover:bg-rosa-vibrante/90"
+            >
               {solicitar.isPending ? 'Enviando...' : 'Solicitar reembolso'}
             </Button>
           </div>

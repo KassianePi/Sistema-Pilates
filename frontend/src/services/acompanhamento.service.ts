@@ -31,16 +31,33 @@ export interface ResumoAcompanhamento {
 export interface DetalheAluno extends AlunoAcompanhamento {
   dataInicio: string
   telefone: string | null
-  presencas: Array<{ id: string; status: string; dataRegistro: string; aula: { dataHoraInicio: string; sala: string } | null }>
-  mensalidades: Array<{ id: string; status: string; valor: string | number; dataVencimento: string; plano: string | null }>
+  presencas: Array<{
+    id: string
+    status: string
+    dataRegistro: string
+    aula: { dataHoraInicio: string; sala: string } | null
+  }>
+  mensalidades: Array<{
+    id: string
+    status: string
+    valor: string | number
+    dataVencimento: string
+    plano: string | null
+  }>
   proximasAulas: Array<{ id: string; dataHoraInicio: string; sala: string; status: string }>
 }
 
 export const acompanhamentoService = {
-  async listar(params?: { risco?: RiscoAluno; busca?: string }): Promise<{ alunos: AlunoAcompanhamento[]; resumo: ResumoAcompanhamento }> {
-    const { data } = await api.get<ApiResponse<{ alunos: AlunoAcompanhamento[]; resumo: ResumoAcompanhamento }>>('/acompanhamento/alunos', {
-      params: { risco: params?.risco, busca: params?.busca || undefined },
-    })
+  async listar(params?: {
+    risco?: RiscoAluno
+    busca?: string
+  }): Promise<{ alunos: AlunoAcompanhamento[]; resumo: ResumoAcompanhamento }> {
+    const { data } = await api.get<ApiResponse<{ alunos: AlunoAcompanhamento[]; resumo: ResumoAcompanhamento }>>(
+      '/acompanhamento/alunos',
+      {
+        params: { risco: params?.risco, busca: params?.busca || undefined },
+      },
+    )
     return data.data
   },
 

@@ -6,9 +6,14 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { ProfessorFormModal } from '../components/ProfessorFormModal'
 import { useProfessores, useDeleteProfessor, useAlterarStatusProfessor } from '../hooks/useProfessores'
@@ -44,7 +49,10 @@ export function ProfessoresPage() {
 
   async function confirmarAlterarStatus() {
     if (!professorAlterandoStatus) return
-    await alterarStatus.mutateAsync({ id: professorAlterandoStatus.id, ativo: professorAlterandoStatus.status !== 'ATIVO' })
+    await alterarStatus.mutateAsync({
+      id: professorAlterandoStatus.id,
+      ativo: professorAlterandoStatus.status !== 'ATIVO',
+    })
     setProfessorAlterandoStatus(null)
   }
 
@@ -70,7 +78,10 @@ export function ProfessoresPage() {
                 placeholder="Buscar por nome..."
                 className="pl-9"
                 value={busca}
-                onChange={(e) => { setBusca(e.target.value); setPagina(1) }}
+                onChange={(e) => {
+                  setBusca(e.target.value)
+                  setPagina(1)
+                }}
               />
             </div>
             {data && (
@@ -115,23 +126,41 @@ export function ProfessoresPage() {
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => { setProfessorEditando(professor); setModalOpen(true) }} title="Editar">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            setProfessorEditando(professor)
+                            setModalOpen(true)
+                          }}
+                          title="Editar"
+                        >
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
-                          size="icon" variant="ghost"
+                          size="icon"
+                          variant="ghost"
                           onClick={() => setProfessorAlterandoStatus(professor)}
                           title={professor.status === 'ATIVO' ? 'Inativar professor' : 'Reativar professor'}
-                          className={professor.status === 'ATIVO'
-                            ? 'hover:text-amber-600 hover:bg-amber-50'
-                            : 'hover:text-emerald-600 hover:bg-emerald-50'}
+                          className={
+                            professor.status === 'ATIVO'
+                              ? 'hover:text-amber-600 hover:bg-amber-50'
+                              : 'hover:text-emerald-600 hover:bg-emerald-50'
+                          }
                         >
-                          {professor.status === 'ATIVO'
-                            ? <PowerOff className="w-4 h-4" />
-                            : <Power className="w-4 h-4" />}
+                          {professor.status === 'ATIVO' ? (
+                            <PowerOff className="w-4 h-4" />
+                          ) : (
+                            <Power className="w-4 h-4" />
+                          )}
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setProfessorExcluindo(professor)} title="Excluir"
-                          className="hover:text-red-600 hover:bg-red-50">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setProfessorExcluindo(professor)}
+                          title="Excluir"
+                          className="hover:text-red-600 hover:bg-red-50"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -144,19 +173,26 @@ export function ProfessoresPage() {
 
           {totalPaginas > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-bege-cartao">
-              <Button variant="outline" size="sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 1}>Anterior</Button>
-              <span className="text-sm text-cinza-texto">Página {pagina} de {totalPaginas}</span>
-              <Button variant="outline" size="sm" onClick={() => setPagina(p => p + 1)} disabled={pagina === totalPaginas}>Próxima</Button>
+              <Button variant="outline" size="sm" onClick={() => setPagina((p) => p - 1)} disabled={pagina === 1}>
+                Anterior
+              </Button>
+              <span className="text-sm text-cinza-texto">
+                Página {pagina} de {totalPaginas}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPagina((p) => p + 1)}
+                disabled={pagina === totalPaginas}
+              >
+                Próxima
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
 
-      <ProfessorFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        professor={professorEditando}
-      />
+      <ProfessorFormModal open={modalOpen} onClose={() => setModalOpen(false)} professor={professorEditando} />
 
       <AlertDialog open={!!professorAlterandoStatus} onOpenChange={(v) => !v && setProfessorAlterandoStatus(null)}>
         <AlertDialogContent>
@@ -165,10 +201,17 @@ export function ProfessoresPage() {
               {professorAlterandoStatus?.status === 'ATIVO' ? 'Inativar professor?' : 'Reativar professor?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {professorAlterandoStatus?.status === 'ATIVO'
-                ? <>O professor <strong>{professorAlterandoStatus?.usuario.nomeCompleto}</strong> não poderá mais acessar o painel. Você pode reativá-lo a qualquer momento.</>
-                : <>O professor <strong>{professorAlterandoStatus?.usuario.nomeCompleto}</strong> voltará a ter acesso ao painel.</>
-              }
+              {professorAlterandoStatus?.status === 'ATIVO' ? (
+                <>
+                  O professor <strong>{professorAlterandoStatus?.usuario.nomeCompleto}</strong> não poderá mais acessar
+                  o painel. Você pode reativá-lo a qualquer momento.
+                </>
+              ) : (
+                <>
+                  O professor <strong>{professorAlterandoStatus?.usuario.nomeCompleto}</strong> voltará a ter acesso ao
+                  painel.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -176,13 +219,17 @@ export function ProfessoresPage() {
             <AlertDialogAction
               onClick={confirmarAlterarStatus}
               disabled={alterarStatus.isPending}
-              className={professorAlterandoStatus?.status === 'ATIVO'
-                ? 'bg-amber-600 hover:bg-amber-700'
-                : 'bg-emerald-600 hover:bg-emerald-700'}
+              className={
+                professorAlterandoStatus?.status === 'ATIVO'
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }
             >
               {alterarStatus.isPending
                 ? 'Aguarde...'
-                : professorAlterandoStatus?.status === 'ATIVO' ? 'Inativar' : 'Reativar'}
+                : professorAlterandoStatus?.status === 'ATIVO'
+                  ? 'Inativar'
+                  : 'Reativar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

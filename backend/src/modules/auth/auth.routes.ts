@@ -10,7 +10,21 @@
  */
 
 import type { FastifyInstance } from 'fastify'
-import { login, loginAluno, register, refresh, logout, changePassword, setup, criarUsuario, listarUsuarios, atualizarUsuario, alterarStatusUsuario, getMeuPerfil, atualizarMeuPerfil } from './auth.controller'
+import {
+  login,
+  loginAluno,
+  register,
+  refresh,
+  logout,
+  changePassword,
+  setup,
+  criarUsuario,
+  listarUsuarios,
+  atualizarUsuario,
+  alterarStatusUsuario,
+  getMeuPerfil,
+  atualizarMeuPerfil,
+} from './auth.controller'
 import { authenticateToken, requireRole } from '../../shared/middlewares/auth.middleware'
 import { logDebug } from '../../shared/utils'
 
@@ -21,56 +35,78 @@ import { logDebug } from '../../shared/utils'
  */
 /** Apenas rotas de login — protegidas por rate limit estrito */
 export async function authLoginRoutes(fastify: FastifyInstance) {
-  fastify.post<{ Body: { email: string; senha: string } }>('/api/v1/auth/login', {
-    schema: {
-      body: {
-        type: 'object',
-        required: ['email', 'senha'],
-        properties: {
-          email: { type: 'string', format: 'email' },
-          senha: { type: 'string', minLength: 6 },
-        },
-      },
-      response: {
-        200: {
+  fastify.addHook('onRoute', (routeOptions) => {
+    routeOptions.schema = { ...routeOptions.schema, tags: ['Autenticação'] }
+  })
+
+  fastify.post<{ Body: { email: string; senha: string } }>(
+    '/api/v1/auth/login',
+    {
+      schema: {
+        body: {
           type: 'object',
+          required: ['email', 'senha'],
           properties: {
-            success: { type: 'boolean' },
-            data: {
-              type: 'object',
-              properties: {
-                usuarioId: { type: 'string' },
-                email: { type: 'string' },
-                nome: { type: 'string' },
-                funcao: { type: 'string' },
-                accessToken: { type: 'string' },
-                refreshToken: { type: 'string' },
-                expiresIn: { type: 'number' },
+            email: { type: 'string', format: 'email' },
+            senha: { type: 'string', minLength: 6 },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  usuarioId: { type: 'string' },
+                  email: { type: 'string' },
+                  nome: { type: 'string' },
+                  funcao: { type: 'string' },
+                  accessToken: { type: 'string' },
+                  refreshToken: { type: 'string' },
+                  expiresIn: { type: 'number' },
+                },
               },
             },
           },
         },
       },
     },
-  }, login)
+    login,
+  )
 
-  fastify.post('/api/v1/auth/aluno/login', {
-    schema: {
-      body: {
-        type: 'object',
-        required: ['email', 'senha'],
-        properties: {
-          email: { type: 'string', format: 'email' },
-          senha: { type: 'string', minLength: 6 },
+  fastify.post(
+    '/api/v1/auth/aluno/login',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email', 'senha'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+            senha: { type: 'string', minLength: 6 },
+          },
         },
       },
     },
-  }, loginAluno)
+    loginAluno,
+  )
 }
 
 /** Demais rotas de auth — sem rate limit estrito */
 export async function authRoutes(fastify: FastifyInstance) {
   logDebug('📝 Registrando rotas de autenticação')
+
+  fastify.addHook('onRoute', (routeOptions) => {
+    routeOptions.schema = {
+      ...routeOptions.schema,
+      tags: ['Autenticação'],
+      ...(Array.isArray(routeOptions.onRequest) && routeOptions.onRequest.includes(authenticateToken)
+        ? { security: [{ bearerAuth: [] }] }
+        : {}),
+    }
+  })
 
   /**
    * POST /api/v1/auth/setup
@@ -86,22 +122,26 @@ export async function authRoutes(fastify: FastifyInstance) {
       senha: string
       senhaConfirmacao: string
     }
-  }>('/api/v1/auth/setup', {
-    schema: {
-      body: {
-        type: 'object',
-        required: ['email', 'nome', 'cpf', 'senha', 'senhaConfirmacao'],
-        properties: {
-          email: { type: 'string', format: 'email' },
-          nome: { type: 'string', minLength: 3 },
-          cpf: { type: 'string', pattern: '^\\d{11}$' },
-          telefone: { type: 'string', pattern: '^\\d{10,11}$' },
-          senha: { type: 'string', minLength: 8 },
-          senhaConfirmacao: { type: 'string', minLength: 8 },
+  }>(
+    '/api/v1/auth/setup',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email', 'nome', 'cpf', 'senha', 'senhaConfirmacao'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+            nome: { type: 'string', minLength: 3 },
+            cpf: { type: 'string', pattern: '^\\d{11}$' },
+            telefone: { type: 'string', pattern: '^\\d{10,11}$' },
+            senha: { type: 'string', minLength: 8 },
+            senhaConfirmacao: { type: 'string', minLength: 8 },
+          },
         },
       },
     },
-  }, setup)
+    setup,
+  )
 
   /**
    * POST /api/v1/auth/register
@@ -118,24 +158,28 @@ export async function authRoutes(fastify: FastifyInstance) {
       senhaConfirmacao: string
       funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO'
     }
-  }>('/api/v1/auth/register', {
-    onRequest: [authenticateToken, requireRole('ADMIN')],
-    schema: {
-      body: {
-        type: 'object',
-        required: ['email', 'nome', 'cpf', 'senha', 'senhaConfirmacao', 'funcao'],
-        properties: {
-          email: { type: 'string', format: 'email' },
-          nome: { type: 'string', minLength: 3 },
-          cpf: { type: 'string', pattern: '^\\d{11}$' },
-          telefone: { type: 'string', pattern: '^\\d{10,11}$' },
-          senha: { type: 'string', minLength: 6 },
-          senhaConfirmacao: { type: 'string', minLength: 6 },
-          funcao: { type: 'string', enum: ['ADMIN', 'PROFESSOR', 'RECEPCIONISTA', 'FINANCEIRO'] },
+  }>(
+    '/api/v1/auth/register',
+    {
+      onRequest: [authenticateToken, requireRole('ADMIN')],
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email', 'nome', 'cpf', 'senha', 'senhaConfirmacao', 'funcao'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+            nome: { type: 'string', minLength: 3 },
+            cpf: { type: 'string', pattern: '^\\d{11}$' },
+            telefone: { type: 'string', pattern: '^\\d{10,11}$' },
+            senha: { type: 'string', minLength: 6 },
+            senhaConfirmacao: { type: 'string', minLength: 6 },
+            funcao: { type: 'string', enum: ['ADMIN', 'PROFESSOR', 'RECEPCIONISTA', 'FINANCEIRO'] },
+          },
         },
       },
     },
-  }, criarUsuario)
+    criarUsuario,
+  )
 
   /**
    * POST /api/v1/auth/refresh
@@ -145,33 +189,37 @@ export async function authRoutes(fastify: FastifyInstance) {
     Body: {
       refreshToken: string
     }
-  }>('/api/v1/auth/refresh', {
-    schema: {
-      body: {
-        type: 'object',
-        required: ['refreshToken'],
-        properties: {
-          refreshToken: { type: 'string', minLength: 10 },
-        },
-      },
-      response: {
-        200: {
+  }>(
+    '/api/v1/auth/refresh',
+    {
+      schema: {
+        body: {
           type: 'object',
+          required: ['refreshToken'],
           properties: {
-            success: { type: 'boolean' },
-            data: {
-              type: 'object',
-              properties: {
-                accessToken: { type: 'string' },
-                refreshToken: { type: 'string' },
-                expiresIn: { type: 'number' },
+            refreshToken: { type: 'string', minLength: 10 },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  accessToken: { type: 'string' },
+                  refreshToken: { type: 'string' },
+                  expiresIn: { type: 'number' },
+                },
               },
             },
           },
         },
       },
     },
-  }, refresh)
+    refresh,
+  )
 
   /**
    * POST /api/v1/auth/logout
@@ -180,21 +228,25 @@ export async function authRoutes(fastify: FastifyInstance) {
    */
   fastify.post<{
     Body: Record<string, never>
-  }>('/api/v1/auth/logout', {
-    onRequest: [authenticateToken],
-    schema: {
-      response: {
-        200: {
-          description: 'Logout bem-sucedido',
-          type: 'object',
-          properties: {
-            success: { type: 'boolean' },
-            data: { type: 'object' },
+  }>(
+    '/api/v1/auth/logout',
+    {
+      onRequest: [authenticateToken],
+      schema: {
+        response: {
+          200: {
+            description: 'Logout bem-sucedido',
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: { type: 'object' },
+            },
           },
         },
       },
     },
-  }, logout)
+    logout,
+  )
 
   /**
    * POST /api/v1/auth/change-password
@@ -207,72 +259,96 @@ export async function authRoutes(fastify: FastifyInstance) {
       novaSenha: string
       novaSenhaConfirmacao: string
     }
-  }>('/api/v1/auth/change-password', {
-    onRequest: [authenticateToken],
-    schema: {
-      body: {
-        type: 'object',
-        required: ['senhaAtual', 'novaSenha', 'novaSenhaConfirmacao'],
-        properties: {
-          senhaAtual: { type: 'string', minLength: 6 },
-          novaSenha: { type: 'string', minLength: 6 },
-          novaSenhaConfirmacao: { type: 'string', minLength: 6 },
-        },
-      },
-      response: {
-        200: {
-          description: 'Senha alterada com sucesso',
+  }>(
+    '/api/v1/auth/change-password',
+    {
+      onRequest: [authenticateToken],
+      schema: {
+        body: {
           type: 'object',
+          required: ['senhaAtual', 'novaSenha', 'novaSenhaConfirmacao'],
           properties: {
-            success: { type: 'boolean' },
-            data: { type: 'object' },
+            senhaAtual: { type: 'string', minLength: 6 },
+            novaSenha: { type: 'string', minLength: 6 },
+            novaSenhaConfirmacao: { type: 'string', minLength: 6 },
+          },
+        },
+        response: {
+          200: {
+            description: 'Senha alterada com sucesso',
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: { type: 'object' },
+            },
           },
         },
       },
     },
-  }, changePassword)
+    changePassword,
+  )
 
   /**
    * GET /api/v1/usuarios
    * Lista usuários do sistema — ADMIN only
    */
-  fastify.get('/api/v1/usuarios', {
-    onRequest: [authenticateToken, requireRole('ADMIN')],
-  }, listarUsuarios)
+  fastify.get(
+    '/api/v1/usuarios',
+    {
+      onRequest: [authenticateToken, requireRole('ADMIN')],
+    },
+    listarUsuarios,
+  )
 
   /**
    * PUT /api/v1/usuarios/:id
    * Atualiza dados de um usuário — ADMIN only
    */
-  fastify.put('/api/v1/usuarios/:id', {
-    onRequest: [authenticateToken, requireRole('ADMIN')],
-  }, atualizarUsuario)
+  fastify.put(
+    '/api/v1/usuarios/:id',
+    {
+      onRequest: [authenticateToken, requireRole('ADMIN')],
+    },
+    atualizarUsuario,
+  )
 
   /**
    * PATCH /api/v1/usuarios/:id/status
    * Ativa ou inativa um usuário — ADMIN only
    */
-  fastify.patch('/api/v1/usuarios/:id/status', {
-    onRequest: [authenticateToken, requireRole('ADMIN')],
-  }, alterarStatusUsuario)
+  fastify.patch(
+    '/api/v1/usuarios/:id/status',
+    {
+      onRequest: [authenticateToken, requireRole('ADMIN')],
+    },
+    alterarStatusUsuario,
+  )
 
   /**
    * GET /api/v1/me
    * Retorna o perfil do usuário autenticado
    * ⚠️ PROTEGIDO
    */
-  fastify.get('/api/v1/me', {
-    onRequest: [authenticateToken],
-  }, getMeuPerfil)
+  fastify.get(
+    '/api/v1/me',
+    {
+      onRequest: [authenticateToken],
+    },
+    getMeuPerfil,
+  )
 
   /**
    * PUT /api/v1/me
    * Atualiza o próprio perfil
    * ⚠️ PROTEGIDO
    */
-  fastify.put('/api/v1/me', {
-    onRequest: [authenticateToken],
-  }, atualizarMeuPerfil)
+  fastify.put(
+    '/api/v1/me',
+    {
+      onRequest: [authenticateToken],
+    },
+    atualizarMeuPerfil,
+  )
 
   logDebug('✅ Rotas de autenticação registradas')
 }

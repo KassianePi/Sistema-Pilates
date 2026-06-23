@@ -30,9 +30,7 @@ export function formatarDataHora(d?: string | null): string {
 export function formatarDataLonga(d?: string | null): string {
   if (!d) return '—'
   const dt = paraData(d)
-  return isNaN(dt.getTime())
-    ? '—'
-    : dt.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
 }
 
 export function primeiroNome(nome?: string | null): string {

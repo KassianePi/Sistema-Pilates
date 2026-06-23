@@ -16,8 +16,8 @@ export interface PresencaAluno {
     id: string
     sala: string
     dataHoraInicio: string
-    data: string        // YYYY-MM-DD (local)
-    horaInicio: string  // HH:mm (local)
+    data: string // YYYY-MM-DD (local)
+    horaInicio: string // HH:mm (local)
     titulo: string
   }
 }
@@ -42,7 +42,14 @@ function mapPresencaAluno(raw: PresencaRaw): PresencaAluno {
     id: raw.id,
     status: raw.status,
     dataRegistro: raw.dataRegistro,
-    aula: { id: raw?.aula?.id ?? '', sala, dataHoraInicio: iso ?? '', data, horaInicio, titulo: sala ? `Aula — ${sala}` : 'Aula' },
+    aula: {
+      id: raw?.aula?.id ?? '',
+      sala,
+      dataHoraInicio: iso ?? '',
+      data,
+      horaInicio,
+      titulo: sala ? `Aula — ${sala}` : 'Aula',
+    },
   }
 }
 
@@ -60,7 +67,9 @@ export const presencaService = {
   },
 
   async listar(params?: { aulaId?: string; alunoId?: string; status?: string; page?: number; limit?: number }) {
-    const { data } = await api.get<ApiResponse<{ presencas: Presenca[]; total: number; page: number; limit: number; totalPages: number }>>('/presencas', { params })
+    const { data } = await api.get<
+      ApiResponse<{ presencas: Presenca[]; total: number; page: number; limit: number; totalPages: number }>
+    >('/presencas', { params })
     return data.data
   },
 }

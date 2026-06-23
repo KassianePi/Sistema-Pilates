@@ -9,6 +9,7 @@
  */
 
 import jwt from 'jsonwebtoken'
+import { randomUUID } from 'node:crypto'
 
 export interface TokenPayload {
   usuarioId: string
@@ -49,6 +50,7 @@ export function generateAccessToken(payload: TokenPayload): string {
     expiresIn: '15m', // 15 minutos
     algorithm: 'HS256',
     issuer: 'studio-pilates',
+    jwtid: randomUUID(),
   })
 
   return token
@@ -79,6 +81,7 @@ export function generateRefreshToken(payload: TokenPayload): string {
     expiresIn: '7d', // 7 dias
     algorithm: 'HS256',
     issuer: 'studio-pilates',
+    jwtid: randomUUID(),
   })
 
   return token

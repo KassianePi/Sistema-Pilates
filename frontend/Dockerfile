@@ -21,7 +21,7 @@ ARG VITE_API_URL=http://localhost:3000/api/v1
 RUN VITE_API_URL=$VITE_API_URL npm run build
 
 # ====== PRODUCTION STAGE (Nginx) ======
-FROM nginx:alpine
+FROM nginx:alpine AS production
 
 COPY --from=prod-builder /app/dist /usr/share/nginx/html
 

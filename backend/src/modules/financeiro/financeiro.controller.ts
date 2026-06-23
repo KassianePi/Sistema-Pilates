@@ -12,7 +12,12 @@ export async function criarMensalidade(request: FastifyRequest, reply: FastifyRe
     const mensalidade = await financeiroService.criarMensalidade(request.body as any)
     return reply.code(201).send({ success: true, data: mensalidade })
   } catch (error: any) {
-    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof ValidationError)
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
+    }
     logWarn('Erro ao criar mensalidade', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao criar mensalidade', code: 'INTERNAL_ERROR' })
   }
@@ -34,7 +39,8 @@ export async function buscarMensalidadePorId(request: FastifyRequest, reply: Fas
     const mensalidade = await financeiroService.buscarMensalidadePorId(id)
     return reply.code(200).send({ success: true, data: mensalidade })
   } catch (error: any) {
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
     logWarn('Erro ao buscar mensalidade', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao buscar mensalidade', code: 'INTERNAL_ERROR' })
   }
@@ -46,9 +52,16 @@ export async function atualizarMensalidade(request: FastifyRequest, reply: Fasti
     const mensalidade = await financeiroService.atualizarMensalidade(id, request.body as any)
     return reply.code(200).send({ success: true, data: mensalidade })
   } catch (error: any) {
-    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
-    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    if (error instanceof ValidationError)
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
+    }
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 400)
+      return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
     logWarn('Erro ao atualizar mensalidade', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao atualizar mensalidade', code: 'INTERNAL_ERROR' })
   }
@@ -62,8 +75,14 @@ export async function registrarPagamento(request: FastifyRequest, reply: Fastify
     const pagamento = await financeiroService.registrarPagamento(usuarioId, request.body as any)
     return reply.code(201).send({ success: true, data: pagamento })
   } catch (error: any) {
-    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
-    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    if (error instanceof ValidationError)
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
+    }
+    if (error?.statusCode === 400)
+      return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
     logWarn('Erro ao registrar pagamento', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao registrar pagamento', code: 'INTERNAL_ERROR' })
   }
@@ -120,9 +139,7 @@ export async function solicitarAulaAvulsa(request: FastifyRequest, reply: Fastif
       select: { id: true },
     })
 
-    const dataTexto = dataDesejada
-      ? ` para o dia ${new Date(dataDesejada).toLocaleDateString('pt-BR')}`
-      : ''
+    const dataTexto = dataDesejada ? ` para o dia ${new Date(dataDesejada).toLocaleDateString('pt-BR')}` : ''
     const notaExtra = observacoes ? ` Observação: "${observacoes}"` : ''
     const titulo = `Solicitação de aula avulsa — ${aluno.usuario.nomeCompleto}`
     const mensagem = `O aluno ${aluno.usuario.nomeCompleto} solicitou uma aula avulsa${dataTexto}.${notaExtra} Crie a cobrança avulsa no financeiro e confirme com o aluno.`
@@ -149,27 +166,40 @@ export async function enviarComprovante(request: FastifyRequest, reply: FastifyR
   try {
     const usuarioId = request.usuarioId!
     const { mensalidadeId, arquivo, nomeArquivo, tipoArquivo } = request.body as {
-      mensalidadeId: string; arquivo: string; nomeArquivo: string; tipoArquivo: string
+      mensalidadeId: string
+      arquivo: string
+      nomeArquivo: string
+      tipoArquivo: string
     }
 
     const aluno = await prisma.aluno.findUnique({
       where: { usuarioId },
       include: { usuario: { select: { nomeCompleto: true } } },
     })
-    if (!aluno) return reply.code(403).send({ success: false, message: 'Perfil de aluno não encontrado', code: 'FORBIDDEN' })
+    if (!aluno)
+      return reply.code(403).send({ success: false, message: 'Perfil de aluno não encontrado', code: 'FORBIDDEN' })
 
     const mensalidade = await prisma.mensalidade.findUnique({
       where: { id: mensalidadeId },
       include: { plano: { select: { nome: true } } },
     })
-    if (!mensalidade) return reply.code(404).send({ success: false, message: 'Mensalidade não encontrada', code: 'NOT_FOUND' })
-    if (String(mensalidade.alunoId) !== aluno.id) return reply.code(403).send({ success: false, message: 'Mensalidade não pertence a este aluno', code: 'FORBIDDEN' })
+    if (!mensalidade)
+      return reply.code(404).send({ success: false, message: 'Mensalidade não encontrada', code: 'NOT_FOUND' })
+    if (String(mensalidade.alunoId) !== aluno.id)
+      return reply
+        .code(403)
+        .send({ success: false, message: 'Mensalidade não pertence a este aluno', code: 'FORBIDDEN' })
 
     // Verifica se já existe comprovante pendente ou aprovado para esta mensalidade
     const existente = await prisma.comprovantePagemento.findFirst({
       where: { mensalidadeId, alunoId: aluno.id, status: { in: ['PENDENTE', 'APROVADO'] } },
     } as any)
-    if (existente) return reply.code(409).send({ success: false, message: 'Já existe um comprovante pendente ou aprovado para esta mensalidade', code: 'CONFLICT' })
+    if (existente)
+      return reply.code(409).send({
+        success: false,
+        message: 'Já existe um comprovante pendente ou aprovado para esta mensalidade',
+        code: 'CONFLICT',
+      })
 
     const comprovante = await prisma.comprovantePagemento.create({
       data: {
@@ -185,16 +215,18 @@ export async function enviarComprovante(request: FastifyRequest, reply: FastifyR
     // Notificar admins
     const admins = await prisma.usuario.findMany({ where: { funcao: 'ADMIN', status: 'ATIVO' }, select: { id: true } })
     const nomePlano = mensalidade.plano?.nome ?? 'Avulso'
-    await Promise.all(admins.map((admin) =>
-      prisma.notificacao.create({
-        data: {
-          usuarioId: admin.id,
-          tipo: 'MENSAGEM_ADMIN',
-          titulo: `Comprovante enviado — ${aluno.usuario.nomeCompleto}`,
-          mensagem: `${aluno.usuario.nomeCompleto} enviou um comprovante de pagamento para a mensalidade "${nomePlano}". Acesse Financeiro > Comprovantes para analisar.`,
-        } as any,
-      })
-    ))
+    await Promise.all(
+      admins.map((admin) =>
+        prisma.notificacao.create({
+          data: {
+            usuarioId: admin.id,
+            tipo: 'MENSAGEM_ADMIN',
+            titulo: `Comprovante enviado — ${aluno.usuario.nomeCompleto}`,
+            mensagem: `${aluno.usuario.nomeCompleto} enviou um comprovante de pagamento para a mensalidade "${nomePlano}". Acesse Financeiro > Comprovantes para analisar.`,
+          } as any,
+        }),
+      ),
+    )
 
     logWarn('Comprovante enviado pelo aluno', { alunoId: aluno.id, mensalidadeId })
     return reply.code(201).send({ success: true, data: comprovante })
@@ -208,7 +240,8 @@ export async function listarMeusComprovantes(request: FastifyRequest, reply: Fas
   try {
     const usuarioId = request.usuarioId!
     const aluno = await prisma.aluno.findUnique({ where: { usuarioId } })
-    if (!aluno) return reply.code(403).send({ success: false, message: 'Perfil de aluno não encontrado', code: 'FORBIDDEN' })
+    if (!aluno)
+      return reply.code(403).send({ success: false, message: 'Perfil de aluno não encontrado', code: 'FORBIDDEN' })
 
     const comprovantes = await prisma.comprovantePagemento.findMany({
       where: { alunoId: aluno.id } as any,
@@ -249,7 +282,9 @@ export async function listarComprovantes(request: FastifyRequest, reply: Fastify
       prisma.comprovantePagemento.count({ where }),
     ])
 
-    return reply.code(200).send({ success: true, data: { comprovantes, total, page, limit, totalPages: Math.ceil(total / limit) } })
+    return reply
+      .code(200)
+      .send({ success: true, data: { comprovantes, total, page, limit, totalPages: Math.ceil(total / limit) } })
   } catch (error) {
     logWarn('Erro ao listar comprovantes', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao listar comprovantes', code: 'INTERNAL_ERROR' })
@@ -263,24 +298,28 @@ export async function analisarComprovante(request: FastifyRequest, reply: Fastif
     const { acao, observacoes } = request.body as { acao: 'APROVADO' | 'REJEITADO'; observacoes?: string }
 
     if (!['APROVADO', 'REJEITADO'].includes(acao)) {
-      return reply.code(400).send({ success: false, message: 'Ação inválida. Use APROVADO ou REJEITADO', code: 'BAD_REQUEST' })
+      return reply
+        .code(400)
+        .send({ success: false, message: 'Ação inválida. Use APROVADO ou REJEITADO', code: 'BAD_REQUEST' })
     }
 
     const comprovante = await prisma.comprovantePagemento.findUnique({ where: { id } } as any)
-    if (!comprovante) return reply.code(404).send({ success: false, message: 'Comprovante não encontrado', code: 'NOT_FOUND' })
-    if ((comprovante as any).status !== 'PENDENTE') return reply.code(400).send({ success: false, message: 'Comprovante já foi analisado', code: 'BAD_REQUEST' })
+    if (!comprovante)
+      return reply.code(404).send({ success: false, message: 'Comprovante não encontrado', code: 'NOT_FOUND' })
+    if ((comprovante as any).status !== 'PENDENTE')
+      return reply.code(400).send({ success: false, message: 'Comprovante já foi analisado', code: 'BAD_REQUEST' })
 
     // Atualiza o comprovante e, se aprovado, baixa a mensalidade vinculada
     // (registrando o pagamento no caixa aberto, se houver) — tudo atômico.
     const atualizado = await prisma.$transaction(async (tx) => {
-      const comp = await tx.comprovantePagemento.update({
+      const comp = (await tx.comprovantePagemento.update({
         where: { id } as any,
         data: { status: acao, analisadoPorId: usuarioId, observacoes: observacoes ?? null } as any,
         include: {
           aluno: { include: { usuario: { select: { id: true, nomeCompleto: true } } } },
           mensalidade: { include: { plano: { select: { nome: true } } } },
         } as any,
-      } as any) as any
+      } as any)) as any
 
       if (acao === 'APROVADO' && comp.mensalidade && comp.mensalidade.status !== 'PAGO') {
         const valorDevido = Number(comp.mensalidade.valor) - Number(comp.mensalidade.desconto ?? 0)
@@ -359,7 +398,9 @@ export async function notificarPagamento(request: FastifyRequest, reply: Fastify
       return reply.code(404).send({ success: false, message: 'Mensalidade não encontrada', code: 'NOT_FOUND' })
     }
     if (String(mensalidade.alunoId) !== aluno.id) {
-      return reply.code(403).send({ success: false, message: 'Mensalidade não pertence a este aluno', code: 'FORBIDDEN' })
+      return reply
+        .code(403)
+        .send({ success: false, message: 'Mensalidade não pertence a este aluno', code: 'FORBIDDEN' })
     }
 
     const admins = await prisma.usuario.findMany({
@@ -372,16 +413,18 @@ export async function notificarPagamento(request: FastifyRequest, reply: Fastify
     const titulo = `Pagamento notificado — ${aluno.usuario.nomeCompleto}`
     const mensagem = `O aluno ${aluno.usuario.nomeCompleto} notificou o pagamento da mensalidade "${nomePlano}".${notaExtra} Verifique e registre o pagamento no sistema.`
 
-    await Promise.all(admins.map((admin) =>
-      prisma.notificacao.create({
-        data: {
-          usuarioId: admin.id,
-          tipo: 'MENSAGEM_ADMIN',
-          titulo,
-          mensagem,
-        } as any,
-      })
-    ))
+    await Promise.all(
+      admins.map((admin) =>
+        prisma.notificacao.create({
+          data: {
+            usuarioId: admin.id,
+            tipo: 'MENSAGEM_ADMIN',
+            titulo,
+            mensagem,
+          } as any,
+        }),
+      ),
+    )
 
     logWarn('Pagamento notificado pelo aluno', { alunoId: aluno.id, mensalidadeId })
     return reply.code(200).send({ success: true, data: { message: 'Notificação enviada ao studio com sucesso.' } })

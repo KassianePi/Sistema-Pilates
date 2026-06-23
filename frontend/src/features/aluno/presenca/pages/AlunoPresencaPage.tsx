@@ -75,14 +75,32 @@ export function AlunoPresencaPage() {
               <div className="flex items-end gap-2 flex-wrap">
                 <div className="space-y-1">
                   <Label className="text-[11px] text-cinza-texto">De</Label>
-                  <Input type="date" value={dataInicio} onChange={(e) => setDataInicio(e.target.value)} className="w-36 h-8" />
+                  <Input
+                    type="date"
+                    value={dataInicio}
+                    onChange={(e) => setDataInicio(e.target.value)}
+                    className="w-36 h-8"
+                  />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-[11px] text-cinza-texto">Até</Label>
-                  <Input type="date" value={dataFim} onChange={(e) => setDataFim(e.target.value)} className="w-36 h-8" />
+                  <Input
+                    type="date"
+                    value={dataFim}
+                    onChange={(e) => setDataFim(e.target.value)}
+                    className="w-36 h-8"
+                  />
                 </div>
                 {temFiltro && (
-                  <Button variant="ghost" size="sm" aria-label="Limpar filtros de período" onClick={() => { setDataInicio(''); setDataFim('') }}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Limpar filtros de período"
+                    onClick={() => {
+                      setDataInicio('')
+                      setDataFim('')
+                    }}
+                  >
                     <X className="w-3 h-3" />
                   </Button>
                 )}
@@ -97,7 +115,10 @@ export function AlunoPresencaPage() {
                   <li key={p.id} className="flex items-center justify-between py-3 gap-3">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-cinza-forte">{p.aula.titulo}</p>
-                      <p className="text-xs text-cinza-texto">{formatarData(p.aula.data)}{p.aula.horaInicio ? ` — ${p.aula.horaInicio}` : ''}</p>
+                      <p className="text-xs text-cinza-texto">
+                        {formatarData(p.aula.data)}
+                        {p.aula.horaInicio ? ` — ${p.aula.horaInicio}` : ''}
+                      </p>
                     </div>
                     <StatusBadge domain="presenca" status={p.status} />
                   </li>

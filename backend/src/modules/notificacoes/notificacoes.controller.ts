@@ -8,7 +8,8 @@ export async function criar(request: FastifyRequest, reply: FastifyReply) {
     const notificacao = await notificacoesService.criar(request.body as CreateNotificacaoData)
     return reply.code(201).send({ success: true, data: notificacao })
   } catch (error: any) {
-    if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+    if (error?.statusCode === 400)
+      return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
     logWarn('Erro ao criar notificação', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao criar notificação', code: 'INTERNAL_ERROR' })
   }
@@ -32,7 +33,10 @@ export async function marcarComoLida(request: FastifyRequest, reply: FastifyRepl
     const notificacao = await notificacoesService.marcarComoLida(id, usuarioId)
     return reply.code(200).send({ success: true, data: notificacao })
   } catch (error: any) {
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 400)
+      return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
     logWarn('Erro ao marcar notificação', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao atualizar notificação', code: 'INTERNAL_ERROR' })
   }
@@ -45,7 +49,10 @@ export async function arquivar(request: FastifyRequest, reply: FastifyReply) {
     const notificacao = await notificacoesService.arquivar(id, usuarioId)
     return reply.code(200).send({ success: true, data: notificacao })
   } catch (error: any) {
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 400)
+      return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
     logWarn('Erro ao arquivar notificação', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao arquivar notificação', code: 'INTERNAL_ERROR' })
   }

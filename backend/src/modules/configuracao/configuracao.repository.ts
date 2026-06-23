@@ -6,7 +6,7 @@ import type { ConfiguracaoStudio, UpsertConfiguracaoData } from './configuracao.
 export class ConfiguracaoRepository {
   async find(): Promise<ConfiguracaoStudio | null> {
     try {
-      return await prisma.configuracaoStudio.findUnique({ where: { id: 'studio' } }) as any
+      return (await prisma.configuracaoStudio.findUnique({ where: { id: 'studio' } })) as any
     } catch (error) {
       logError('Erro ao buscar configuração', error as Error)
       throw AppError.internal('Erro ao buscar configuração')
@@ -15,11 +15,11 @@ export class ConfiguracaoRepository {
 
   async upsert(data: UpsertConfiguracaoData): Promise<ConfiguracaoStudio> {
     try {
-      return await prisma.configuracaoStudio.upsert({
+      return (await prisma.configuracaoStudio.upsert({
         where: { id: 'studio' },
         create: { id: 'studio', ...data } as any,
         update: data as any,
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao salvar configuração', error as Error)
       throw AppError.internal('Erro ao salvar configuração')

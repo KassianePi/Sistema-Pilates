@@ -10,20 +10,19 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { modalidadesService } from '@/services/modalidades.service'
 import type { Modalidade } from '@/types/domain.types'
 
-function ModalModalidade({
-  modalidade,
-  onClose,
-}: {
-  modalidade?: Modalidade | null
-  onClose: () => void
-}) {
+function ModalModalidade({ modalidade, onClose }: { modalidade?: Modalidade | null; onClose: () => void }) {
   const queryClient = useQueryClient()
   const isEditing = !!modalidade
   const [nome, setNome] = useState(modalidade?.nome ?? '')
@@ -61,7 +60,9 @@ function ModalModalidade({
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Descrição <span className="text-cinza-medio text-xs">(opcional)</span></Label>
+            <Label>
+              Descrição <span className="text-cinza-medio text-xs">(opcional)</span>
+            </Label>
             <Textarea
               rows={2}
               value={descricao}
@@ -70,11 +71,10 @@ function ModalModalidade({
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button
-              onClick={() => mutation.mutate()}
-              disabled={mutation.isPending || !nome.trim()}
-            >
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button onClick={() => mutation.mutate()} disabled={mutation.isPending || !nome.trim()}>
               {mutation.isPending ? 'Salvando...' : isEditing ? 'Salvar' : 'Criar'}
             </Button>
           </DialogFooter>
@@ -126,7 +126,12 @@ export function ModalidadesPage() {
           <h1 className="text-2xl font-bold text-cinza-forte">Modalidades de Aula</h1>
           <p className="text-sm text-cinza-texto mt-1">Gerencie os tipos de aula oferecidos pelo studio.</p>
         </div>
-        <Button onClick={() => { setEditando(null); setModalAberto(true) }}>
+        <Button
+          onClick={() => {
+            setEditando(null)
+            setModalAberto(true)
+          }}
+        >
           <Plus className="w-4 h-4 mr-2" /> Nova Modalidade
         </Button>
       </div>
@@ -152,9 +157,7 @@ export function ModalidadesPage() {
                   <div className="space-y-0.5 flex-1 min-w-0">
                     <div className="flex items-center gap-2">
                       <p className="font-medium text-cinza-forte truncate">{m.nome}</p>
-                      <Badge variant={m.ativo ? 'success' : 'outline'}>
-                        {m.ativo ? 'Ativa' : 'Inativa'}
-                      </Badge>
+                      <Badge variant={m.ativo ? 'success' : 'outline'}>{m.ativo ? 'Ativa' : 'Inativa'}</Badge>
                     </div>
                     {m.descricao && <p className="text-xs text-cinza-texto truncate">{m.descricao}</p>}
                   </div>
@@ -166,16 +169,20 @@ export function ModalidadesPage() {
                       onClick={() => toggleAtivo.mutate(m)}
                       title={m.ativo ? 'Desativar' : 'Ativar'}
                     >
-                      {m.ativo
-                        ? <XCircle className="w-4 h-4 text-amber-500" />
-                        : <CheckCircle className="w-4 h-4 text-green-600" />
-                      }
+                      {m.ativo ? (
+                        <XCircle className="w-4 h-4 text-amber-500" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                      )}
                     </Button>
                     <Button
                       variant="ghost"
                       size="sm"
                       className="text-cinza-medio hover:text-cinza-forte"
-                      onClick={() => { setEditando(m); setModalAberto(true) }}
+                      onClick={() => {
+                        setEditando(m)
+                        setModalAberto(true)
+                      }}
                     >
                       <Pencil className="w-4 h-4" />
                     </Button>
@@ -198,7 +205,10 @@ export function ModalidadesPage() {
       {modalAberto && (
         <ModalModalidade
           modalidade={editando}
-          onClose={() => { setModalAberto(false); setEditando(null) }}
+          onClose={() => {
+            setModalAberto(false)
+            setEditando(null)
+          }}
         />
       )}
 
@@ -207,7 +217,8 @@ export function ModalidadesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir modalidade?</AlertDialogTitle>
             <AlertDialogDescription>
-              A modalidade <strong>{excluindo?.nome}</strong> será excluída permanentemente. Isso só é possível se nenhuma aula usar esta modalidade.
+              A modalidade <strong>{excluindo?.nome}</strong> será excluída permanentemente. Isso só é possível se
+              nenhuma aula usar esta modalidade.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

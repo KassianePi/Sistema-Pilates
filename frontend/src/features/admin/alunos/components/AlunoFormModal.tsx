@@ -20,7 +20,11 @@ const createSchema = z.object({
   email: z.string().email('E-mail inválido'),
   cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
+  telefone: z
+    .string()
+    .regex(/^\d{10,11}$/, 'Telefone inválido')
+    .optional()
+    .or(z.literal('')),
   planoId: z.string().optional(),
   dataInicio: z.string().min(1, 'Informe a data de início'),
   dataNascimento: z.string().optional(),
@@ -32,7 +36,11 @@ const editSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').optional(),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
-  telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
+  telefone: z
+    .string()
+    .regex(/^\d{10,11}$/, 'Telefone inválido')
+    .optional()
+    .or(z.literal('')),
   planoId: z.string().optional(),
   dataNascimento: z.string().optional(),
   cidade: z.string().optional(),
@@ -57,7 +65,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
   const planos = planosData?.data ?? []
 
   // Comprovante de matrícula (apenas no cadastro com plano)
-  const [comprovante, setComprovante] = useState<{ arquivo: string; nomeArquivo: string; tipoArquivo: string } | null>(null)
+  const [comprovante, setComprovante] = useState<{ arquivo: string; nomeArquivo: string; tipoArquivo: string } | null>(
+    null,
+  )
   const [comprovanteErro, setComprovanteErro] = useState<string | null>(null)
 
   function handleComprovante(e: React.ChangeEvent<HTMLInputElement>) {
@@ -81,7 +91,12 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
   }
 
   const {
-    register, handleSubmit, reset, setValue, watch, control,
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CreateForm | EditForm>({
     resolver: zodResolver(isEditing ? editSchema : createSchema),
@@ -98,13 +113,20 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
         dataNascimento: aluno.dataNascimento ? aluno.dataNascimento.split('T')[0] : '',
         cidade: aluno.cidade ?? '',
         estado: aluno.estado ?? '',
-        status: aluno.status,
+        status: aluno.status as 'ATIVO' | 'INATIVO',
       })
     } else {
       reset({
-        nomeCompleto: '', email: '', cpf: '', senha: '', telefone: '',
-        planoId: '', dataInicio: new Date().toISOString().split('T')[0],
-        dataNascimento: '', cidade: '', estado: '',
+        nomeCompleto: '',
+        email: '',
+        cpf: '',
+        senha: '',
+        telefone: '',
+        planoId: '',
+        dataInicio: new Date().toISOString().split('T')[0],
+        dataNascimento: '',
+        cidade: '',
+        estado: '',
       })
     }
     setComprovante(null)
@@ -124,7 +146,7 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
     const payload = {
       ...values,
       planoId: temPlano ? values.planoId : undefined,
-      telefone: (values.telefone && values.telefone.length) ? values.telefone : undefined,
+      telefone: values.telefone && values.telefone.length ? values.telefone : undefined,
       estado: values.estado ? (values.estado as string).toUpperCase() : undefined,
       email: (values as any).email?.trim() || undefined,
       senha: (values as any).senha?.trim() || undefined,
@@ -152,7 +174,6 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
             {/* Nome */}
             <div className="space-y-1.5">
               <Label htmlFor="nomeCompleto">Nome completo *</Label>
@@ -167,7 +188,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                   <Label htmlFor="email">E-mail *</Label>
                   <Input id="email" type="email" {...register('email' as never)} placeholder="email@exemplo.com" />
                   {(errors as { email?: { message?: string } }).email && (
-                    <p className="text-xs text-rosa-vibrante">{(errors as { email?: { message?: string } }).email?.message}</p>
+                    <p className="text-xs text-rosa-vibrante">
+                      {(errors as { email?: { message?: string } }).email?.message}
+                    </p>
                   )}
                 </div>
 
@@ -188,7 +211,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                     )}
                   />
                   {(errors as { cpf?: { message?: string } }).cpf && (
-                    <p className="text-xs text-rosa-vibrante">{(errors as { cpf?: { message?: string } }).cpf?.message}</p>
+                    <p className="text-xs text-rosa-vibrante">
+                      {(errors as { cpf?: { message?: string } }).cpf?.message}
+                    </p>
                   )}
                 </div>
 
@@ -197,7 +222,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                   <Label htmlFor="senha">Senha *</Label>
                   <Input id="senha" type="password" {...register('senha' as never)} placeholder="Mínimo 6 caracteres" />
                   {(errors as { senha?: { message?: string } }).senha && (
-                    <p className="text-xs text-rosa-vibrante">{(errors as { senha?: { message?: string } }).senha?.message}</p>
+                    <p className="text-xs text-rosa-vibrante">
+                      {(errors as { senha?: { message?: string } }).senha?.message}
+                    </p>
                   )}
                 </div>
 
@@ -206,7 +233,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                   <Label htmlFor="dataInicio">Data de início *</Label>
                   <Input id="dataInicio" type="date" {...register('dataInicio' as never)} />
                   {(errors as { dataInicio?: { message?: string } }).dataInicio && (
-                    <p className="text-xs text-rosa-vibrante">{(errors as { dataInicio?: { message?: string } }).dataInicio?.message}</p>
+                    <p className="text-xs text-rosa-vibrante">
+                      {(errors as { dataInicio?: { message?: string } }).dataInicio?.message}
+                    </p>
                   )}
                 </div>
               </>
@@ -218,7 +247,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                 <Label htmlFor="email-edit">E-mail</Label>
                 <Input id="email-edit" type="email" {...register('email' as never)} placeholder="email@exemplo.com" />
                 {(errors as { email?: { message?: string } }).email && (
-                  <p className="text-xs text-rosa-vibrante">{(errors as { email?: { message?: string } }).email?.message}</p>
+                  <p className="text-xs text-rosa-vibrante">
+                    {(errors as { email?: { message?: string } }).email?.message}
+                  </p>
                 )}
               </div>
             )}
@@ -226,10 +257,19 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
             {/* Nova senha (edição) */}
             {isEditing && (
               <div className="space-y-1.5">
-                <Label htmlFor="senha-edit">Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span></Label>
-                <Input id="senha-edit" type="password" {...register('senha' as never)} placeholder="Mínimo 6 caracteres" />
+                <Label htmlFor="senha-edit">
+                  Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span>
+                </Label>
+                <Input
+                  id="senha-edit"
+                  type="password"
+                  {...register('senha' as never)}
+                  placeholder="Mínimo 6 caracteres"
+                />
                 {(errors as { senha?: { message?: string } }).senha && (
-                  <p className="text-xs text-rosa-vibrante">{(errors as { senha?: { message?: string } }).senha?.message}</p>
+                  <p className="text-xs text-rosa-vibrante">
+                    {(errors as { senha?: { message?: string } }).senha?.message}
+                  </p>
                 )}
               </div>
             )}
@@ -256,18 +296,19 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
             {/* Plano */}
             <div className="space-y-1.5">
               <Label>Plano</Label>
-              <Select
-                value={planoIdValue || 'none'}
-                onValueChange={(v) => setValue('planoId', v === 'none' ? '' : v)}
-              >
+              <Select value={planoIdValue || 'none'} onValueChange={(v) => setValue('planoId', v === 'none' ? '' : v)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um plano" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">Sem plano</SelectItem>
-                  {planos.filter(p => p.ativo).map((plano) => (
-                    <SelectItem key={plano.id} value={plano.id}>{plano.nome}</SelectItem>
-                  ))}
+                  {planos
+                    .filter((p) => p.ativo)
+                    .map((plano) => (
+                      <SelectItem key={plano.id} value={plano.id}>
+                        {plano.nome}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -311,7 +352,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                   value={(watch as (k: string) => string)('status') ?? 'ATIVO'}
                   onValueChange={(v) => setValue('status' as never, v as never)}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="ATIVO">Ativo</SelectItem>
                     <SelectItem value="INATIVO">Inativo</SelectItem>
@@ -346,7 +389,9 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
             <Button type="submit" disabled={isSubmitting || createAluno.isPending || updateAluno.isPending}>
               {isEditing ? 'Salvar alterações' : 'Cadastrar aluno'}
             </Button>

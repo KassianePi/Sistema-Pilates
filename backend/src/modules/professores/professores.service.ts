@@ -10,7 +10,15 @@ import type { Professor, CreateProfessorData, UpdateProfessorData } from './prof
 export class ProfessoresService {
   constructor(private repository: ProfessoresRepository) {}
 
-  async criar(data: { email: string; nomeCompleto: string; cpf: string; telefone?: string | null; senha: string; especialidade?: string | null; bio?: string | null }): Promise<Professor> {
+  async criar(data: {
+    email: string
+    nomeCompleto: string
+    cpf: string
+    telefone?: string | null
+    senha: string
+    especialidade?: string | null
+    bio?: string | null
+  }): Promise<Professor> {
     const validado = createProfessorSchema.parse(data)
 
     const emailExistente = await prisma.usuario.findUnique({ where: { email: validado.email } })
@@ -69,7 +77,7 @@ export class ProfessoresService {
     }
 
     const senhaHash = validado.senha ? await hashPassword(validado.senha) : undefined
-    const professor = await this.repository.update(id, { ...validado as any, senhaHash })
+    const professor = await this.repository.update(id, { ...(validado as any), senhaHash })
     logInfo('Professor atualizado', { id })
     return professor
   }

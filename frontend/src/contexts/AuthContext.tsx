@@ -62,7 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const payload = data.data
     setAccessToken(payload.accessToken)
     setRefreshToken(payload.refreshToken)
-    const userData: AdminUser = { id: payload.usuarioId, nome: payload.nome, email: payload.email, role: payload.funcao }
+    const userData: AdminUser = {
+      id: payload.usuarioId,
+      nome: payload.nome,
+      email: payload.email,
+      role: payload.funcao,
+    }
     localStorage.setItem(STORAGE_USER, JSON.stringify(userData))
     localStorage.setItem(STORAGE_USER_TYPE, 'admin')
     setUser(userData)

@@ -10,7 +10,12 @@ import type { Presenca } from './presenca.types'
 export class PresencaService {
   constructor(private repository: PresencaRepository) {}
 
-  async registrar(data: { alunoId: string; aulaId: string; status?: string; dataRegistro?: string }): Promise<Presenca> {
+  async registrar(data: {
+    alunoId: string
+    aulaId: string
+    status?: string
+    dataRegistro?: string
+  }): Promise<Presenca> {
     const validado = createPresencaSchema.parse(data)
 
     const [aluno, aula] = await Promise.all([
@@ -43,7 +48,15 @@ export class PresencaService {
     return presenca
   }
 
-  async listar(params: { alunoId?: string; aulaId?: string; status?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
+  async listar(params: {
+    alunoId?: string
+    aulaId?: string
+    status?: string
+    dataInicio?: string
+    dataFim?: string
+    page?: number
+    limit?: number
+  }) {
     const validado = listPresencasSchema.parse(params)
     const { presencas, total } = await this.repository.findAll({
       alunoId: validado.alunoId,
@@ -54,7 +67,13 @@ export class PresencaService {
       page: validado.page,
       limit: validado.limit,
     })
-    return { presencas, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
+    return {
+      presencas,
+      total,
+      page: validado.page,
+      limit: validado.limit,
+      totalPages: Math.ceil(total / validado.limit),
+    }
   }
 
   async atualizar(id: string, data: { status: string }): Promise<Presenca> {
@@ -101,7 +120,7 @@ export class PresencaService {
       await tx.aula.update({ where: { id: aulaId }, data: { status: 'REALIZADA' } })
     })
 
-    eventBus.emit('aula.realizada', { aulaId, totalPresentes: presencas.filter(p => p.status === 'PRESENTE').length })
+    eventBus.emit('aula.realizada', { aulaId, totalPresentes: presencas.filter((p) => p.status === 'PRESENTE').length })
     logInfo('Presenças registradas em lote', { aulaId, total: presencas.length })
     return { registros: presencas.length, aulaStatus: 'REALIZADA' }
   }

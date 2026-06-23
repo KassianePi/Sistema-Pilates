@@ -37,8 +37,12 @@ export function DetalheAulaModal({ aula, onClose }: { aula: Aula | null; onClose
           </div>
 
           <div className="space-y-2">
-            <Linha icon={CalendarDays}><span className="capitalize">{formatarDataLonga(aula.data)}</span></Linha>
-            <Linha icon={Clock}>{aula.horaInicio} – {aula.horaFim}</Linha>
+            <Linha icon={CalendarDays}>
+              <span className="capitalize">{formatarDataLonga(aula.data)}</span>
+            </Linha>
+            <Linha icon={Clock}>
+              {aula.horaInicio} – {aula.horaFim}
+            </Linha>
             <Linha icon={User}>{aula.professor.usuario.nomeCompleto}</Linha>
             {aula.sala && <Linha icon={MapPin}>{aula.sala}</Linha>}
           </div>
@@ -46,7 +50,10 @@ export function DetalheAulaModal({ aula, onClose }: { aula: Aula | null; onClose
           {aula.dataHoraAnterior && (
             <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 flex items-start gap-2">
               <CalendarClock className="w-4 h-4 mt-0.5 shrink-0" />
-              <span>Reagendada de <strong>{formatarDataHora(aula.dataHoraAnterior)}</strong> para <strong>{formatarDataHora(`${aula.data}T${aula.horaInicio}`)}</strong>.</span>
+              <span>
+                Reagendada de <strong>{formatarDataHora(aula.dataHoraAnterior)}</strong> para{' '}
+                <strong>{formatarDataHora(`${aula.data}T${aula.horaInicio}`)}</strong>.
+              </span>
             </div>
           )}
 

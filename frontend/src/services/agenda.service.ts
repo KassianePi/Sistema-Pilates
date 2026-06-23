@@ -1,5 +1,13 @@
 import { api } from './api'
-import type { Aula, Modalidade, ApiResponse, PaginatedResponse, TipoAula, CategoriaAula, StatusAula } from '@/types/domain.types'
+import type {
+  Aula,
+  Modalidade,
+  ApiResponse,
+  PaginatedResponse,
+  TipoAula,
+  CategoriaAula,
+  StatusAula,
+} from '@/types/domain.types'
 
 export interface CreateAulaDTO {
   professorId: string
@@ -80,7 +88,13 @@ function mapAula(raw: BackendAula): Aula {
 }
 
 export const agendaService = {
-  async listar(params?: { pagina?: number; limite?: number; data?: string; professorId?: string; status?: string }): Promise<PaginatedResponse<Aula>> {
+  async listar(params?: {
+    pagina?: number
+    limite?: number
+    data?: string
+    professorId?: string
+    status?: string
+  }): Promise<PaginatedResponse<Aula>> {
     const { data } = await api.get<ApiResponse<BackendListResponse>>('/aulas', {
       params: {
         status: params?.status,
@@ -121,7 +135,10 @@ export const agendaService = {
   },
 
   async reagendar(id: string, dataHoraInicio: string, justificativa: string) {
-    const { data } = await api.patch<ApiResponse<BackendAula>>(`/aulas/${id}/reagendar`, { dataHoraInicio, justificativa })
+    const { data } = await api.patch<ApiResponse<BackendAula>>(`/aulas/${id}/reagendar`, {
+      dataHoraInicio,
+      justificativa,
+    })
     return mapAula(data.data)
   },
 
@@ -142,7 +159,11 @@ export const agendaService = {
 
   // Endpoint exclusivo para o portal do aluno — segmentado por escopo
   // escopo: 'minhas' (inscritas futuras) | 'gerais' (grade aberta) | 'historico' (passadas)
-  async listarAulasAluno(params?: { page?: number; limit?: number; escopo?: 'minhas' | 'gerais' | 'historico' }): Promise<PaginatedResponse<Aula>> {
+  async listarAulasAluno(params?: {
+    page?: number
+    limit?: number
+    escopo?: 'minhas' | 'gerais' | 'historico'
+  }): Promise<PaginatedResponse<Aula>> {
     const { data } = await api.get<ApiResponse<BackendListResponse>>('/aluno/aulas', {
       params: { page: params?.page, limit: params?.limit, escopo: params?.escopo },
     })

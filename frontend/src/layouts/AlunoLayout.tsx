@@ -1,14 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import {
-  LayoutDashboard,
-  CalendarDays,
-  ClipboardList,
-  Receipt,
-  User,
-  LogOut,
-  Bell,
-} from 'lucide-react'
+import { LayoutDashboard, CalendarDays, ClipboardList, Receipt, User, LogOut, Bell } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import type { AlunoUser } from '@/types/auth.types'
@@ -108,11 +100,7 @@ export function AlunoLayout() {
 
           {/* Usuário + logout (desktop) */}
           <div className="hidden md:flex items-center gap-4">
-            {alunoUser && (
-              <span className="text-sm text-white/70 truncate max-w-[140px]">
-                {alunoUser.nome}
-              </span>
-            )}
+            {alunoUser && <span className="text-sm text-white/70 truncate max-w-[140px]">{alunoUser.nome}</span>}
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm text-white/70 hover:bg-white/10 hover:text-branco-puro transition-colors"
@@ -177,9 +165,7 @@ export function AlunoLayout() {
                   </span>
                 )}
               </span>
-              <span className="text-[10px] font-medium leading-none truncate max-w-full px-0.5">
-                {item.label}
-              </span>
+              <span className="text-[10px] font-medium leading-none truncate max-w-full px-0.5">{item.label}</span>
             </NavLink>
           )
         })}

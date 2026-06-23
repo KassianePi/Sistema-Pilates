@@ -55,7 +55,10 @@ export const estornosService = {
     return data.data
   },
 
-  async listarMeusEstornos(params?: { page?: number; limit?: number }): Promise<{ estornos: Estorno[]; total: number; page: number; limit: number; totalPages: number }> {
+  async listarMeusEstornos(params?: {
+    page?: number
+    limit?: number
+  }): Promise<{ estornos: Estorno[]; total: number; page: number; limit: number; totalPages: number }> {
     const { data } = await api.get('/aluno/estornos', { params })
     return data
   },

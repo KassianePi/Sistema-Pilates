@@ -1,5 +1,19 @@
 import { useState } from 'react'
-import { Plus, Search, Pencil, X, CalendarDays, Users, Zap, ClipboardCheck, PauseCircle, CalendarClock, Ban, Trash2, UserPlus } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  Pencil,
+  X,
+  CalendarDays,
+  Users,
+  Zap,
+  ClipboardCheck,
+  PauseCircle,
+  CalendarClock,
+  Ban,
+  Trash2,
+  UserPlus,
+} from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -30,14 +44,15 @@ const avulsoSchema = z.object({
   vencimento: z.string().min(1, 'Informe a data'),
 })
 
-const STATUS_BADGE: Record<StatusAula, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
-  AGENDADA: { label: 'Agendada', variant: 'secondary' as never },
-  REALIZADA: { label: 'Realizada', variant: 'success' },
-  CANCELADA: { label: 'Cancelada', variant: 'destructive' },
-  ADIADA: { label: 'Adiada', variant: 'warning' },
-  SUSPENSA: { label: 'Suspensa', variant: 'warning' },
-  EXCLUIDA: { label: 'Excluída', variant: 'outline' },
-}
+const STATUS_BADGE: Record<StatusAula, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> =
+  {
+    AGENDADA: { label: 'Agendada', variant: 'secondary' as never },
+    REALIZADA: { label: 'Realizada', variant: 'success' },
+    CANCELADA: { label: 'Cancelada', variant: 'destructive' },
+    ADIADA: { label: 'Adiada', variant: 'warning' },
+    SUSPENSA: { label: 'Suspensa', variant: 'warning' },
+    EXCLUIDA: { label: 'Excluída', variant: 'outline' },
+  }
 
 const ACAO_CONFIG: Record<AcaoJustificada, { titulo: string; confirmLabel: string; destructive: boolean }> = {
   cancelar: { titulo: 'Cancelar aula', confirmLabel: 'Cancelar aula', destructive: true },
@@ -147,12 +162,21 @@ export function AgendaPage() {
                 type="date"
                 className="pl-9 w-48"
                 value={filtroData}
-                onChange={(e) => { setFiltroData(e.target.value); setPagina(1) }}
+                onChange={(e) => {
+                  setFiltroData(e.target.value)
+                  setPagina(1)
+                }}
                 title="Filtrar por data"
               />
             </div>
 
-            <Select value={filtroStatus || 'all'} onValueChange={(v) => { setFiltroStatus(v === 'all' ? '' : v); setPagina(1) }}>
+            <Select
+              value={filtroStatus || 'all'}
+              onValueChange={(v) => {
+                setFiltroStatus(v === 'all' ? '' : v)
+                setPagina(1)
+              }}
+            >
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Todos os status" />
               </SelectTrigger>
@@ -166,12 +190,24 @@ export function AgendaPage() {
             </Select>
 
             {(filtroData || filtroStatus) && (
-              <Button variant="ghost" size="sm" onClick={() => { setFiltroData(''); setFiltroStatus('') }}>
-                <X className="w-3 h-3 mr-1" />Limpar filtros
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFiltroData('')
+                  setFiltroStatus('')
+                }}
+              >
+                <X className="w-3 h-3 mr-1" />
+                Limpar filtros
               </Button>
             )}
 
-            {data && <span className="text-sm text-cinza-medio ml-auto">{data.total} aula{data.total !== 1 ? 's' : ''}</span>}
+            {data && (
+              <span className="text-sm text-cinza-medio ml-auto">
+                {data.total} aula{data.total !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
         </CardHeader>
 
@@ -203,12 +239,15 @@ export function AgendaPage() {
                       <div>
                         <p className="font-medium">{aula.titulo}</p>
                         <p className="text-xs text-cinza-medio">
-                          {aula.modalidade?.nome ? `${aula.modalidade.nome} · ` : ''}{aula.tipo}
+                          {aula.modalidade?.nome ? `${aula.modalidade.nome} · ` : ''}
+                          {aula.tipo}
                         </p>
                       </div>
                     </TableCell>
                     <TableCell className="text-cinza-texto">{formatarData(aula.data)}</TableCell>
-                    <TableCell className="text-cinza-texto">{aula.horaInicio} – {aula.horaFim}</TableCell>
+                    <TableCell className="text-cinza-texto">
+                      {aula.horaInicio} – {aula.horaFim}
+                    </TableCell>
                     <TableCell className="text-cinza-texto">{aula.professor.usuario.nomeCompleto}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 text-sm">
@@ -219,9 +258,7 @@ export function AgendaPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={STATUS_BADGE[aula.status].variant}>
-                        {STATUS_BADGE[aula.status].label}
-                      </Badge>
+                      <Badge variant={STATUS_BADGE[aula.status].variant}>{STATUS_BADGE[aula.status].label}</Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -237,37 +274,70 @@ export function AgendaPage() {
                           </Button>
                         )}
                         {(aula.status === 'AGENDADA' || aula.status === 'ADIADA' || aula.status === 'SUSPENSA') && (
-                          <Button size="icon" variant="ghost" onClick={() => setAulaMatricula(aula)} title="Matricular alunos"
-                            className="hover:text-roxo-profundo hover:bg-lilas-claro/40">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setAulaMatricula(aula)}
+                            title="Matricular alunos"
+                            className="hover:text-roxo-profundo hover:bg-lilas-claro/40"
+                          >
                             <UserPlus className="w-4 h-4" />
                           </Button>
                         )}
                         {aula.status === 'AGENDADA' && (
-                          <Button size="icon" variant="ghost" onClick={() => { setAulaEditando(aula); setModalOpen(true) }} title="Editar">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => {
+                              setAulaEditando(aula)
+                              setModalOpen(true)
+                            }}
+                            title="Editar"
+                          >
                             <Pencil className="w-4 h-4" />
                           </Button>
                         )}
                         {(aula.status === 'AGENDADA' || aula.status === 'ADIADA' || aula.status === 'SUSPENSA') && (
-                          <Button size="icon" variant="ghost" onClick={() => setAulaReagendando(aula)} title="Reagendar"
-                            className="hover:text-lilas-medio hover:bg-lilas-claro/40">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setAulaReagendando(aula)}
+                            title="Reagendar"
+                            className="hover:text-lilas-medio hover:bg-lilas-claro/40"
+                          >
                             <CalendarClock className="w-4 h-4" />
                           </Button>
                         )}
                         {(aula.status === 'AGENDADA' || aula.status === 'ADIADA') && (
-                          <Button size="icon" variant="ghost" onClick={() => setAcaoJustificada({ aula, tipo: 'suspender' })} title="Suspender aula"
-                            className="hover:text-amber-600 hover:bg-amber-50">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setAcaoJustificada({ aula, tipo: 'suspender' })}
+                            title="Suspender aula"
+                            className="hover:text-amber-600 hover:bg-amber-50"
+                          >
                             <PauseCircle className="w-4 h-4" />
                           </Button>
                         )}
                         {(aula.status === 'AGENDADA' || aula.status === 'ADIADA' || aula.status === 'SUSPENSA') && (
-                          <Button size="icon" variant="ghost" onClick={() => setAcaoJustificada({ aula, tipo: 'cancelar' })} title="Cancelar aula"
-                            className="hover:text-red-600 hover:bg-red-50">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setAcaoJustificada({ aula, tipo: 'cancelar' })}
+                            title="Cancelar aula"
+                            className="hover:text-red-600 hover:bg-red-50"
+                          >
                             <Ban className="w-4 h-4" />
                           </Button>
                         )}
                         {aula.status !== 'EXCLUIDA' && (
-                          <Button size="icon" variant="ghost" onClick={() => setAcaoJustificada({ aula, tipo: 'excluir' })} title="Excluir aula"
-                            className="hover:text-red-600 hover:bg-red-50">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => setAcaoJustificada({ aula, tipo: 'excluir' })}
+                            title="Excluir aula"
+                            className="hover:text-red-600 hover:bg-red-50"
+                          >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         )}
@@ -281,9 +351,20 @@ export function AgendaPage() {
 
           {totalPaginas > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-bege-cartao">
-              <Button variant="outline" size="sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 1}>Anterior</Button>
-              <span className="text-sm text-cinza-texto">Página {pagina} de {totalPaginas}</span>
-              <Button variant="outline" size="sm" onClick={() => setPagina(p => p + 1)} disabled={pagina === totalPaginas}>Próxima</Button>
+              <Button variant="outline" size="sm" onClick={() => setPagina((p) => p - 1)} disabled={pagina === 1}>
+                Anterior
+              </Button>
+              <span className="text-sm text-cinza-texto">
+                Página {pagina} de {totalPaginas}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPagina((p) => p + 1)}
+                disabled={pagina === totalPaginas}
+              >
+                Próxima
+              </Button>
             </div>
           )}
         </CardContent>
@@ -301,9 +382,7 @@ export function AgendaPage() {
               <Zap className="w-4 h-4 text-lilas-medio" /> Registrar Aula Avulsa
             </DialogTitle>
           </DialogHeader>
-          <p className="text-xs text-cinza-texto -mt-2 mb-2">
-            Cria uma cobrança avulsa para aluno sem plano mensal.
-          </p>
+          <p className="text-xs text-cinza-texto -mt-2 mb-2">Cria uma cobrança avulsa para aluno sem plano mensal.</p>
           <form onSubmit={formAvulso.handleSubmit(onCriarAvulso as never)} className="space-y-4">
             <div className="space-y-1.5">
               <Label>Aluno *</Label>
@@ -314,10 +393,14 @@ export function AgendaPage() {
                   formAvulso.setValue('alunoId', v, { shouldValidate: true })
                 }}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o aluno" />
+                </SelectTrigger>
                 <SelectContent>
                   {alunos.map((a) => (
-                    <SelectItem key={a.id} value={a.id}>{a.usuario.nomeCompleto}</SelectItem>
+                    <SelectItem key={a.id} value={a.id}>
+                      {a.usuario.nomeCompleto}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -339,8 +422,12 @@ export function AgendaPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={fecharModalAvulso}>Cancelar</Button>
-              <Button type="submit" disabled={createMensalidade.isPending}>Registrar</Button>
+              <Button type="button" variant="outline" onClick={fecharModalAvulso}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createMensalidade.isPending}>
+                Registrar
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -367,9 +454,7 @@ export function AgendaPage() {
         />
       )}
 
-      {aulaMatricula && (
-        <MatriculaModal aula={aulaMatricula} onClose={() => setAulaMatricula(null)} />
-      )}
+      {aulaMatricula && <MatriculaModal aula={aulaMatricula} onClose={() => setAulaMatricula(null)} />}
     </div>
   )
 }

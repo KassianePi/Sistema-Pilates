@@ -1,0 +1,7 @@
+# Scripts de shell rodam dentro de containers Linux (Docker) — precisam de
+# LF sempre, independente da configuração local de core.autocrlf do
+# desenvolvedor (em Windows, CRLF quebra o shebang #!/bin/sh dentro do
+# container: "exec: no such file or directory").
+*.sh text eol=lf
+Dockerfile text eol=lf
+*.dockerfile text eol=lf

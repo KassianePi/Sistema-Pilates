@@ -1,0 +1,42 @@
+name: Deploy (manual)
+
+# Disparo manual apenas — sem deploy automático. Este workflow é um
+# placeholder: documenta os secrets necessários e os passos esperados, mas
+# não contém credenciais nem lógica de deploy real ainda.
+#
+# Secrets que precisarão ser configurados em Settings > Secrets and variables
+# > Actions quando o deploy automático for implementado:
+#   SSH_HOST            — endereço do servidor de produção
+#   SSH_USER            — usuário SSH com permissão de deploy
+#   SSH_PRIVATE_KEY      — chave privada SSH (par da chave pública autorizada no servidor)
+#   DOCKER_REGISTRY      — registry de imagens Docker (se usado)
+#   DOCKER_REGISTRY_USER — usuário do registry
+#   DOCKER_REGISTRY_PASS — senha/token do registry
+#   PRODUCTION_ENV_FILE  — conteúdo do .env.production (ou referência a um secret manager)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Digite "deploy" para confirmar'
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy manual para produção
+    runs-on: ubuntu-latest
+    if: github.event.inputs.confirm == 'deploy'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Placeholder — build de imagens
+        run: |
+          echo "TODO: docker build das imagens de produção (backend/Dockerfile target=production, frontend/Dockerfile target=production)"
+          echo "TODO: push para o registry configurado em DOCKER_REGISTRY"
+
+      - name: Placeholder — deploy no servidor
+        run: |
+          echo "TODO: conectar via SSH (SSH_HOST/SSH_USER/SSH_PRIVATE_KEY) e rodar scripts/deploy.sh"
+          echo "Este job é apenas um placeholder — nenhuma credencial real está configurada."

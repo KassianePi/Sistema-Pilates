@@ -32,10 +32,22 @@ export interface Pagamento {
 }
 
 export interface CreateMensalidadeData {
-  alunoId: string; planoId?: string | null; tipo?: TipoMensalidade; mesReferencia: Date; dataVencimento: Date
-  valor: number; desconto?: number; observacoes?: string | null
+  alunoId: string
+  planoId?: string | null
+  tipo?: TipoMensalidade
+  mesReferencia: Date
+  dataVencimento: Date
+  valor: number
+  desconto?: number
+  observacoes?: string | null
 }
 export interface CreatePagamentoData {
-  mensalidadeId: string; caixaId?: string | null; usuarioId: string; valor: number
-  metodo: MetodoPagamento; dataPagamento?: Date; referencia?: string | null; observacoes?: string | null
+  mensalidadeId: string
+  caixaId?: string | null
+  usuarioId: string
+  valor: number
+  metodo: MetodoPagamento
+  dataPagamento?: Date
+  referencia?: string | null
+  observacoes?: string | null
 }

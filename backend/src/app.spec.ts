@@ -54,6 +54,34 @@ describe('App', () => {
     })
   })
 
+  describe('GET /documentation', () => {
+    it('deve redirecionar para a UI do Swagger', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/documentation',
+      })
+
+      expect(response.statusCode).toBe(302)
+    })
+
+    it('deve servir a especificação OpenAPI em /documentation/json', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/documentation/json',
+      })
+
+      expect(response.statusCode).toBe(200)
+      const spec = JSON.parse(response.body)
+      expect(spec.openapi).toBeDefined()
+      expect(spec.info.title).toBe('Studio de Pilates — API')
+      expect(spec.components.securitySchemes.bearerAuth).toBeDefined()
+      // Rota pública não deve exigir Bearer
+      expect(spec.paths['/auth/login']?.post?.security).toBeUndefined()
+      // Rota protegida deve exigir Bearer
+      expect(spec.paths['/alunos']?.get?.security).toEqual([{ bearerAuth: [] }])
+    })
+  })
+
   describe('GET /rota-inexistente', () => {
     it('deve retornar 404 para rota não encontrada', async () => {
       const response = await app.inject({

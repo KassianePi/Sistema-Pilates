@@ -19,7 +19,14 @@ export interface ListaRelatoriosResponse {
 }
 
 export const relatoriosService = {
-  async listar(params?: { professorId?: string; tipo?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
+  async listar(params?: {
+    professorId?: string
+    tipo?: string
+    dataInicio?: string
+    dataFim?: string
+    page?: number
+    limit?: number
+  }) {
     const { data } = await api.get<ApiResponse<ListaRelatoriosResponse>>('/relatorios', { params })
     return data.data
   },

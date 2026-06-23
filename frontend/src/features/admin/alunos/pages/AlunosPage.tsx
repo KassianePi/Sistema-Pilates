@@ -6,9 +6,14 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { AlunoFormModal } from '../components/AlunoFormModal'
 import { useAlunos, useDeleteAluno, useAlterarStatusAluno } from '../hooks/useAlunos'
@@ -75,7 +80,10 @@ export function AlunosPage() {
                 placeholder="Buscar por nome ou e-mail..."
                 className="pl-9"
                 value={busca}
-                onChange={(e) => { setBusca(e.target.value); setPagina(1) }}
+                onChange={(e) => {
+                  setBusca(e.target.value)
+                  setPagina(1)
+                }}
               />
             </div>
             {data && (
@@ -113,16 +121,24 @@ export function AlunosPage() {
                     <TableCell className="text-cinza-texto">{aluno.usuario.email}</TableCell>
                     <TableCell className="text-cinza-texto">{aluno.usuario.telefone ?? '—'}</TableCell>
                     <TableCell>
-                      {aluno.planoAtual
-                        ? <Badge variant="secondary">{aluno.planoAtual.nome}</Badge>
-                        : <span className="text-cinza-medio text-xs">Sem plano</span>
-                      }
+                      {aluno.planoAtual ? (
+                        <Badge variant="secondary">{aluno.planoAtual.nome}</Badge>
+                      ) : (
+                        <span className="text-cinza-medio text-xs">Sem plano</span>
+                      )}
                     </TableCell>
                     <TableCell>
-                      {aluno.status === 'ATIVO'
-                        ? <Badge variant="success"><UserCheck className="w-3 h-3 mr-1" />Ativo</Badge>
-                        : <Badge variant="destructive"><UserX className="w-3 h-3 mr-1" />Inativo</Badge>
-                      }
+                      {aluno.status === 'ATIVO' ? (
+                        <Badge variant="success">
+                          <UserCheck className="w-3 h-3 mr-1" />
+                          Ativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          <UserX className="w-3 h-3 mr-1" />
+                          Inativo
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -130,19 +146,25 @@ export function AlunosPage() {
                           <Pencil className="w-4 h-4" />
                         </Button>
                         <Button
-                          size="icon" variant="ghost"
+                          size="icon"
+                          variant="ghost"
                           onClick={() => setAlunoAlterandoStatus(aluno)}
                           title={aluno.status === 'ATIVO' ? 'Inativar aluno' : 'Reativar aluno'}
-                          className={aluno.status === 'ATIVO'
-                            ? 'hover:text-amber-600 hover:bg-amber-50'
-                            : 'hover:text-emerald-600 hover:bg-emerald-50'}
+                          className={
+                            aluno.status === 'ATIVO'
+                              ? 'hover:text-amber-600 hover:bg-amber-50'
+                              : 'hover:text-emerald-600 hover:bg-emerald-50'
+                          }
                         >
-                          {aluno.status === 'ATIVO'
-                            ? <PowerOff className="w-4 h-4" />
-                            : <Power className="w-4 h-4" />}
+                          {aluno.status === 'ATIVO' ? <PowerOff className="w-4 h-4" /> : <Power className="w-4 h-4" />}
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setAlunoExcluindo(aluno)} title="Excluir"
-                          className="hover:text-red-600 hover:bg-red-50">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setAlunoExcluindo(aluno)}
+                          title="Excluir"
+                          className="hover:text-red-600 hover:bg-red-50"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -155,13 +177,18 @@ export function AlunosPage() {
 
           {totalPaginas > 1 && (
             <div className="flex items-center justify-between px-4 py-3 border-t border-bege-cartao">
-              <Button variant="outline" size="sm" onClick={() => setPagina(p => p - 1)} disabled={pagina === 1}>
+              <Button variant="outline" size="sm" onClick={() => setPagina((p) => p - 1)} disabled={pagina === 1}>
                 Anterior
               </Button>
               <span className="text-sm text-cinza-texto">
                 Página {pagina} de {totalPaginas}
               </span>
-              <Button variant="outline" size="sm" onClick={() => setPagina(p => p + 1)} disabled={pagina === totalPaginas}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPagina((p) => p + 1)}
+                disabled={pagina === totalPaginas}
+              >
                 Próxima
               </Button>
             </div>
@@ -169,11 +196,7 @@ export function AlunosPage() {
         </CardContent>
       </Card>
 
-      <AlunoFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        aluno={alunoEditando}
-      />
+      <AlunoFormModal open={modalOpen} onClose={() => setModalOpen(false)} aluno={alunoEditando} />
 
       <AlertDialog open={!!alunoAlterandoStatus} onOpenChange={(v) => !v && setAlunoAlterandoStatus(null)}>
         <AlertDialogContent>
@@ -182,10 +205,16 @@ export function AlunosPage() {
               {alunoAlterandoStatus?.status === 'ATIVO' ? 'Inativar aluno?' : 'Reativar aluno?'}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              {alunoAlterandoStatus?.status === 'ATIVO'
-                ? <>O aluno <strong>{alunoAlterandoStatus?.usuario.nomeCompleto}</strong> não poderá mais acessar o portal. Você pode reativá-lo a qualquer momento.</>
-                : <>O aluno <strong>{alunoAlterandoStatus?.usuario.nomeCompleto}</strong> voltará a ter acesso ao portal.</>
-              }
+              {alunoAlterandoStatus?.status === 'ATIVO' ? (
+                <>
+                  O aluno <strong>{alunoAlterandoStatus?.usuario.nomeCompleto}</strong> não poderá mais acessar o
+                  portal. Você pode reativá-lo a qualquer momento.
+                </>
+              ) : (
+                <>
+                  O aluno <strong>{alunoAlterandoStatus?.usuario.nomeCompleto}</strong> voltará a ter acesso ao portal.
+                </>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -193,13 +222,17 @@ export function AlunosPage() {
             <AlertDialogAction
               onClick={confirmarAlterarStatus}
               disabled={alterarStatus.isPending}
-              className={alunoAlterandoStatus?.status === 'ATIVO'
-                ? 'bg-amber-600 hover:bg-amber-700'
-                : 'bg-emerald-600 hover:bg-emerald-700'}
+              className={
+                alunoAlterandoStatus?.status === 'ATIVO'
+                  ? 'bg-amber-600 hover:bg-amber-700'
+                  : 'bg-emerald-600 hover:bg-emerald-700'
+              }
             >
               {alterarStatus.isPending
                 ? 'Aguarde...'
-                : alunoAlterandoStatus?.status === 'ATIVO' ? 'Inativar' : 'Reativar'}
+                : alunoAlterandoStatus?.status === 'ATIVO'
+                  ? 'Inativar'
+                  : 'Reativar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -210,7 +243,8 @@ export function AlunosPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover aluno?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação removerá permanentemente <strong>{alunoExcluindo?.usuario.nomeCompleto}</strong> do sistema. Não é possível desfazer.
+              Esta ação removerá permanentemente <strong>{alunoExcluindo?.usuario.nomeCompleto}</strong> do sistema. Não
+              é possível desfazer.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

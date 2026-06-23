@@ -1,0 +1,28 @@
+#!/bin/sh
+# Pre-push: typecheck + testes rápidos. Mantido enxuto de propósito (sem
+# test:coverage) para não atrapalhar o fluxo normal de desenvolvimento.
+#
+# Os testes do backend dependem de um MySQL real (DATABASE_URL) — em vez de
+# bloquear o push quando o dev não tem o banco rodando localmente, eles são
+# pulados com um aviso claro nesse caso (o CI sempre roda a suíte completa).
+
+set -e
+
+echo "🔎 pre-push: typecheck backend"
+(cd backend && npm run typecheck)
+
+echo "🔎 pre-push: typecheck frontend"
+(cd frontend && npm run typecheck)
+
+echo "🔎 pre-push: testes frontend"
+(cd frontend && npm run test)
+
+echo "🔎 pre-push: testes backend"
+if [ -n "$DATABASE_URL" ]; then
+  (cd backend && npm run test)
+else
+  echo "⏭️  DATABASE_URL não definida neste shell — pulando testes do backend localmente."
+  echo "   (o pipeline de CI sempre roda a suíte completa do backend com um MySQL real)"
+fi
+
+echo "✅ pre-push: validações concluídas"

@@ -9,7 +9,12 @@ export async function criar(request: FastifyRequest, reply: FastifyReply) {
     const aluno = await alunosService.criar(request.body as any, request.usuarioId as string)
     return reply.code(201).send({ success: true, data: aluno })
   } catch (error: any) {
-    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof ValidationError)
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
+    }
     logWarn('Erro ao criar aluno', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao criar aluno', code: 'INTERNAL_ERROR' })
   }
@@ -31,7 +36,8 @@ export async function buscarPorId(request: FastifyRequest, reply: FastifyReply) 
     const aluno = await alunosService.buscarPorId(id)
     return reply.code(200).send({ success: true, data: aluno })
   } catch (error: any) {
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
     logWarn('Erro ao buscar aluno', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao buscar aluno', code: 'INTERNAL_ERROR' })
   }
@@ -43,8 +49,14 @@ export async function atualizar(request: FastifyRequest, reply: FastifyReply) {
     const aluno = await alunosService.atualizar(id, request.body as any, request.usuarioId as string)
     return reply.code(200).send({ success: true, data: aluno })
   } catch (error: any) {
-    if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error instanceof ValidationError)
+      return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
+    }
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
     logWarn('Erro ao atualizar aluno', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao atualizar aluno', code: 'INTERNAL_ERROR' })
   }
@@ -56,7 +68,8 @@ export async function excluir(request: FastifyRequest, reply: FastifyReply) {
     await alunosService.excluir(id, request.usuarioId as string)
     return reply.code(200).send({ success: true, data: {} })
   } catch (error: any) {
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
     logWarn('Erro ao excluir aluno', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao excluir aluno', code: 'INTERNAL_ERROR' })
   }
@@ -69,7 +82,12 @@ export async function alterarStatus(request: FastifyRequest, reply: FastifyReply
     const aluno = await alunosService.alterarStatus(id, ativo, request.usuarioId as string)
     return reply.code(200).send({ success: true, data: aluno })
   } catch (error: any) {
-    if (error instanceof AppError) return reply.code(error.statusCode || 400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof AppError)
+      return reply.code(error.statusCode || 400).send({ success: false, message: error.message, code: error.code })
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
+    }
     logWarn('Erro ao alterar status do aluno', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao alterar status', code: 'INTERNAL_ERROR' })
   }

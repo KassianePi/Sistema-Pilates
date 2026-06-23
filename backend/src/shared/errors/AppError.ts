@@ -9,7 +9,12 @@ export class AppError extends Error {
   readonly statusCode: number
   readonly isOperational: boolean
 
-  constructor(message: string, code: string = 'INTERNAL_ERROR', statusCode: number = 500, isOperational: boolean = true) {
+  constructor(
+    message: string,
+    code: string = 'INTERNAL_ERROR',
+    statusCode: number = 500,
+    isOperational: boolean = true,
+  ) {
     super(message)
     this.name = this.constructor.name
     this.code = code

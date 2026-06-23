@@ -19,8 +19,20 @@ export interface CreatePagamentoDTO {
 
 type BackendMensalidadeRaw = Omit<Mensalidade, 'vencimento'> & { dataVencimento: string }
 type BackendPagamentoRaw = Omit<Pagamento, 'metodoPagamento'> & { metodo: MetodoPagamento }
-type BackendMensalidadesResponse = { mensalidades: BackendMensalidadeRaw[]; total: number; page: number; limit: number; totalPages: number }
-type BackendPagamentosResponse = { pagamentos: BackendPagamentoRaw[]; total: number; page: number; limit: number; totalPages: number }
+type BackendMensalidadesResponse = {
+  mensalidades: BackendMensalidadeRaw[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
+type BackendPagamentosResponse = {
+  pagamentos: BackendPagamentoRaw[]
+  total: number
+  page: number
+  limit: number
+  totalPages: number
+}
 
 function mapMensalidade(raw: BackendMensalidadeRaw): Mensalidade {
   return { ...raw, vencimento: raw.dataVencimento, valor: Number(raw.valor) } as Mensalidade
@@ -31,12 +43,23 @@ function mapPagamento(raw: BackendPagamentoRaw): Pagamento {
 }
 
 export const financeiroService = {
-  async listarMensalidades(params?: { pagina?: number; limite?: number; alunoId?: string; status?: string }): Promise<PaginatedResponse<Mensalidade>> {
+  async listarMensalidades(params?: {
+    pagina?: number
+    limite?: number
+    alunoId?: string
+    status?: string
+  }): Promise<PaginatedResponse<Mensalidade>> {
     const { data } = await api.get<ApiResponse<BackendMensalidadesResponse>>('/mensalidades', {
       params: { alunoId: params?.alunoId, status: params?.status, page: params?.pagina, limit: params?.limite },
     })
     const r = data.data
-    return { data: r.mensalidades.map(mapMensalidade), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
+    return {
+      data: r.mensalidades.map(mapMensalidade),
+      total: r.total,
+      pagina: r.page,
+      limite: r.limit,
+      totalPaginas: r.totalPages,
+    }
   },
 
   async criarMensalidade(dto: CreateMensalidadeDTO) {
@@ -56,7 +79,13 @@ export const financeiroService = {
       params: { page: params?.pagina, limit: params?.limite },
     })
     const r = data.data
-    return { data: r.pagamentos.map(mapPagamento), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
+    return {
+      data: r.pagamentos.map(mapPagamento),
+      total: r.total,
+      pagina: r.page,
+      limite: r.limit,
+      totalPaginas: r.totalPages,
+    }
   },
 
   async registrarPagamento(dto: CreatePagamentoDTO) {
@@ -70,12 +99,22 @@ export const financeiroService = {
     return mapPagamento(data.data)
   },
 
-  async listarMinhasMensalidades(params?: { pagina?: number; limite?: number; status?: string }): Promise<PaginatedResponse<Mensalidade>> {
+  async listarMinhasMensalidades(params?: {
+    pagina?: number
+    limite?: number
+    status?: string
+  }): Promise<PaginatedResponse<Mensalidade>> {
     const { data } = await api.get<ApiResponse<BackendMensalidadesResponse>>('/aluno/mensalidades', {
       params: { status: params?.status, page: params?.pagina, limit: params?.limite },
     })
     const r = data.data
-    return { data: r.mensalidades.map(mapMensalidade), total: r.total, pagina: r.page, limite: r.limit, totalPaginas: r.totalPages }
+    return {
+      data: r.mensalidades.map(mapMensalidade),
+      total: r.total,
+      pagina: r.page,
+      limite: r.limit,
+      totalPaginas: r.totalPages,
+    }
   },
 
   async notificarPagamento(mensalidadeId: string, observacoes?: string): Promise<void> {
@@ -86,11 +125,27 @@ export const financeiroService = {
     await api.post('/aluno/solicitar-avulsa', { dataDesejada, observacoes })
   },
 
-  async enviarComprovante(dto: { mensalidadeId: string; arquivo: string; nomeArquivo: string; tipoArquivo: string }): Promise<void> {
+  async enviarComprovante(dto: {
+    mensalidadeId: string
+    arquivo: string
+    nomeArquivo: string
+    tipoArquivo: string
+  }): Promise<void> {
     await api.post('/aluno/comprovantes', dto)
   },
 
-  async listarMeusComprovantes(): Promise<{ id: string; mensalidadeId: string; nomeArquivo: string; tipoArquivo: string; dataEnvio: string; status: string; observacoes?: string | null; mensalidade?: { plano?: { nome: string } | null } }[]> {
+  async listarMeusComprovantes(): Promise<
+    {
+      id: string
+      mensalidadeId: string
+      nomeArquivo: string
+      tipoArquivo: string
+      dataEnvio: string
+      status: string
+      observacoes?: string | null
+      mensalidade?: { plano?: { nome: string } | null }
+    }[]
+  > {
     const { data } = await api.get('/aluno/comprovantes')
     return data.data
   },

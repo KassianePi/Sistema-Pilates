@@ -4,6 +4,16 @@ import { authenticateToken } from '../../shared/middlewares/auth.middleware'
 import { authorize } from '../../shared/middlewares/rbac.middleware'
 
 export async function planosRoutes(fastify: FastifyInstance) {
+  fastify.addHook('onRoute', (routeOptions) => {
+    routeOptions.schema = {
+      ...routeOptions.schema,
+      tags: ['Planos'],
+      ...(Array.isArray(routeOptions.onRequest) && routeOptions.onRequest.includes(authenticateToken)
+        ? { security: [{ bearerAuth: [] }] }
+        : {}),
+    }
+  })
+
   // GET /api/v1/planos — todos os autenticados
   fastify.get('/api/v1/planos', { onRequest: [authenticateToken] }, listar)
 

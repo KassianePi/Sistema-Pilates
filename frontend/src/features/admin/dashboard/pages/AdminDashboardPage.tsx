@@ -1,7 +1,4 @@
-import {
-  Users, CalendarDays, DollarSign, TrendingUp,
-  UserCheck, AlertCircle,
-} from 'lucide-react'
+import { Users, CalendarDays, DollarSign, TrendingUp, UserCheck, AlertCircle } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/hooks/useAuth'
@@ -35,7 +32,7 @@ export function AdminDashboardPage() {
   const totalAulasHoje = aulasHoje?.total ?? 0
   const totalInadimplentes = inadimplentes?.total ?? 0
   const receitaMes = (pagamentosData?.data ?? [])
-    .filter(p => p.dataPagamento?.startsWith(mesAtual))
+    .filter((p) => p.dataPagamento?.startsWith(mesAtual))
     .reduce((acc, p) => acc + p.valor, 0)
 
   const kpis = [
@@ -134,13 +131,30 @@ export function AdminDashboardPage() {
             ) : (
               <ul className="space-y-3">
                 {(aulasHojeAll?.data ?? []).map((aula) => (
-                  <li key={aula.id} className="flex items-center justify-between py-2 border-b border-bege-cartao last:border-0">
+                  <li
+                    key={aula.id}
+                    className="flex items-center justify-between py-2 border-b border-bege-cartao last:border-0"
+                  >
                     <div>
                       <p className="text-sm font-medium text-cinza-forte">{aula.titulo}</p>
-                      <p className="text-xs text-cinza-medio">{aula.professor.usuario.nomeCompleto} · {aula.horaInicio} – {aula.horaFim}</p>
+                      <p className="text-xs text-cinza-medio">
+                        {aula.professor.usuario.nomeCompleto} · {aula.horaInicio} – {aula.horaFim}
+                      </p>
                     </div>
-                    <Badge variant={aula.status === 'AGENDADA' ? 'secondary' : aula.status === 'REALIZADA' ? 'success' : 'destructive'}>
-                      {aula.status === 'AGENDADA' ? 'Agendada' : aula.status === 'REALIZADA' ? 'Realizada' : 'Cancelada'}
+                    <Badge
+                      variant={
+                        aula.status === 'AGENDADA'
+                          ? 'secondary'
+                          : aula.status === 'REALIZADA'
+                            ? 'success'
+                            : 'destructive'
+                      }
+                    >
+                      {aula.status === 'AGENDADA'
+                        ? 'Agendada'
+                        : aula.status === 'REALIZADA'
+                          ? 'Realizada'
+                          : 'Cancelada'}
                     </Badge>
                   </li>
                 ))}
@@ -162,10 +176,15 @@ export function AdminDashboardPage() {
             ) : (
               <ul className="space-y-3">
                 {(pagamentosData?.data ?? []).map((p) => (
-                  <li key={p.id} className="flex items-center justify-between py-2 border-b border-bege-cartao last:border-0">
+                  <li
+                    key={p.id}
+                    className="flex items-center justify-between py-2 border-b border-bege-cartao last:border-0"
+                  >
                     <div>
                       <p className="text-sm font-medium text-cinza-forte">{p.mensalidade.aluno.usuario.nomeCompleto}</p>
-                      <p className="text-xs text-cinza-medio">{p.mensalidade.plano.nome} · {formatarData(p.dataPagamento)}</p>
+                      <p className="text-xs text-cinza-medio">
+                        {p.mensalidade.plano.nome} · {formatarData(p.dataPagamento)}
+                      </p>
                     </div>
                     <span className="text-sm font-semibold text-green-700">{formatarValor(p.valor)}</span>
                   </li>

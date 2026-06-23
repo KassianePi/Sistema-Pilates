@@ -1,0 +1,129 @@
+services:
+  # ====== BANCO DE DADOS ======
+  mysql:
+    image: mysql:8.0
+    container_name: pilates_mysql_prod
+    restart: unless-stopped
+    command: >
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --sql-mode=STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION
+      --explicit-defaults-for-timestamp=1
+      --default-time-zone=+00:00
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    # Sem "ports:" — o MySQL não é exposto ao host, só acessível pela rede interna.
+    volumes:
+      - mysql_data_prod:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pilates_network_prod
+
+  # ====== MIGRATIONS (serviço único, roda uma vez e encerra) ======
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    container_name: pilates_migrate
+    entrypoint: ["npx", "prisma", "migrate", "deploy"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - pilates_network_prod
+    restart: "no"
+
+  # ====== BACKEND FASTIFY ======
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: production
+    container_name: pilates_backend_prod
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      CORS_ORIGIN: ${CORS_ORIGIN}
+      PORT: 3000
+      # Migrations já foram aplicadas pelo serviço "migrate" — evita execução concorrente.
+      SKIP_MIGRATE: "1"
+    # Sem "ports:" — o backend só é alcançável pela rede interna (via Nginx).
+    depends_on:
+      mysql:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    networks:
+      - pilates_network_prod
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "require('http').get('http://localhost:3000/api/v1/health', (r) => { const ok = r.statusCode === 200; r.resume(); r.on('end', () => process.exit(ok ? 0 : 1)) }).on('error', () => process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ====== FRONTEND (build estático servido por Nginx) ======
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: production
+      args:
+        VITE_API_URL: ${VITE_API_URL:-/api/v1}
+    container_name: pilates_frontend_prod
+    restart: unless-stopped
+    # Sem "ports:" — só alcançável pela rede interna (via Nginx).
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - pilates_network_prod
+
+  # ====== NGINX (proxy reverso + TLS) ======
+  nginx:
+    image: nginx:alpine
+    container_name: pilates_nginx_prod
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d/default.prod.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - certbot_webroot:/var/www/certbot:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - pilates_network_prod
+
+volumes:
+  mysql_data_prod:
+    driver: local
+  # Compartilhado com o Certbot (rodado separadamente — ver docs/SSL_LETSENCRYPT.md)
+  # para servir o desafio HTTP-01 em /.well-known/acme-challenge/
+  certbot_webroot:
+    driver: local
+
+networks:
+  pilates_network_prod:
+    driver: bridge

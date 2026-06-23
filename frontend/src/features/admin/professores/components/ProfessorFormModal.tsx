@@ -17,7 +17,11 @@ const createSchema = z.object({
   email: z.string().email('E-mail inválido'),
   cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
+  telefone: z
+    .string()
+    .regex(/^\d{10,11}$/, 'Telefone inválido')
+    .optional()
+    .or(z.literal('')),
   especialidade: z.string().optional(),
   bio: z.string().optional(),
 })
@@ -26,7 +30,11 @@ const editSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres').optional(),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
-  telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
+  telefone: z
+    .string()
+    .regex(/^\d{10,11}$/, 'Telefone inválido')
+    .optional()
+    .or(z.literal('')),
   especialidade: z.string().optional(),
   bio: z.string().optional(),
   status: z.enum(['ATIVO', 'INATIVO']).optional(),
@@ -47,7 +55,12 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
   const updateProfessor = useUpdateProfessor()
 
   const {
-    register, handleSubmit, reset, setValue, watch, control,
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<CreateForm | EditForm>({
     resolver: zodResolver(isEditing ? editSchema : createSchema),
@@ -72,7 +85,7 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
   async function onSubmit(values: CreateForm | EditForm) {
     const payload = {
       ...values,
-      telefone: (values.telefone && values.telefone.length) ? values.telefone : undefined,
+      telefone: values.telefone && values.telefone.length ? values.telefone : undefined,
       email: (values as any).email?.trim() || undefined,
       senha: (values as any).senha?.trim() || undefined,
     }
@@ -107,7 +120,9 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
                 <Label htmlFor="email">E-mail *</Label>
                 <Input id="email" type="email" {...register('email' as never)} placeholder="email@exemplo.com" />
                 {(errors as { email?: { message?: string } }).email && (
-                  <p className="text-xs text-rosa-vibrante">{(errors as { email?: { message?: string } }).email?.message}</p>
+                  <p className="text-xs text-rosa-vibrante">
+                    {(errors as { email?: { message?: string } }).email?.message}
+                  </p>
                 )}
               </div>
 
@@ -128,7 +143,9 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
                   )}
                 />
                 {(errors as { cpf?: { message?: string } }).cpf && (
-                  <p className="text-xs text-rosa-vibrante">{(errors as { cpf?: { message?: string } }).cpf?.message}</p>
+                  <p className="text-xs text-rosa-vibrante">
+                    {(errors as { cpf?: { message?: string } }).cpf?.message}
+                  </p>
                 )}
               </div>
 
@@ -137,7 +154,9 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
                 <Label htmlFor="senha">Senha *</Label>
                 <Input id="senha" type="password" {...register('senha' as never)} placeholder="Mínimo 6 caracteres" />
                 {(errors as { senha?: { message?: string } }).senha && (
-                  <p className="text-xs text-rosa-vibrante">{(errors as { senha?: { message?: string } }).senha?.message}</p>
+                  <p className="text-xs text-rosa-vibrante">
+                    {(errors as { senha?: { message?: string } }).senha?.message}
+                  </p>
                 )}
               </div>
             </>
@@ -149,7 +168,9 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
               <Label htmlFor="email-edit">E-mail</Label>
               <Input id="email-edit" type="email" {...register('email' as never)} placeholder="email@exemplo.com" />
               {(errors as { email?: { message?: string } }).email && (
-                <p className="text-xs text-rosa-vibrante">{(errors as { email?: { message?: string } }).email?.message}</p>
+                <p className="text-xs text-rosa-vibrante">
+                  {(errors as { email?: { message?: string } }).email?.message}
+                </p>
               )}
             </div>
           )}
@@ -157,10 +178,19 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
           {/* Nova senha (edição) */}
           {isEditing && (
             <div className="space-y-1.5">
-              <Label htmlFor="senha-edit">Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span></Label>
-              <Input id="senha-edit" type="password" {...register('senha' as never)} placeholder="Mínimo 6 caracteres" />
+              <Label htmlFor="senha-edit">
+                Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span>
+              </Label>
+              <Input
+                id="senha-edit"
+                type="password"
+                {...register('senha' as never)}
+                placeholder="Mínimo 6 caracteres"
+              />
               {(errors as { senha?: { message?: string } }).senha && (
-                <p className="text-xs text-rosa-vibrante">{(errors as { senha?: { message?: string } }).senha?.message}</p>
+                <p className="text-xs text-rosa-vibrante">
+                  {(errors as { senha?: { message?: string } }).senha?.message}
+                </p>
               )}
             </div>
           )}
@@ -204,7 +234,9 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
                 value={(watch as (k: string) => string)('status') ?? 'ATIVO'}
                 onValueChange={(v) => setValue('status' as never, v as never)}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ATIVO">Ativo</SelectItem>
                   <SelectItem value="INATIVO">Inativo</SelectItem>
@@ -214,7 +246,9 @@ export function ProfessorFormModal({ open, onClose, professor }: Props) {
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
             <Button type="submit" disabled={isSubmitting || createProfessor.isPending || updateProfessor.isPending}>
               {isEditing ? 'Salvar alterações' : 'Cadastrar professor'}
             </Button>

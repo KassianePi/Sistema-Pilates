@@ -121,13 +121,7 @@ describe('AuthService', () => {
 
   describe('register', () => {
     it('deve registrar novo usuário com dados válidos', async () => {
-      const result = await service.register(
-        'novo@pilates.local',
-        'Novo Usuário',
-        '98765432100',
-        'senha123',
-        'senha123',
-      )
+      const result = await service.register('novo@pilates.local', 'Novo Usuário', '98765432100', 'senha123', 'senha123')
       expect(result.usuarioId).toBe('new-user-id')
       expect(result.email).toBe('novo@pilates.local')
       expect(result.nome).toBe('Novo Usuário')
@@ -149,9 +143,9 @@ describe('AuthService', () => {
     })
 
     it('deve rejeitar nome muito curto', async () => {
-      await expect(
-        service.register('novo@pilates.local', 'Na', '11122233344', 'senha123', 'senha123'),
-      ).rejects.toThrow(ValidationError)
+      await expect(service.register('novo@pilates.local', 'Na', '11122233344', 'senha123', 'senha123')).rejects.toThrow(
+        ValidationError,
+      )
     })
 
     it('deve permitir funcao customizado', async () => {

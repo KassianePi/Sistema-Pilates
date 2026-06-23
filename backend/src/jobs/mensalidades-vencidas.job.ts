@@ -51,9 +51,13 @@ export function iniciarJobMensalidadesVencidas(): NodeJS.Timeout {
   logInfo('Job mensalidades vencidas iniciado (intervalo: 6h)')
 
   // Executa imediatamente na inicialização
-  processarMensalidadesVencidas().catch((err) => logWarn('Job mensalidades: erro na execução inicial', { error: String(err) }))
+  processarMensalidadesVencidas().catch((err) =>
+    logWarn('Job mensalidades: erro na execução inicial', { error: String(err) }),
+  )
 
   return setInterval(() => {
-    processarMensalidadesVencidas().catch((err) => logWarn('Job mensalidades: erro na execução periódica', { error: String(err) }))
+    processarMensalidadesVencidas().catch((err) =>
+      logWarn('Job mensalidades: erro na execução periódica', { error: String(err) }),
+    )
   }, INTERVALO_MS)
 }

@@ -32,7 +32,7 @@ export function PresencaModal({ aula, onClose }: Props) {
     if (!aula) return
     const presencasList = alunos.map((a) => ({
       alunoId: a.id,
-      status: presentes.has(a.id) ? 'PRESENTE' as const : 'AUSENTE' as const,
+      status: presentes.has(a.id) ? ('PRESENTE' as const) : ('AUSENTE' as const),
     }))
     await registrarBatch.mutateAsync({ aulaId: aula.id, presencas: presencasList })
     onClose()
@@ -64,8 +64,12 @@ export function PresencaModal({ aula, onClose }: Props) {
             {formatarData(aula.data)} · {aula.horaInicio} – {aula.horaFim}
           </p>
           <div className="flex items-center gap-2 mt-1">
-            <Badge variant="secondary">{totalPresentes} presente{totalPresentes !== 1 ? 's' : ''}</Badge>
-            <Badge variant="outline">{totalAlunos - totalPresentes} ausente{totalAlunos - totalPresentes !== 1 ? 's' : ''}</Badge>
+            <Badge variant="secondary">
+              {totalPresentes} presente{totalPresentes !== 1 ? 's' : ''}
+            </Badge>
+            <Badge variant="outline">
+              {totalAlunos - totalPresentes} ausente{totalAlunos - totalPresentes !== 1 ? 's' : ''}
+            </Badge>
           </div>
         </div>
 
@@ -76,7 +80,9 @@ export function PresencaModal({ aula, onClose }: Props) {
         <div className="overflow-y-auto flex-1 divide-y divide-bege-cartao border border-bege-cartao rounded-md">
           {alunos.length === 0 ? (
             <p className="text-sm text-cinza-medio text-center py-8 px-4">
-              Nenhum aluno matriculado nesta aula.<br />Matricule alunos antes de registrar presença.
+              Nenhum aluno matriculado nesta aula.
+              <br />
+              Matricule alunos antes de registrar presença.
             </p>
           ) : (
             alunos.map((aluno) => {
@@ -90,20 +96,21 @@ export function PresencaModal({ aula, onClose }: Props) {
                     marcado ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-bege-suave'
                   }`}
                 >
-                  {marcado
-                    ? <CheckSquare2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                    : <Square className="w-5 h-5 text-cinza-medio flex-shrink-0" />
-                  }
+                  {marcado ? (
+                    <CheckSquare2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                  ) : (
+                    <Square className="w-5 h-5 text-cinza-medio flex-shrink-0" />
+                  )}
                   <div className="min-w-0">
                     <p className={`text-sm font-medium truncate ${marcado ? 'text-green-800' : 'text-cinza-forte'}`}>
                       {aluno.usuario.nomeCompleto}
                     </p>
-                    {aluno.planoAtual && (
-                      <p className="text-xs text-cinza-medio truncate">{aluno.planoAtual.nome}</p>
-                    )}
+                    {aluno.planoAtual && <p className="text-xs text-cinza-medio truncate">{aluno.planoAtual.nome}</p>}
                   </div>
                   {marcado && (
-                    <Badge variant="success" className="ml-auto flex-shrink-0">Presente</Badge>
+                    <Badge variant="success" className="ml-auto flex-shrink-0">
+                      Presente
+                    </Badge>
                   )}
                 </button>
               )
@@ -112,7 +119,9 @@ export function PresencaModal({ aula, onClose }: Props) {
         </div>
 
         <DialogFooter className="mt-4 gap-2">
-          <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={handleClose}>
+            Cancelar
+          </Button>
           <Button
             type="button"
             onClick={salvar}

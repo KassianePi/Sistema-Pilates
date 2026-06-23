@@ -21,7 +21,12 @@ export function TimelineFinanceira({ eventos }: { eventos: EventoFinanceiro[] })
         const m = META[e.tipo]
         return (
           <li key={e.id} className="ml-6">
-            <span className={cn('absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ring-4 ring-branco-puro', m.bg)}>
+            <span
+              className={cn(
+                'absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full ring-4 ring-branco-puro',
+                m.bg,
+              )}
+            >
               <m.Icon className={cn('w-3.5 h-3.5', m.color)} />
             </span>
             <div className="flex items-center justify-between gap-2 flex-wrap">

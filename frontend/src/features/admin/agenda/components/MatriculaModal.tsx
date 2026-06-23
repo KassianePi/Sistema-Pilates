@@ -20,7 +20,9 @@ function MatriculaForm({ aula, iniciais, onClose }: { aula: Aula; iniciais: stri
     <>
       <SeletorAlunos value={selecionados} onChange={setSelecionados} capacidade={aula.vagas} />
       <DialogFooter className="mt-4">
-        <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+        <Button type="button" variant="outline" onClick={onClose}>
+          Cancelar
+        </Button>
         <Button type="button" onClick={salvar} disabled={matricular.isPending}>
           {matricular.isPending ? 'Salvando...' : 'Salvar matrículas'}
         </Button>
@@ -40,7 +42,9 @@ export function MatriculaModal({ aula, onClose }: { aula: Aula; onClose: () => v
             <UserPlus className="w-4 h-4 text-lilas-medio" /> Matricular alunos
           </DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-cinza-texto -mt-1">{aula.titulo} — {aula.data} às {aula.horaInicio}</p>
+        <p className="text-sm text-cinza-texto -mt-1">
+          {aula.titulo} — {aula.data} às {aula.horaInicio}
+        </p>
 
         {isLoading || !inscritos ? (
           <p className="text-sm text-cinza-medio text-center py-8">Carregando matrículas...</p>

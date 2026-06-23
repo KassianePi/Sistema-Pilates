@@ -21,13 +21,20 @@ export function DialogClose(props: React.ComponentPropsWithoutRef<typeof DialogP
 export function DialogOverlay({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Overlay>) {
   return (
     <DialogPrimitive.Overlay
-      className={cn('fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0', className)}
+      className={cn(
+        'fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
+        className,
+      )}
       {...props}
     />
   )
 }
 
-export function DialogContent({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>) {
+export function DialogContent({
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>) {
   return (
     <DialogPortal>
       <DialogOverlay />
@@ -55,7 +62,10 @@ export function DialogTitle({ className, ...props }: React.ComponentPropsWithout
   return <DialogPrimitive.Title className={cn('text-lg font-semibold text-cinza-forte', className)} {...props} />
 }
 
-export function DialogDescription({ className, ...props }: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) {
+export function DialogDescription({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof DialogPrimitive.Description>) {
   return <DialogPrimitive.Description className={cn('text-sm text-cinza-texto', className)} {...props} />
 }
 

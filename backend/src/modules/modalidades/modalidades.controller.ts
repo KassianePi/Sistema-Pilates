@@ -1,11 +1,15 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { modalidadesService } from './modalidades.service'
-import { AppError } from '../../shared/errors'
+import { AppError, ValidationError } from '../../shared/errors'
 import { logWarn } from '../../shared/utils'
 
 function handleError(reply: FastifyReply, error: unknown) {
   if (error instanceof AppError) {
     return reply.code(error.statusCode).send({ success: false, message: error.message, code: error.code })
+  }
+  if (error instanceof Error && error.name === 'ZodError') {
+    const validationError = ValidationError.fromZod(error)
+    return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
   }
   logWarn('Erro inesperado em modalidades', { error: String(error) })
   return reply.code(500).send({ success: false, message: 'Erro interno', code: 'INTERNAL_ERROR' })

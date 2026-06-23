@@ -49,14 +49,19 @@ describe('TermosService', () => {
       mockRepo.proximaVersao.mockResolvedValue(3)
       mockRepo.criar.mockImplementation((d: any) => Promise.resolve({ id: 'novo', ...d }))
 
-      const termo = await service.criar({ titulo: 'Nova versão', conteudo: 'Conteúdo com mais de vinte caracteres aqui.' })
+      const termo = await service.criar({
+        titulo: 'Nova versão',
+        conteudo: 'Conteúdo com mais de vinte caracteres aqui.',
+      })
 
       expect(mockRepo.criar).toHaveBeenCalledWith(expect.objectContaining({ versao: 3 }))
       expect(termo.versao).toBe(3)
     })
 
     it('rejeita título muito curto (validação Zod)', async () => {
-      await expect(service.criar({ titulo: 'x', conteudo: 'Conteúdo com mais de vinte caracteres aqui.' })).rejects.toThrow()
+      await expect(
+        service.criar({ titulo: 'x', conteudo: 'Conteúdo com mais de vinte caracteres aqui.' }),
+      ).rejects.toThrow()
     })
   })
 
@@ -123,7 +128,9 @@ describe('TermosService', () => {
 
       const aceite = await service.registrarAceite(USUARIO_ID, { enderecoIp: '127.0.0.1', userAgent: 'jest' })
 
-      expect(mockRepo.registrarAceite).toHaveBeenCalledWith(expect.objectContaining({ termoId: TERMO_ID, alunoId: ALUNO_ID, versao: 2 }))
+      expect(mockRepo.registrarAceite).toHaveBeenCalledWith(
+        expect.objectContaining({ termoId: TERMO_ID, alunoId: ALUNO_ID, versao: 2 }),
+      )
       expect(aceite.id).toBe('aceite-1')
     })
   })

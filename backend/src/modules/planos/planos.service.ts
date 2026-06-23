@@ -35,7 +35,12 @@ export class PlanosService {
     return plano
   }
 
-  async listar(params: { ativo?: boolean; tipo?: string; page?: number; limit?: number }): Promise<{ planos: Plano[]; total: number; page: number; limit: number; totalPages: number }> {
+  async listar(params: {
+    ativo?: boolean
+    tipo?: string
+    page?: number
+    limit?: number
+  }): Promise<{ planos: Plano[]; total: number; page: number; limit: number; totalPages: number }> {
     const validado = listPlanosSchema.parse(params)
     const { planos, total } = await this.repository.findAll({
       ativo: validado.ativo,
@@ -55,7 +60,10 @@ export class PlanosService {
   async atualizar(id: string, data: UpdatePlanoData): Promise<Plano> {
     await this.buscarPorId(id)
 
-    const validado = updatePlanoSchema.parse({ ...data, preco: data.preco !== undefined ? Number(data.preco) : undefined })
+    const validado = updatePlanoSchema.parse({
+      ...data,
+      preco: data.preco !== undefined ? Number(data.preco) : undefined,
+    })
 
     if (validado.nome) {
       const existente = await this.repository.findByNome(validado.nome)

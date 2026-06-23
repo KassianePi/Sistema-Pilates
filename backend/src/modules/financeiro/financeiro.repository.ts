@@ -9,14 +9,14 @@ export class FinanceiroRepository {
 
   async findMensalidadeById(id: string): Promise<Mensalidade | null> {
     try {
-      return await prisma.mensalidade.findUnique({
+      return (await prisma.mensalidade.findUnique({
         where: { id },
         include: {
           aluno: { include: { usuario: { select: { nomeCompleto: true } } } },
           plano: { select: { id: true, nome: true } },
           pagamentos: true,
         },
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao buscar mensalidade', error as Error, { id })
       throw AppError.internal('Erro ao buscar mensalidade')
@@ -73,7 +73,7 @@ export class FinanceiroRepository {
 
   async createMensalidade(data: CreateMensalidadeData): Promise<Mensalidade> {
     try {
-      return await prisma.mensalidade.create({
+      return (await prisma.mensalidade.create({
         data: {
           alunoId: data.alunoId,
           planoId: data.planoId ?? null,
@@ -84,7 +84,7 @@ export class FinanceiroRepository {
           desconto: data.desconto ?? 0,
           observacoes: data.observacoes ?? null,
         } as any,
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao criar mensalidade', error as Error)
       throw AppError.internal('Erro ao criar mensalidade')
@@ -106,7 +106,7 @@ export class FinanceiroRepository {
         ...(dados?.observacoes !== undefined && { observacoes: dados.observacoes }),
       }
 
-      return await prisma.mensalidade.update({ where: { id }, data }) as any
+      return (await prisma.mensalidade.update({ where: { id }, data })) as any
     } catch (error) {
       logError('Erro ao atualizar mensalidade', error as Error, { id })
       throw AppError.internal('Erro ao atualizar mensalidade')
@@ -117,7 +117,7 @@ export class FinanceiroRepository {
 
   async findPagamentoById(id: string): Promise<Pagamento | null> {
     try {
-      return await prisma.pagamento.findUnique({ where: { id } }) as any
+      return (await prisma.pagamento.findUnique({ where: { id } })) as any
     } catch (error) {
       logError('Erro ao buscar pagamento', error as Error, { id })
       throw AppError.internal('Erro ao buscar pagamento')
@@ -175,7 +175,7 @@ export class FinanceiroRepository {
 
   async createPagamento(data: CreatePagamentoData): Promise<Pagamento> {
     try {
-      return await prisma.pagamento.create({
+      return (await prisma.pagamento.create({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         data: {
           mensalidadeId: data.mensalidadeId,
@@ -187,7 +187,7 @@ export class FinanceiroRepository {
           referencia: data.referencia ?? null,
           observacoes: data.observacoes ?? null,
         } as any,
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao criar pagamento', error as Error)
       throw AppError.internal('Erro ao registrar pagamento')

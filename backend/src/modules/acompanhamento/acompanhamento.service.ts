@@ -46,9 +46,8 @@ export class AcompanhamentoService {
 
     const mensalidadeVencida = aluno.mensalidades.some((m) => m.status === 'VENCIDO')
     const mensalidadesPendentes = aluno.mensalidades.length
-    const proximoVencimento = aluno.mensalidades
-      .map((m) => m.dataVencimento)
-      .sort((a, b) => a.getTime() - b.getTime())[0] ?? null
+    const proximoVencimento =
+      aluno.mensalidades.map((m) => m.dataVencimento).sort((a, b) => a.getTime() - b.getTime())[0] ?? null
 
     const motivosRisco: string[] = []
     let risco: RiscoAluno = 'OK'
@@ -61,7 +60,8 @@ export class AcompanhamentoService {
     if (inativoDemais || mensalidadeVencida) {
       risco = 'EM_RISCO'
     } else {
-      const taxaBaixa = totalRegistros >= ACOMPANHAMENTO.MIN_REGISTROS_TAXA && taxaPresenca < ACOMPANHAMENTO.TAXA_PRESENCA_ATENCAO
+      const taxaBaixa =
+        totalRegistros >= ACOMPANHAMENTO.MIN_REGISTROS_TAXA && taxaPresenca < ACOMPANHAMENTO.TAXA_PRESENCA_ATENCAO
       const vencimentoProximo = proximoVencimento
         ? (proximoVencimento.getTime() - agora) / DIA_MS <= ACOMPANHAMENTO.DIAS_VENCIMENTO_PROXIMO
         : false
@@ -92,15 +92,15 @@ export class AcompanhamentoService {
   }
 
   /** Lista de alunos com métricas, com filtro opcional por risco e busca por nome. */
-  async listar(params: { risco?: RiscoAluno; busca?: string } = {}): Promise<{ alunos: AlunoAcompanhamento[]; resumo: ResumoAcompanhamento }> {
+  async listar(
+    params: { risco?: RiscoAluno; busca?: string } = {},
+  ): Promise<{ alunos: AlunoAcompanhamento[]; resumo: ResumoAcompanhamento }> {
     const [alunos, ultimas] = await Promise.all([
       this.repository.findAlunosAtivosComDados(this.janelaInicio()),
       this.repository.findUltimasPresencas(),
     ])
 
-    let lista = (alunos as unknown as AlunoComDados[]).map((a) =>
-      this.calcularMetricas(a, ultimas.get(a.id) ?? null),
-    )
+    let lista = (alunos as unknown as AlunoComDados[]).map((a) => this.calcularMetricas(a, ultimas.get(a.id) ?? null))
 
     const resumo: ResumoAcompanhamento = {
       total: lista.length,
@@ -157,14 +157,24 @@ export class AcompanhamentoService {
       dataInicio: aluno.dataInicio,
       telefone: aluno.usuario.telefone,
       presencas: aluno.presencas.map((p) => ({
-        id: p.id, status: p.status, dataRegistro: p.dataRegistro,
+        id: p.id,
+        status: p.status,
+        dataRegistro: p.dataRegistro,
         aula: p.aula ? { dataHoraInicio: p.aula.dataHoraInicio, sala: p.aula.sala } : null,
       })),
       mensalidades: aluno.mensalidades.map((m) => ({
-        id: m.id, status: m.status, valor: m.valor, dataVencimento: m.dataVencimento,
+        id: m.id,
+        status: m.status,
+        valor: m.valor,
+        dataVencimento: m.dataVencimento,
         plano: m.plano?.nome ?? null,
       })),
-      proximasAulas: proximasAulas.map((a) => ({ id: a.id, dataHoraInicio: a.dataHoraInicio, sala: a.sala, status: a.status })),
+      proximasAulas: proximasAulas.map((a) => ({
+        id: a.id,
+        dataHoraInicio: a.dataHoraInicio,
+        sala: a.sala,
+        status: a.status,
+      })),
     }
   }
 }

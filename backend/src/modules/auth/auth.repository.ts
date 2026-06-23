@@ -187,9 +187,7 @@ export class AuthRepository {
     try {
       const usuarios = await prisma.usuario.findMany({
         where: {
-          funcao: funcao
-            ? { equals: funcao as any }
-            : { notIn: ['ALUNO'] as any[] },
+          funcao: funcao ? { equals: funcao as any } : { notIn: ['ALUNO'] as any[] },
         },
         take: limit,
         skip: offset,
@@ -209,9 +207,7 @@ export class AuthRepository {
     try {
       return await prisma.usuario.count({
         where: {
-          funcao: funcao
-            ? { equals: funcao as any }
-            : { notIn: ['ALUNO'] as any[] },
+          funcao: funcao ? { equals: funcao as any } : { notIn: ['ALUNO'] as any[] },
         },
       })
     } catch (error) {
@@ -223,7 +219,10 @@ export class AuthRepository {
   /**
    * Atualiza dados básicos de um usuário
    */
-  async updateDados(usuarioId: string, dados: { nomeCompleto?: string; telefone?: string | null; email?: string; senhaHash?: string }): Promise<Usuario> {
+  async updateDados(
+    usuarioId: string,
+    dados: { nomeCompleto?: string; telefone?: string | null; email?: string; senhaHash?: string },
+  ): Promise<Usuario> {
     try {
       logDebug('Atualizando dados do usuário', { usuarioId })
       const usuario = await prisma.usuario.update({

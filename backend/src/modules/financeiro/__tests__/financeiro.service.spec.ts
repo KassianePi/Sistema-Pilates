@@ -42,14 +42,19 @@ describe('FinanceiroService', () => {
 
     it('deve registrar pagamento sem depender de caixa aberto', async () => {
       mockRepo.findMensalidadeById.mockResolvedValue({
-        id: MENS_ID, status: 'PENDENTE', alunoId: 'a-1',
-        valor: { toNumber: () => 200 }, desconto: { toNumber: () => 0 },
+        id: MENS_ID,
+        status: 'PENDENTE',
+        alunoId: 'a-1',
+        valor: { toNumber: () => 200 },
+        desconto: { toNumber: () => 0 },
       })
       mockRepo.createPagamento.mockResolvedValue({ id: 'p-1' })
       mockRepo.updateMensalidadeStatus.mockResolvedValue({ id: MENS_ID, status: 'PAGO' })
 
       const result = await service.registrarPagamento('usuario-1', {
-        mensalidadeId: MENS_ID, valor: 200, metodo: 'PIX',
+        mensalidadeId: MENS_ID,
+        valor: 200,
+        metodo: 'PIX',
       })
 
       expect(result.id).toBe('p-1')
@@ -61,19 +66,30 @@ describe('FinanceiroService', () => {
 
     it('deve lançar erro se mensalidade não encontrada', async () => {
       mockRepo.findMensalidadeById.mockResolvedValue(null)
-      await expect(service.registrarPagamento('usuario-1', {
-        mensalidadeId: MENS_ID, valor: 200, metodo: 'PIX',
-      })).rejects.toThrow()
+      await expect(
+        service.registrarPagamento('usuario-1', {
+          mensalidadeId: MENS_ID,
+          valor: 200,
+          metodo: 'PIX',
+        }),
+      ).rejects.toThrow()
     })
 
     it('deve lançar erro se mensalidade já paga', async () => {
       mockRepo.findMensalidadeById.mockResolvedValue({
-        id: MENS_ID, status: 'PAGO', alunoId: 'a-1',
-        valor: { toNumber: () => 200 }, desconto: { toNumber: () => 0 },
+        id: MENS_ID,
+        status: 'PAGO',
+        alunoId: 'a-1',
+        valor: { toNumber: () => 200 },
+        desconto: { toNumber: () => 0 },
       })
-      await expect(service.registrarPagamento('usuario-1', {
-        mensalidadeId: MENS_ID, valor: 200, metodo: 'PIX',
-      })).rejects.toThrow('paga')
+      await expect(
+        service.registrarPagamento('usuario-1', {
+          mensalidadeId: MENS_ID,
+          valor: 200,
+          metodo: 'PIX',
+        }),
+      ).rejects.toThrow('paga')
     })
   })
 })

@@ -63,7 +63,14 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
   })
   const modalidades = modalidadesData ?? []
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues: { tipo: 'GRUPO', categoria: 'GERAL', capacidade: 8 },
   })
@@ -83,14 +90,25 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
         observacoes: aula.observacoes ?? '',
       })
     } else {
-      reset({ professorId: '', sala: '', data: '', horaInicio: '', horaFim: '', capacidade: 8, tipo: 'GRUPO', categoria: 'GERAL', modalidadeId: null, observacoes: '' })
+      reset({
+        professorId: '',
+        sala: '',
+        data: '',
+        horaInicio: '',
+        horaFim: '',
+        capacidade: 8,
+        tipo: 'GRUPO',
+        categoria: 'GERAL',
+        modalidadeId: null,
+        observacoes: '',
+      })
     }
   }, [aula, reset, open])
 
   function calcDuracao(horaInicio: string, horaFim: string): number {
     const [hi, mi] = horaInicio.split(':').map(Number)
     const [hf, mf] = horaFim.split(':').map(Number)
-    return Math.max(15, (hf * 60 + mf) - (hi * 60 + mi))
+    return Math.max(15, hf * 60 + mf - (hi * 60 + mi))
   }
 
   async function onSubmit(values: FormData) {
@@ -103,7 +121,16 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
     if (isEditing && aula) {
       await updateAula.mutateAsync({
         id: aula.id,
-        dto: { dataHoraInicio, duracao, capacidade: values.capacidade, sala: values.sala, tipo: values.tipo, categoria: values.categoria, modalidadeId: values.modalidadeId, observacoes: values.observacoes },
+        dto: {
+          dataHoraInicio,
+          duracao,
+          capacidade: values.capacidade,
+          sala: values.sala,
+          tipo: values.tipo,
+          categoria: values.categoria,
+          modalidadeId: values.modalidadeId,
+          observacoes: values.observacoes,
+        },
       })
     } else {
       const novaAula = await createAula.mutateAsync({
@@ -136,14 +163,22 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5 sm:col-span-2">
               <Label>Professor *</Label>
-              <Select value={watch('professorId')} onValueChange={(v) => setValue('professorId', v)} disabled={isEditing}>
+              <Select
+                value={watch('professorId')}
+                onValueChange={(v) => setValue('professorId', v)}
+                disabled={isEditing}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione um professor" />
                 </SelectTrigger>
                 <SelectContent>
-                  {professores.filter(p => p.status === 'ATIVO').map((p) => (
-                    <SelectItem key={p.id} value={p.id}>{p.usuario.nomeCompleto}</SelectItem>
-                  ))}
+                  {professores
+                    .filter((p) => p.status === 'ATIVO')
+                    .map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.usuario.nomeCompleto}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {errors.professorId && <p className="text-xs text-red-600">{errors.professorId.message}</p>}
@@ -184,16 +219,27 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
             <div className="space-y-1.5">
               <Label>Tipo *</Label>
               <Select value={watch('tipo')} onValueChange={(v) => setValue('tipo', v as FormData['tipo'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {TIPOS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                  {TIPOS.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1.5">
               <Label>Categoria *</Label>
-              <Select value={watch('categoria')} onValueChange={(v) => setValue('categoria', v as FormData['categoria'])}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+              <Select
+                value={watch('categoria')}
+                onValueChange={(v) => setValue('categoria', v as FormData['categoria'])}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="GERAL">Geral (grade regular)</SelectItem>
                   <SelectItem value="SOB_DEMANDA">Sob demanda (particular/reposição)</SelectItem>
@@ -202,16 +248,15 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
             </div>
             <div className="space-y-1.5">
               <Label>Modalidade</Label>
-              <Select
-                value={watch('modalidadeId') ?? ''}
-                onValueChange={(v) => setValue('modalidadeId', v || null)}
-              >
+              <Select value={watch('modalidadeId') ?? ''} onValueChange={(v) => setValue('modalidadeId', v || null)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione uma modalidade" />
                 </SelectTrigger>
                 <SelectContent>
-                  {modalidades.map(m => (
-                    <SelectItem key={m.id} value={m.id}>{m.nome}</SelectItem>
+                  {modalidades.map((m) => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.nome}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -231,14 +276,21 @@ export function AulaFormModal({ open, onClose, aula }: Props) {
             </div>
           ) : (
             <div className="space-y-1.5 border-t border-bege-cartao pt-4">
-              <Label>Matricular alunos <span className="text-cinza-medio text-xs font-normal">(opcional)</span></Label>
+              <Label>
+                Matricular alunos <span className="text-cinza-medio text-xs font-normal">(opcional)</span>
+              </Label>
               <SeletorAlunos value={matriculados} onChange={setMatriculados} capacidade={watch('capacidade') || 0} />
             </div>
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose}>Cancelar</Button>
-            <Button type="submit" disabled={isSubmitting || createAula.isPending || updateAula.isPending || matricular.isPending}>
+            <Button type="button" variant="outline" onClick={handleClose}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting || createAula.isPending || updateAula.isPending || matricular.isPending}
+            >
               {isEditing ? 'Salvar alterações' : 'Agendar aula'}
             </Button>
           </DialogFooter>

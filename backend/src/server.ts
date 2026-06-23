@@ -54,9 +54,7 @@ async function start() {
   }
 }
 
-import { fileURLToPath } from 'url'
-
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (require.main === module) {
   start()
 }
 

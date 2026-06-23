@@ -2,8 +2,11 @@ import { FinanceiroRepository } from './financeiro.repository'
 import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo } from '../../shared/utils'
 import {
-  createMensalidadeSchema, updateMensalidadeSchema, listMensalidadesSchema,
-  createPagamentoSchema, listPagamentosSchema,
+  createMensalidadeSchema,
+  updateMensalidadeSchema,
+  listMensalidadesSchema,
+  createPagamentoSchema,
+  listPagamentosSchema,
 } from '../../shared/schemas'
 import { FINANCEIRO_ERRORS } from './financeiro.constants'
 import { prisma } from '../../database/prisma.client'
@@ -17,7 +20,16 @@ export class FinanceiroService {
 
   // ===================== MENSALIDADES =====================
 
-  async criarMensalidade(data: { alunoId: string; planoId?: string | null; tipo?: string; mesReferencia: string; dataVencimento: string; valor: number; desconto?: number; observacoes?: string | null }): Promise<Mensalidade> {
+  async criarMensalidade(data: {
+    alunoId: string
+    planoId?: string | null
+    tipo?: string
+    mesReferencia: string
+    dataVencimento: string
+    valor: number
+    desconto?: number
+    observacoes?: string | null
+  }): Promise<Mensalidade> {
     const validado = createMensalidadeSchema.parse(data)
 
     const aluno = await prisma.aluno.findUnique({ where: { id: validado.alunoId } })
@@ -44,7 +56,9 @@ export class FinanceiroService {
 
     // Notifica o aluno sobre a nova cobrança
     try {
-      const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(mensalidade.valor) - Number(mensalidade.desconto ?? 0))
+      const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+        Number(mensalidade.valor) - Number(mensalidade.desconto ?? 0),
+      )
       const vencFmt = new Date(mensalidade.dataVencimento).toLocaleDateString('pt-BR')
       const descricao = mensalidade.tipo === 'AVULSO' ? 'aula avulsa' : 'mensalidade'
       await notificacoesService.criar({
@@ -53,19 +67,23 @@ export class FinanceiroService {
         titulo: 'Nova cobrança disponível',
         mensagem: `Foi gerada uma cobrança de ${descricao} no valor de ${valorFmt}, com vencimento em ${vencFmt}. Pague e envie o comprovante pelo portal.`,
       })
-    } catch { /* silencioso */ }
+    } catch {
+      /* silencioso */
+    }
 
     if (mensalidade.tipo === 'AVULSO') {
       const aluno = await prisma.aluno.findUnique({
         where: { id: mensalidade.alunoId },
-        include: { usuario: { select: { nomeCompleto: true } } }
+        include: { usuario: { select: { nomeCompleto: true } } },
       })
       const nomeAluno = aluno?.usuario?.nomeCompleto ?? 'Aluno'
-      const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(mensalidade.valor))
+      const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
+        Number(mensalidade.valor),
+      )
       const dataVenc = new Date(mensalidade.dataVencimento).toLocaleDateString('pt-BR')
       await notificacoesService.notificarAdmins(
         'Cobrança avulsa criada',
-        `Uma nova cobrança avulsa no valor de ${valorFmt} foi criada para o aluno ${nomeAluno} com vencimento em ${dataVenc}.`
+        `Uma nova cobrança avulsa no valor de ${valorFmt} foi criada para o aluno ${nomeAluno} com vencimento em ${dataVenc}.`,
       )
     }
 
@@ -78,7 +96,16 @@ export class FinanceiroService {
     return mensalidade
   }
 
-  async listarMensalidades(params: { alunoId?: string; planoId?: string; tipo?: string; status?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
+  async listarMensalidades(params: {
+    alunoId?: string
+    planoId?: string
+    tipo?: string
+    status?: string
+    dataInicio?: string
+    dataFim?: string
+    page?: number
+    limit?: number
+  }) {
     const validado = listMensalidadesSchema.parse(params)
     const { mensalidades, total } = await this.repository.findMensalidades({
       alunoId: validado.alunoId,
@@ -90,10 +117,19 @@ export class FinanceiroService {
       page: validado.page,
       limit: validado.limit,
     })
-    return { mensalidades, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
+    return {
+      mensalidades,
+      total,
+      page: validado.page,
+      limit: validado.limit,
+      totalPages: Math.ceil(total / validado.limit),
+    }
   }
 
-  async atualizarMensalidade(id: string, data: { dataVencimento?: string; valor?: number; desconto?: number; status?: string; observacoes?: string | null }): Promise<Mensalidade> {
+  async atualizarMensalidade(
+    id: string,
+    data: { dataVencimento?: string; valor?: number; desconto?: number; status?: string; observacoes?: string | null },
+  ): Promise<Mensalidade> {
     const mensalidade = await this.buscarMensalidadePorId(id)
     if (mensalidade.status === 'PAGO') throw AppError.badRequest(FINANCEIRO_ERRORS.MENSALIDADE_JA_PAGA)
 
@@ -115,7 +151,18 @@ export class FinanceiroService {
 
   // ===================== PAGAMENTOS =====================
 
-  async registrarPagamento(usuarioId: string, data: { mensalidadeId: string; caixaId?: string | null; valor: number; metodo: string; dataPagamento?: string; referencia?: string | null; observacoes?: string | null }): Promise<Pagamento> {
+  async registrarPagamento(
+    usuarioId: string,
+    data: {
+      mensalidadeId: string
+      caixaId?: string | null
+      valor: number
+      metodo: string
+      dataPagamento?: string
+      referencia?: string | null
+      observacoes?: string | null
+    },
+  ): Promise<Pagamento> {
     const validado = createPagamentoSchema.parse(data)
 
     // Operações financeiras não dependem mais de caixa aberto: o pagamento é
@@ -140,13 +187,25 @@ export class FinanceiroService {
     const novoStatus = validado.valor >= valorTotal ? 'PAGO' : 'PARCIAL'
     await this.repository.updateMensalidadeStatus(mensalidade.id, novoStatus)
 
-    eventBus.emit('pagamento.realizado', { pagamentoId: pagamento.id, alunoId: mensalidade.alunoId, valor: validado.valor })
+    eventBus.emit('pagamento.realizado', {
+      pagamentoId: pagamento.id,
+      alunoId: mensalidade.alunoId,
+      valor: validado.valor,
+    })
     logInfo('Pagamento registrado', { id: pagamento.id })
     await registrarLog({ usuarioId, acao: 'CREATE', entidade: 'Pagamento', entidadeId: pagamento.id })
     return pagamento
   }
 
-  async listarPagamentos(params: { mensalidadeId?: string; caixaId?: string; metodo?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
+  async listarPagamentos(params: {
+    mensalidadeId?: string
+    caixaId?: string
+    metodo?: string
+    dataInicio?: string
+    dataFim?: string
+    page?: number
+    limit?: number
+  }) {
     const validado = listPagamentosSchema.parse(params)
     const { pagamentos, total } = await this.repository.findPagamentos({
       mensalidadeId: validado.mensalidadeId,
@@ -157,7 +216,13 @@ export class FinanceiroService {
       page: validado.page,
       limit: validado.limit,
     })
-    return { pagamentos, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
+    return {
+      pagamentos,
+      total,
+      page: validado.page,
+      limit: validado.limit,
+      totalPages: Math.ceil(total / validado.limit),
+    }
   }
 }
 

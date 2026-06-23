@@ -12,7 +12,16 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useUsuarios, useCriarUsuario, useAtualizarUsuario, useAlterarStatusUsuario } from '../hooks/useUsuarios'
 import { useAuth } from '@/hooks/useAuth'
 import type { UsuarioSistema } from '@/services/usuarios.service'
@@ -40,24 +49,34 @@ function formatarData(d: string) {
 
 // ── Schemas ──────────────────────────────────────────────────────────────────
 
-const criarSchema = z.object({
-  nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-  email: z.string().email('Email inválido'),
-  cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
-  telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
-  funcao: z.enum(['ADMIN', 'RECEPCIONISTA', 'PROFESSOR', 'FINANCEIRO'] as const),
-  senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
-  senhaConfirmacao: z.string().min(6),
-}).refine(d => d.senha === d.senhaConfirmacao, {
-  message: 'Senhas não conferem',
-  path: ['senhaConfirmacao'],
-})
+const criarSchema = z
+  .object({
+    nome: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
+    email: z.string().email('Email inválido'),
+    cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
+    telefone: z
+      .string()
+      .regex(/^\d{10,11}$/, 'Telefone inválido')
+      .optional()
+      .or(z.literal('')),
+    funcao: z.enum(['ADMIN', 'RECEPCIONISTA', 'PROFESSOR', 'FINANCEIRO'] as const),
+    senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
+    senhaConfirmacao: z.string().min(6),
+  })
+  .refine((d) => d.senha === d.senhaConfirmacao, {
+    message: 'Senhas não conferem',
+    path: ['senhaConfirmacao'],
+  })
 
 const editarSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
   email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres').optional().or(z.literal('')),
-  telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
+  telefone: z
+    .string()
+    .regex(/^\d{10,11}$/, 'Telefone inválido')
+    .optional()
+    .or(z.literal('')),
 })
 
 type CriarForm = z.infer<typeof criarSchema>
@@ -94,12 +113,16 @@ function ModalCriar({ open, onClose }: { open: boolean; onClose: () => void }) {
             <div className="col-span-2 space-y-1.5">
               <Label>Nome completo *</Label>
               <Input placeholder="João Silva" {...form.register('nome')} />
-              {form.formState.errors.nome && <p className="text-xs text-rosa-vibrante">{form.formState.errors.nome.message}</p>}
+              {form.formState.errors.nome && (
+                <p className="text-xs text-rosa-vibrante">{form.formState.errors.nome.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Email *</Label>
               <Input type="email" placeholder="joao@pilates.local" {...form.register('email')} />
-              {form.formState.errors.email && <p className="text-xs text-rosa-vibrante">{form.formState.errors.email.message}</p>}
+              {form.formState.errors.email && (
+                <p className="text-xs text-rosa-vibrante">{form.formState.errors.email.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>CPF *</Label>
@@ -115,7 +138,9 @@ function ModalCriar({ open, onClose }: { open: boolean; onClose: () => void }) {
                   />
                 )}
               />
-              {form.formState.errors.cpf && <p className="text-xs text-rosa-vibrante">{form.formState.errors.cpf.message}</p>}
+              {form.formState.errors.cpf && (
+                <p className="text-xs text-rosa-vibrante">{form.formState.errors.cpf.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Telefone</Label>
@@ -131,7 +156,9 @@ function ModalCriar({ open, onClose }: { open: boolean; onClose: () => void }) {
                   />
                 )}
               />
-              {form.formState.errors.telefone && <p className="text-xs text-rosa-vibrante">{form.formState.errors.telefone.message}</p>}
+              {form.formState.errors.telefone && (
+                <p className="text-xs text-rosa-vibrante">{form.formState.errors.telefone.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Função *</Label>
@@ -141,25 +168,35 @@ function ModalCriar({ open, onClose }: { open: boolean; onClose: () => void }) {
                 </SelectTrigger>
                 <SelectContent>
                   {(Object.keys(FUNCAO_LABEL) as FuncaoSistema[]).map((f) => (
-                    <SelectItem key={f} value={f}>{FUNCAO_LABEL[f]}</SelectItem>
+                    <SelectItem key={f} value={f}>
+                      {FUNCAO_LABEL[f]}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
-              {form.formState.errors.funcao && <p className="text-xs text-rosa-vibrante">{form.formState.errors.funcao.message}</p>}
+              {form.formState.errors.funcao && (
+                <p className="text-xs text-rosa-vibrante">{form.formState.errors.funcao.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Senha *</Label>
               <Input type="password" placeholder="Mínimo 6 caracteres" {...form.register('senha')} />
-              {form.formState.errors.senha && <p className="text-xs text-rosa-vibrante">{form.formState.errors.senha.message}</p>}
+              {form.formState.errors.senha && (
+                <p className="text-xs text-rosa-vibrante">{form.formState.errors.senha.message}</p>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Confirmar senha *</Label>
               <Input type="password" placeholder="Repita a senha" {...form.register('senhaConfirmacao')} />
-              {form.formState.errors.senhaConfirmacao && <p className="text-xs text-rosa-vibrante">{form.formState.errors.senhaConfirmacao.message}</p>}
+              {form.formState.errors.senhaConfirmacao && (
+                <p className="text-xs text-rosa-vibrante">{form.formState.errors.senhaConfirmacao.message}</p>
+              )}
             </div>
           </div>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
             <Button type="submit" disabled={criar.isPending}>
               {criar.isPending ? 'Criando...' : 'Criar usuário'}
             </Button>
@@ -207,17 +244,25 @@ function ModalEditar({ usuario, onClose }: { usuario: UsuarioSistema; onClose: (
           <div className="space-y-1.5">
             <Label>Nome completo *</Label>
             <Input {...form.register('nomeCompleto')} />
-            {form.formState.errors.nomeCompleto && <p className="text-xs text-rosa-vibrante">{form.formState.errors.nomeCompleto.message}</p>}
+            {form.formState.errors.nomeCompleto && (
+              <p className="text-xs text-rosa-vibrante">{form.formState.errors.nomeCompleto.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>E-mail</Label>
             <Input type="email" {...form.register('email')} />
-            {form.formState.errors.email && <p className="text-xs text-rosa-vibrante">{form.formState.errors.email.message}</p>}
+            {form.formState.errors.email && (
+              <p className="text-xs text-rosa-vibrante">{form.formState.errors.email.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
-            <Label>Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span></Label>
+            <Label>
+              Nova senha <span className="text-cinza-medio text-xs">(deixe vazio para não alterar)</span>
+            </Label>
             <Input type="password" placeholder="Mínimo 6 caracteres" {...form.register('senha')} />
-            {form.formState.errors.senha && <p className="text-xs text-rosa-vibrante">{form.formState.errors.senha.message}</p>}
+            {form.formState.errors.senha && (
+              <p className="text-xs text-rosa-vibrante">{form.formState.errors.senha.message}</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>Telefone</Label>
@@ -233,11 +278,15 @@ function ModalEditar({ usuario, onClose }: { usuario: UsuarioSistema; onClose: (
                 />
               )}
             />
-            {form.formState.errors.telefone && <p className="text-xs text-rosa-vibrante">{form.formState.errors.telefone.message}</p>}
+            {form.formState.errors.telefone && (
+              <p className="text-xs text-rosa-vibrante">{form.formState.errors.telefone.message}</p>
+            )}
           </div>
           <p className="text-xs text-cinza-medio">Email, CPF e função não podem ser alterados por aqui.</p>
           <div className="flex justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
             <Button type="submit" disabled={atualizar.isPending}>
               {atualizar.isPending ? 'Salvando...' : 'Salvar'}
             </Button>
@@ -265,8 +314,7 @@ export function UsuariosPage() {
 
   const usuarios = (data?.data ?? []).filter((u) =>
     busca
-      ? u.nome.toLowerCase().includes(busca.toLowerCase()) ||
-        u.email.toLowerCase().includes(busca.toLowerCase())
+      ? u.nome.toLowerCase().includes(busca.toLowerCase()) || u.email.toLowerCase().includes(busca.toLowerCase())
       : true,
   )
 
@@ -294,7 +342,10 @@ export function UsuariosPage() {
             onChange={(e) => setBusca(e.target.value)}
           />
           {busca && (
-            <button onClick={() => setBusca('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-cinza-medio hover:text-cinza-forte">
+            <button
+              onClick={() => setBusca('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-cinza-medio hover:text-cinza-forte"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
@@ -306,7 +357,9 @@ export function UsuariosPage() {
           <SelectContent>
             <SelectItem value="all">Todas as funções</SelectItem>
             {(Object.keys(FUNCAO_LABEL) as FuncaoSistema[]).map((f) => (
-              <SelectItem key={f} value={f}>{FUNCAO_LABEL[f]}</SelectItem>
+              <SelectItem key={f} value={f}>
+                {FUNCAO_LABEL[f]}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -366,11 +419,7 @@ export function UsuariosPage() {
                       <TableCell className="text-cinza-texto text-sm">{formatarData(u.criadoEm)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-2">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => setEditando(u)}
-                          >
+                          <Button size="sm" variant="outline" onClick={() => setEditando(u)}>
                             <Pencil className="w-3.5 h-3.5" />
                           </Button>
                           {!isSelf && (
@@ -380,9 +429,11 @@ export function UsuariosPage() {
                               onClick={() => setConfirmandoStatus({ usuario: u, ativo: u.status === 'INATIVO' })}
                               title={u.status === 'ATIVO' ? 'Inativar' : 'Reativar'}
                             >
-                              {u.status === 'ATIVO'
-                                ? <UserX className="w-3.5 h-3.5 text-rosa-vibrante" />
-                                : <UserCheck className="w-3.5 h-3.5 text-green-600" />}
+                              {u.status === 'ATIVO' ? (
+                                <UserX className="w-3.5 h-3.5 text-rosa-vibrante" />
+                              ) : (
+                                <UserCheck className="w-3.5 h-3.5 text-green-600" />
+                              )}
                             </Button>
                           )}
                         </div>
@@ -406,9 +457,7 @@ export function UsuariosPage() {
       <AlertDialog open={!!confirmandoStatus} onOpenChange={(v) => !v && setConfirmandoStatus(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {confirmandoStatus?.ativo ? 'Reativar usuário' : 'Inativar usuário'}
-            </AlertDialogTitle>
+            <AlertDialogTitle>{confirmandoStatus?.ativo ? 'Reativar usuário' : 'Inativar usuário'}</AlertDialogTitle>
             <AlertDialogDescription>
               {confirmandoStatus?.ativo
                 ? `Deseja reativar "${confirmandoStatus.usuario.nome}"? O acesso ao sistema será restaurado.`

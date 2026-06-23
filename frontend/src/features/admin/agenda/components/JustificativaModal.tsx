@@ -24,7 +24,13 @@ const MIN_CHARS = 5
  * para que o estado nasça limpo a cada abertura — sem efeito de reset.
  */
 export function JustificativaModal({
-  onClose, titulo, descricao, confirmLabel, destructive, pending, onConfirm,
+  onClose,
+  titulo,
+  descricao,
+  confirmLabel,
+  destructive,
+  pending,
+  onConfirm,
 }: JustificativaModalProps) {
   const [justificativa, setJustificativa] = useState('')
   const [tocado, setTocado] = useState(false)
@@ -45,7 +51,9 @@ export function JustificativaModal({
         </DialogHeader>
         {descricao && <p className="text-sm text-cinza-texto -mt-1">{descricao}</p>}
         <div className="space-y-1.5 mt-2">
-          <Label>Justificativa <span className="text-rosa-vibrante">*</span></Label>
+          <Label>
+            Justificativa <span className="text-rosa-vibrante">*</span>
+          </Label>
           <Textarea
             rows={3}
             value={justificativa}
@@ -58,7 +66,9 @@ export function JustificativaModal({
           )}
         </div>
         <DialogFooter className="mt-2">
-          <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button
             type="button"
             variant={destructive ? 'destructive' : 'default'}

@@ -10,7 +10,7 @@ const includeUsuario = {
 export class ProfessoresRepository {
   async findById(id: string): Promise<Professor | null> {
     try {
-      return await prisma.professor.findUnique({ where: { id }, include: includeUsuario }) as any
+      return (await prisma.professor.findUnique({ where: { id }, include: includeUsuario })) as any
     } catch (error) {
       logError('Erro ao buscar professor por ID', error as Error, { id })
       throw AppError.internal('Erro ao buscar professor')
@@ -19,14 +19,19 @@ export class ProfessoresRepository {
 
   async findByUsuarioId(usuarioId: string): Promise<Professor | null> {
     try {
-      return await prisma.professor.findUnique({ where: { usuarioId }, include: includeUsuario }) as any
+      return (await prisma.professor.findUnique({ where: { usuarioId }, include: includeUsuario })) as any
     } catch (error) {
       logError('Erro ao buscar professor por usuarioId', error as Error, { usuarioId })
       throw AppError.internal('Erro ao buscar professor')
     }
   }
 
-  async findAll(params: { status?: string; search?: string; page: number; limit: number }): Promise<{ professores: Professor[]; total: number }> {
+  async findAll(params: {
+    status?: string
+    search?: string
+    page: number
+    limit: number
+  }): Promise<{ professores: Professor[]; total: number }> {
     try {
       const { status, search, page, limit } = params
       const where: Record<string, unknown> = {}
@@ -113,7 +118,7 @@ export class ProfessoresRepository {
         })
       })
 
-      return await this.findById(id) as Professor
+      return (await this.findById(id)) as Professor
     } catch (error) {
       if (error instanceof AppError) throw error
       logError('Erro ao atualizar professor', error as Error, { id })

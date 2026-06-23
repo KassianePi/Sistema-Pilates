@@ -1,7 +1,14 @@
 import { AgendaRepository } from './agenda.repository'
 import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo } from '../../shared/utils'
-import { createAulaSchema, updateAulaSchema, listAulasSchema, justificativaAulaSchema, reagendarAulaSchema, matricularAulaSchema } from '../../shared/schemas'
+import {
+  createAulaSchema,
+  updateAulaSchema,
+  listAulasSchema,
+  justificativaAulaSchema,
+  reagendarAulaSchema,
+  matricularAulaSchema,
+} from '../../shared/schemas'
 import { AGENDA_ERRORS } from './agenda.constants'
 import { prisma } from '../../database/prisma.client'
 import { eventBus } from '../../events/event-bus'
@@ -15,8 +22,15 @@ export class AgendaService {
   constructor(private repository: AgendaRepository) {}
 
   async criar(data: {
-    professorId: string; dataHoraInicio: string; duracao?: number
-    capacidade?: number; sala: string; tipo?: string; categoria?: string; modalidadeId?: string | null; observacoes?: string | null
+    professorId: string
+    dataHoraInicio: string
+    duracao?: number
+    capacidade?: number
+    sala: string
+    tipo?: string
+    categoria?: string
+    modalidadeId?: string | null
+    observacoes?: string | null
   }): Promise<Aula> {
     const validado = createAulaSchema.parse(data)
 
@@ -56,7 +70,17 @@ export class AgendaService {
     return aula
   }
 
-  async listar(params: { professorId?: string; status?: string; tipo?: string; categoria?: string; modalidadeId?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
+  async listar(params: {
+    professorId?: string
+    status?: string
+    tipo?: string
+    categoria?: string
+    modalidadeId?: string
+    dataInicio?: string
+    dataFim?: string
+    page?: number
+    limit?: number
+  }) {
     const validado = listAulasSchema.parse(params)
     const { aulas, total } = await this.repository.findAll({
       professorId: validado.professorId,
@@ -110,7 +134,10 @@ export class AgendaService {
     if (validado.capacidade !== undefined) {
       const matriculados = await this.repository.countInscricoesAtivas(id)
       if (validado.capacidade < matriculados) {
-        throw ValidationError.forField('capacidade', `A aula já tem ${matriculados} aluno(s) matriculado(s). Reduza as matrículas antes de diminuir a capacidade.`)
+        throw ValidationError.forField(
+          'capacidade',
+          `A aula já tem ${matriculados} aluno(s) matriculado(s). Reduza as matrículas antes de diminuir a capacidade.`,
+        )
       }
     }
 
@@ -130,7 +157,11 @@ export class AgendaService {
     if (validado.status === 'CANCELADA') {
       eventBus.emit('aula.cancelada', { id: aula.id })
       const dataFmt = aulaAtual.dataHoraInicio.toLocaleDateString('pt-BR')
-      await notificacoesService.notificarAdmins('Aula cancelada', `A aula do dia ${dataFmt} foi cancelada.`).catch(() => {/* silencioso */})
+      await notificacoesService
+        .notificarAdmins('Aula cancelada', `A aula do dia ${dataFmt} foi cancelada.`)
+        .catch(() => {
+          /* silencioso */
+        })
     }
 
     logInfo('Aula atualizada', { id })
@@ -144,7 +175,10 @@ export class AgendaService {
    */
   private async notificarEnvolvidos(
     aula: { id: string; categoria: string },
-    tituloAluno: string, mensagemAluno: string, tituloAdmin: string, mensagemAdmin: string,
+    tituloAluno: string,
+    mensagemAluno: string,
+    tituloAdmin: string,
+    mensagemAdmin: string,
   ): Promise<void> {
     try {
       let usuarioIds: string[]
@@ -164,7 +198,9 @@ export class AgendaService {
         ),
       )
       await notificacoesService.notificarAdmins(tituloAdmin, mensagemAdmin)
-    } catch { /* notificação não deve bloquear a operação principal */ }
+    } catch {
+      /* notificação não deve bloquear a operação principal */
+    }
   }
 
   async cancelar(id: string, usuarioId: string, data: { justificativa: string }): Promise<Aula> {
@@ -175,7 +211,10 @@ export class AgendaService {
     const { justificativa } = justificativaAulaSchema.parse(data)
 
     const aula = await this.repository.update(id, {
-      status: 'CANCELADA', justificativa, statusAlteradoEm: new Date(), statusAlteradoPorId: usuarioId,
+      status: 'CANCELADA',
+      justificativa,
+      statusAlteradoEm: new Date(),
+      statusAlteradoPorId: usuarioId,
     })
     eventBus.emit('aula.cancelada', { id: aula.id })
     logInfo('Aula cancelada', { id })
@@ -199,7 +238,10 @@ export class AgendaService {
     const { justificativa } = justificativaAulaSchema.parse(data)
 
     const aula = await this.repository.update(id, {
-      status: 'SUSPENSA', justificativa, statusAlteradoEm: new Date(), statusAlteradoPorId: usuarioId,
+      status: 'SUSPENSA',
+      justificativa,
+      statusAlteradoEm: new Date(),
+      statusAlteradoPorId: usuarioId,
     })
     logInfo('Aula suspensa', { id })
 
@@ -214,7 +256,11 @@ export class AgendaService {
     return aula
   }
 
-  async reagendar(id: string, usuarioId: string, data: { dataHoraInicio: string; justificativa: string }): Promise<Aula> {
+  async reagendar(
+    id: string,
+    usuarioId: string,
+    data: { dataHoraInicio: string; justificativa: string },
+  ): Promise<Aula> {
     const aulaAtual = await this.buscarPorId(id)
     if (STATUS_ENCERRADOS.includes(aulaAtual.status)) {
       throw AppError.badRequest(AGENDA_ERRORS.AULA_ENCERRADA)
@@ -257,7 +303,10 @@ export class AgendaService {
     const { justificativa } = justificativaAulaSchema.parse(data)
 
     const aula = await this.repository.update(id, {
-      status: 'EXCLUIDA', justificativa, statusAlteradoEm: new Date(), statusAlteradoPorId: usuarioId,
+      status: 'EXCLUIDA',
+      justificativa,
+      statusAlteradoEm: new Date(),
+      statusAlteradoPorId: usuarioId,
     })
     logInfo('Aula excluída (soft delete)', { id })
 
@@ -286,7 +335,10 @@ export class AgendaService {
     }
     const { alunoIds } = matricularAulaSchema.parse(data)
     if (alunoIds.length > aula.capacidade) {
-      throw ValidationError.forField('alunoIds', `Capacidade da aula é ${aula.capacidade}. Selecione no máximo ${aula.capacidade} aluno(s).`)
+      throw ValidationError.forField(
+        'alunoIds',
+        `Capacidade da aula é ${aula.capacidade}. Selecione no máximo ${aula.capacidade} aluno(s).`,
+      )
     }
     await this.repository.setInscricoes(aulaId, alunoIds)
     logInfo('Matrículas atualizadas', { aulaId, total: alunoIds.length })

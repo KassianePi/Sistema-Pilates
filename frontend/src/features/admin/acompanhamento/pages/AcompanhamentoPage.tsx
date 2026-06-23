@@ -1,6 +1,16 @@
 import { useState } from 'react'
-import { HeartPulse, Search, X, AlertTriangle, TrendingDown, CheckCircle2, CalendarDays, Clock, User } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  HeartPulse,
+  Search,
+  X,
+  AlertTriangle,
+  TrendingDown,
+  CheckCircle2,
+  CalendarDays,
+  Clock,
+  User,
+} from 'lucide-react'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -40,9 +50,30 @@ export function AcompanhamentoPage() {
   const resumo = data?.resumo
 
   const cards = [
-    { key: 'EM_RISCO' as const, label: 'Em risco de evasão', valor: resumo?.emRisco ?? 0, Icon: TrendingDown, cor: 'text-rosa-vibrante', borda: 'border-rosa-vibrante/30' },
-    { key: 'ATENCAO' as const, label: 'Requer atenção', valor: resumo?.atencao ?? 0, Icon: AlertTriangle, cor: 'text-amber-600', borda: 'border-amber-200' },
-    { key: 'OK' as const, label: 'Em dia', valor: resumo?.ok ?? 0, Icon: CheckCircle2, cor: 'text-green-600', borda: 'border-green-200' },
+    {
+      key: 'EM_RISCO' as const,
+      label: 'Em risco de evasão',
+      valor: resumo?.emRisco ?? 0,
+      Icon: TrendingDown,
+      cor: 'text-rosa-vibrante',
+      borda: 'border-rosa-vibrante/30',
+    },
+    {
+      key: 'ATENCAO' as const,
+      label: 'Requer atenção',
+      valor: resumo?.atencao ?? 0,
+      Icon: AlertTriangle,
+      cor: 'text-amber-600',
+      borda: 'border-amber-200',
+    },
+    {
+      key: 'OK' as const,
+      label: 'Em dia',
+      valor: resumo?.ok ?? 0,
+      Icon: CheckCircle2,
+      cor: 'text-green-600',
+      borda: 'border-green-200',
+    },
   ]
 
   return (
@@ -51,7 +82,9 @@ export function AcompanhamentoPage() {
         <h1 className="text-2xl font-bold text-cinza-forte flex items-center gap-2">
           <HeartPulse className="w-6 h-6 text-rosa-vibrante" /> Acompanhamento de Alunos
         </h1>
-        <p className="text-sm text-cinza-texto mt-1">Frequência, situação financeira e risco de evasão — para agir na retenção.</p>
+        <p className="text-sm text-cinza-texto mt-1">
+          Frequência, situação financeira e risco de evasão — para agir na retenção.
+        </p>
       </div>
 
       {/* Cards de resumo (clicáveis para filtrar) */}
@@ -88,11 +121,22 @@ export function AcompanhamentoPage() {
               />
             </div>
             {(filtroRisco || busca) && (
-              <Button variant="ghost" size="sm" onClick={() => { setFiltroRisco(''); setBusca('') }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFiltroRisco('')
+                  setBusca('')
+                }}
+              >
                 <X className="w-3 h-3 mr-1" /> Limpar filtros
               </Button>
             )}
-            {data && <span className="text-sm text-cinza-medio ml-auto">{alunos.length} aluno{alunos.length !== 1 ? 's' : ''}</span>}
+            {data && (
+              <span className="text-sm text-cinza-medio ml-auto">
+                {alunos.length} aluno{alunos.length !== 1 ? 's' : ''}
+              </span>
+            )}
           </div>
         </CardHeader>
 
@@ -118,7 +162,11 @@ export function AcompanhamentoPage() {
               </TableHeader>
               <TableBody>
                 {alunos.map((a) => (
-                  <TableRow key={a.id} className="cursor-pointer hover:bg-bege-suave/60" onClick={() => setAlunoSelecionado(a.id)}>
+                  <TableRow
+                    key={a.id}
+                    className="cursor-pointer hover:bg-bege-suave/60"
+                    onClick={() => setAlunoSelecionado(a.id)}
+                  >
                     <TableCell>
                       <p className="font-medium text-cinza-forte">{a.nome}</p>
                       {a.motivosRisco.length > 0 && (
@@ -133,16 +181,20 @@ export function AcompanhamentoPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-center">
-                      <span className={cn('font-medium', a.taxaPresenca < 50 ? 'text-rosa-vibrante' : 'text-cinza-forte')}>
+                      <span
+                        className={cn('font-medium', a.taxaPresenca < 50 ? 'text-rosa-vibrante' : 'text-cinza-forte')}
+                      >
                         {a.taxaPresenca}%
                       </span>
                     </TableCell>
                     <TableCell>
-                      {a.mensalidadeVencida
-                        ? <Badge variant="destructive">Inadimplente</Badge>
-                        : a.mensalidadesPendentes > 0
-                          ? <Badge variant="warning">{a.mensalidadesPendentes} pendente(s)</Badge>
-                          : <Badge variant="success">Em dia</Badge>}
+                      {a.mensalidadeVencida ? (
+                        <Badge variant="destructive">Inadimplente</Badge>
+                      ) : a.mensalidadesPendentes > 0 ? (
+                        <Badge variant="warning">{a.mensalidadesPendentes} pendente(s)</Badge>
+                      ) : (
+                        <Badge variant="success">Em dia</Badge>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={RISCO_INFO[a.risco].variant}>{RISCO_INFO[a.risco].label}</Badge>
@@ -173,7 +225,9 @@ export function AcompanhamentoPage() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <div className="rounded-lg bg-bege-suave p-3">
                   <p className="text-xs text-cinza-medio">Risco</p>
-                  <Badge variant={RISCO_INFO[detalhe.risco].variant} className="mt-1">{RISCO_INFO[detalhe.risco].label}</Badge>
+                  <Badge variant={RISCO_INFO[detalhe.risco].variant} className="mt-1">
+                    {RISCO_INFO[detalhe.risco].label}
+                  </Badge>
                 </div>
                 <div className="rounded-lg bg-bege-suave p-3">
                   <p className="text-xs text-cinza-medio">Frequência (30d)</p>
@@ -208,7 +262,8 @@ export function AcompanhamentoPage() {
                   <ul className="space-y-1">
                     {detalhe.proximasAulas.map((a) => (
                       <li key={a.id} className="text-sm text-cinza-texto flex items-center gap-2">
-                        <Clock className="w-3.5 h-3.5 text-cinza-medio" /> {formatarDataHora(a.dataHoraInicio)} — {a.sala}
+                        <Clock className="w-3.5 h-3.5 text-cinza-medio" /> {formatarDataHora(a.dataHoraInicio)} —{' '}
+                        {a.sala}
                       </li>
                     ))}
                   </ul>
@@ -223,11 +278,22 @@ export function AcompanhamentoPage() {
                 ) : (
                   <div className="space-y-1">
                     {detalhe.mensalidades.slice(0, 6).map((m) => (
-                      <div key={m.id} className="flex items-center justify-between text-sm border-b border-bege-cartao py-1">
-                        <span className="text-cinza-texto">{m.plano ?? 'Avulso'} · venc. {formatarData(m.dataVencimento)}</span>
+                      <div
+                        key={m.id}
+                        className="flex items-center justify-between text-sm border-b border-bege-cartao py-1"
+                      >
+                        <span className="text-cinza-texto">
+                          {m.plano ?? 'Avulso'} · venc. {formatarData(m.dataVencimento)}
+                        </span>
                         <span className="flex items-center gap-2">
                           <span className="text-cinza-forte">{formatarValor(m.valor)}</span>
-                          <Badge variant={m.status === 'PAGO' ? 'success' : m.status === 'VENCIDO' ? 'destructive' : 'warning'}>{m.status}</Badge>
+                          <Badge
+                            variant={
+                              m.status === 'PAGO' ? 'success' : m.status === 'VENCIDO' ? 'destructive' : 'warning'
+                            }
+                          >
+                            {m.status}
+                          </Badge>
                         </span>
                       </div>
                     ))}
@@ -248,9 +314,11 @@ export function AcompanhamentoPage() {
                         title={`${formatarData(p.dataRegistro)} — ${p.status}`}
                         className={cn(
                           'text-[11px] px-2 py-0.5 rounded-full border',
-                          p.status === 'PRESENTE' ? 'bg-green-50 text-green-700 border-green-200'
-                            : p.status === 'AUSENTE' ? 'bg-rosa-vibrante/10 text-rosa-vibrante border-rosa-vibrante/30'
-                            : 'bg-bege-suave text-cinza-texto border-bege-cartao',
+                          p.status === 'PRESENTE'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : p.status === 'AUSENTE'
+                              ? 'bg-rosa-vibrante/10 text-rosa-vibrante border-rosa-vibrante/30'
+                              : 'bg-bege-suave text-cinza-texto border-bege-cartao',
                         )}
                       >
                         {formatarData(p.dataRegistro)}

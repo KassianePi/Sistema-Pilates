@@ -10,7 +10,10 @@ import { SectionCard } from '../../components/SectionCard'
 import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import {
-  useNotificacoes, useMarcarLida, useArquivarNotificacao, useMarcarTodasLidas,
+  useNotificacoes,
+  useMarcarLida,
+  useArquivarNotificacao,
+  useMarcarTodasLidas,
 } from '../../hooks/useAlunoNotificacoes'
 import { NOTIFICACAO_META, getNotificacaoMeta, getNotificacaoLink } from '@/lib/notificacaoMeta'
 import { formatarDataHora } from '../../utils/format'
@@ -54,7 +57,9 @@ export function AlunoNotificacoesPage() {
     <div className="space-y-6">
       <PageHeader
         title="Notificações"
-        subtitle={naoLidasIds.length > 0 ? `${naoLidasIds.length} não lida${naoLidasIds.length !== 1 ? 's' : ''}` : 'Tudo lido'}
+        subtitle={
+          naoLidasIds.length > 0 ? `${naoLidasIds.length} não lida${naoLidasIds.length !== 1 ? 's' : ''}` : 'Tudo lido'
+        }
         icon={Bell}
         action={
           <Button
@@ -74,17 +79,25 @@ export function AlunoNotificacoesPage() {
           <div className="space-y-1">
             <Label className="text-xs text-cinza-texto">Tipo</Label>
             <Select value={filtroTipo} onValueChange={setFiltroTipo}>
-              <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-48">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos os tipos</SelectItem>
-                {TIPOS.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                {TIPOS.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-1">
             <Label className="text-xs text-cinza-texto">Status</Label>
             <Select value={filtroStatus} onValueChange={setFiltroStatus}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas</SelectItem>
                 <SelectItem value="NAO_LIDA">Não lidas</SelectItem>
@@ -104,7 +117,10 @@ export function AlunoNotificacoesPage() {
               const meta = getNotificacaoMeta(n.tipo as TipoNotificacao)
               const temLink = getNotificacaoLink(n.tipo as TipoNotificacao) !== null
               return (
-                <li key={n.id} className={`flex items-start gap-2 px-3 sm:px-6 py-4 ${!n.lida ? 'bg-lilas-claro/30' : ''}`}>
+                <li
+                  key={n.id}
+                  className={`flex items-start gap-2 px-3 sm:px-6 py-4 ${!n.lida ? 'bg-lilas-claro/30' : ''}`}
+                >
                   <button
                     type="button"
                     onClick={() => abrir(n)}
@@ -115,8 +131,14 @@ export function AlunoNotificacoesPage() {
                     </span>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`text-sm ${!n.lida ? 'font-medium text-cinza-forte' : 'text-cinza-texto'}`}>{n.titulo}</p>
-                        {!n.lida && <Badge variant="secondary" className="text-xs">Nova</Badge>}
+                        <p className={`text-sm ${!n.lida ? 'font-medium text-cinza-forte' : 'text-cinza-texto'}`}>
+                          {n.titulo}
+                        </p>
+                        {!n.lida && (
+                          <Badge variant="secondary" className="text-xs">
+                            Nova
+                          </Badge>
+                        )}
                       </div>
                       <p className="text-sm text-cinza-texto mt-0.5">{n.mensagem}</p>
                       <p className="text-xs text-cinza-texto mt-1 flex items-center gap-1">
@@ -131,11 +153,25 @@ export function AlunoNotificacoesPage() {
                   </button>
                   <div className="flex items-center gap-1 shrink-0">
                     {!n.lida && (
-                      <Button size="icon" variant="ghost" title="Marcar como lida" aria-label="Marcar como lida" className="h-11 w-11" onClick={() => marcarLida.mutate(n.id)}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Marcar como lida"
+                        aria-label="Marcar como lida"
+                        className="h-11 w-11"
+                        onClick={() => marcarLida.mutate(n.id)}
+                      >
                         <CheckCircle2 className="w-4 h-4" />
                       </Button>
                     )}
-                    <Button size="icon" variant="ghost" title="Arquivar" aria-label="Arquivar notificação" className="h-11 w-11 hover:text-cinza-forte" onClick={() => arquivar.mutate(n.id)}>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      title="Arquivar"
+                      aria-label="Arquivar notificação"
+                      className="h-11 w-11 hover:text-cinza-forte"
+                      onClick={() => arquivar.mutate(n.id)}
+                    >
                       <Archive className="w-4 h-4" />
                     </Button>
                   </div>

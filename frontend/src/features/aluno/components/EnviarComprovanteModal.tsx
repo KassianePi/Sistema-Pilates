@@ -47,10 +47,14 @@ export function EnviarComprovanteModal({ mensalidadeId, nomePlano, onClose }: En
         <div className="space-y-4 mt-2">
           <div className="bg-lilas-claro/40 border border-lilas-medio/20 rounded-lg p-3 text-sm">
             <p className="font-medium text-cinza-forte">{nomePlano}</p>
-            <p className="text-cinza-texto mt-0.5">Envie a foto ou PDF do comprovante do pagamento PIX desta cobrança.</p>
+            <p className="text-cinza-texto mt-0.5">
+              Envie a foto ou PDF do comprovante do pagamento PIX desta cobrança.
+            </p>
           </div>
           <div className="space-y-1.5">
-            <Label>Arquivo <span className="text-cinza-texto text-xs">(máx. 5MB — JPG, PNG, PDF)</span></Label>
+            <Label>
+              Arquivo <span className="text-cinza-texto text-xs">(máx. 5MB — JPG, PNG, PDF)</span>
+            </Label>
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp,application/pdf"
@@ -64,8 +68,14 @@ export function EnviarComprovanteModal({ mensalidadeId, nomePlano, onClose }: En
             )}
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={submit} disabled={enviar.isPending || !arquivo} className="bg-roxo-profundo hover:bg-roxo-profundo/90">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={submit}
+              disabled={enviar.isPending || !arquivo}
+              className="bg-roxo-profundo hover:bg-roxo-profundo/90"
+            >
               {enviar.isPending ? 'Enviando...' : 'Enviar comprovante'}
             </Button>
           </div>

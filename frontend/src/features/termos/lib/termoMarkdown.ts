@@ -26,8 +26,6 @@ export function segmentosNegrito(texto: string): { texto: string; negrito: boole
     .split(/(\*\*[^*]+\*\*)/g)
     .filter((p) => p.length > 0)
     .map((p) =>
-      p.startsWith('**') && p.endsWith('**')
-        ? { texto: p.slice(2, -2), negrito: true }
-        : { texto: p, negrito: false },
+      p.startsWith('**') && p.endsWith('**') ? { texto: p.slice(2, -2), negrito: true } : { texto: p, negrito: false },
     )
 }

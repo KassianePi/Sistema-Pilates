@@ -6,14 +6,20 @@ import type { Notificacao, CreateNotificacaoData } from './notificacoes.types'
 export class NotificacoesRepository {
   async findById(id: string): Promise<Notificacao | null> {
     try {
-      return await prisma.notificacao.findUnique({ where: { id } }) as any
+      return (await prisma.notificacao.findUnique({ where: { id } })) as any
     } catch (error) {
       logError('Erro ao buscar notificação', error as Error, { id })
       throw AppError.internal('Erro ao buscar notificação')
     }
   }
 
-  async findAll(params: { usuarioId?: string; status?: string; tipo?: string; page: number; limit: number }): Promise<{ notificacoes: Notificacao[]; total: number }> {
+  async findAll(params: {
+    usuarioId?: string
+    status?: string
+    tipo?: string
+    page: number
+    limit: number
+  }): Promise<{ notificacoes: Notificacao[]; total: number }> {
     try {
       const { usuarioId, status, tipo, page, limit } = params
       const where: Record<string, unknown> = {}
@@ -22,7 +28,12 @@ export class NotificacoesRepository {
       if (tipo) where.tipo = tipo
 
       const [notificacoes, total] = await Promise.all([
-        prisma.notificacao.findMany({ where: where as any, skip: (page - 1) * limit, take: limit, orderBy: { criadoEm: 'desc' } }),
+        prisma.notificacao.findMany({
+          where: where as any,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { criadoEm: 'desc' },
+        }),
         prisma.notificacao.count({ where: where as any }),
       ])
 
@@ -35,7 +46,7 @@ export class NotificacoesRepository {
 
   async create(data: CreateNotificacaoData): Promise<Notificacao> {
     try {
-      return await prisma.notificacao.create({ data }) as any
+      return (await prisma.notificacao.create({ data })) as any
     } catch (error) {
       logError('Erro ao criar notificação', error as Error)
       throw AppError.internal('Erro ao criar notificação')
@@ -44,10 +55,10 @@ export class NotificacoesRepository {
 
   async marcarComoLida(id: string): Promise<Notificacao> {
     try {
-      return await prisma.notificacao.update({
+      return (await prisma.notificacao.update({
         where: { id },
         data: { status: 'LIDA', dataLeitura: new Date() },
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao marcar notificação como lida', error as Error, { id })
       throw AppError.internal('Erro ao atualizar notificação')
@@ -56,7 +67,7 @@ export class NotificacoesRepository {
 
   async arquivar(id: string): Promise<Notificacao> {
     try {
-      return await prisma.notificacao.update({ where: { id }, data: { status: 'ARQUIVADA' } }) as any
+      return (await prisma.notificacao.update({ where: { id }, data: { status: 'ARQUIVADA' } })) as any
     } catch (error) {
       logError('Erro ao arquivar notificação', error as Error, { id })
       throw AppError.internal('Erro ao arquivar notificação')

@@ -11,9 +11,7 @@ class PrismaClientSingleton {
   static getInstance(): PrismaClient {
     if (!PrismaClientSingleton.instance) {
       PrismaClientSingleton.instance = new PrismaClient({
-        log: isDevelopment
-          ? ['query', 'error', 'warn']
-          : ['error'],
+        log: isDevelopment ? ['query', 'error', 'warn'] : ['error'],
         errorFormat: isDevelopment ? 'pretty' : 'minimal',
       })
     }

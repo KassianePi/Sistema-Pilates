@@ -48,7 +48,13 @@ export class TermosRepository {
   }
 
   /** Idempotente: se o aluno já aceitou esta versão, mantém o registro original (imutável). */
-  registrarAceite(data: { termoId: string; alunoId: string; versao: number; enderecoIp?: string | null; userAgent?: string | null }) {
+  registrarAceite(data: {
+    termoId: string
+    alunoId: string
+    versao: number
+    enderecoIp?: string | null
+    userAgent?: string | null
+  }) {
     return prisma.termoAceite.upsert({
       where: { termoId_alunoId: { termoId: data.termoId, alunoId: data.alunoId } },
       create: data,

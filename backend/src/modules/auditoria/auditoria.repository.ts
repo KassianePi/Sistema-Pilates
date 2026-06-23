@@ -6,7 +6,7 @@ import type { LogAuditoria, CreateLogAuditoriaData } from './auditoria.types'
 export class AuditoriaRepository {
   async create(data: CreateLogAuditoriaData): Promise<LogAuditoria> {
     try {
-      return await prisma.logAuditoria.create({
+      return (await prisma.logAuditoria.create({
         data: {
           usuarioId: data.usuarioId,
           acao: data.acao,
@@ -17,21 +17,30 @@ export class AuditoriaRepository {
           enderecoIp: data.enderecoIp || null,
           userAgent: data.userAgent || null,
         } as any,
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao criar log de auditoria', error as Error)
       throw AppError.internal('Erro ao registrar auditoria')
     }
   }
 
-  async findAll(params: { usuarioId?: string; acao?: string; entidade?: string; dataInicio?: Date; dataFim?: Date; page: number; limit: number }): Promise<{ logs: LogAuditoria[]; total: number }> {
+  async findAll(params: {
+    usuarioId?: string
+    acao?: string
+    entidade?: string
+    dataInicio?: Date
+    dataFim?: Date
+    page: number
+    limit: number
+  }): Promise<{ logs: LogAuditoria[]; total: number }> {
     try {
       const { usuarioId, acao, entidade, dataInicio, dataFim, page, limit } = params
       const where: Record<string, unknown> = {}
       if (usuarioId) where.usuarioId = usuarioId
       if (acao) where.acao = acao
       if (entidade) where.entidade = entidade
-      if (dataInicio || dataFim) where.criadoEm = { ...(dataInicio && { gte: dataInicio }), ...(dataFim && { lte: dataFim }) }
+      if (dataInicio || dataFim)
+        where.criadoEm = { ...(dataInicio && { gte: dataInicio }), ...(dataFim && { lte: dataFim }) }
 
       const [logs, total] = await Promise.all([
         prisma.logAuditoria.findMany({

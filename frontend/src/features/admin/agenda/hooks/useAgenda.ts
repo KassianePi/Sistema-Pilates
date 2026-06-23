@@ -5,7 +5,13 @@ import { presencaService, type BatchPresencaDTO } from '@/services/presenca.serv
 
 const QUERY_KEY = 'aulas'
 
-export function useAulas(params?: { pagina?: number; limite?: number; data?: string; professorId?: string; status?: string }) {
+export function useAulas(params?: {
+  pagina?: number
+  limite?: number
+  data?: string
+  professorId?: string
+  status?: string
+}) {
   return useQuery({
     queryKey: [QUERY_KEY, params],
     queryFn: () => agendaService.listar(params),
@@ -39,7 +45,8 @@ export function useUpdateAula() {
 export function useCancelarAula() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) => agendaService.cancelar(id, justificativa),
+    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) =>
+      agendaService.cancelar(id, justificativa),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY] })
       toast.success('Aula cancelada.')
@@ -51,7 +58,8 @@ export function useCancelarAula() {
 export function useSuspenderAula() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) => agendaService.suspender(id, justificativa),
+    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) =>
+      agendaService.suspender(id, justificativa),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY] })
       toast.success('Aula suspensa.')
@@ -63,8 +71,15 @@ export function useSuspenderAula() {
 export function useReagendarAula() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, dataHoraInicio, justificativa }: { id: string; dataHoraInicio: string; justificativa: string }) =>
-      agendaService.reagendar(id, dataHoraInicio, justificativa),
+    mutationFn: ({
+      id,
+      dataHoraInicio,
+      justificativa,
+    }: {
+      id: string
+      dataHoraInicio: string
+      justificativa: string
+    }) => agendaService.reagendar(id, dataHoraInicio, justificativa),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY] })
       toast.success('Aula reagendada.')
@@ -76,7 +91,8 @@ export function useReagendarAula() {
 export function useExcluirAula() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) => agendaService.excluir(id, justificativa),
+    mutationFn: ({ id, justificativa }: { id: string; justificativa: string }) =>
+      agendaService.excluir(id, justificativa),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY] })
       toast.success('Aula excluída.')
@@ -96,7 +112,8 @@ export function useInscricoes(aulaId: string | null) {
 export function useMatricular() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ aulaId, alunoIds }: { aulaId: string; alunoIds: string[] }) => agendaService.matricular(aulaId, alunoIds),
+    mutationFn: ({ aulaId, alunoIds }: { aulaId: string; alunoIds: string[] }) =>
+      agendaService.matricular(aulaId, alunoIds),
     onSuccess: (_data, { aulaId }) => {
       qc.invalidateQueries({ queryKey: [QUERY_KEY] })
       qc.invalidateQueries({ queryKey: [QUERY_KEY, 'inscricoes', aulaId] })
@@ -113,7 +130,9 @@ export function useRegistrarPresencasBatch() {
     onSuccess: (_, { presencas }) => {
       const presentes = presencas.filter((p) => p.status === 'PRESENTE').length
       qc.invalidateQueries({ queryKey: [QUERY_KEY] })
-      toast.success(`Presenças salvas: ${presentes} presente(s), ${presencas.length - presentes} ausente(s). Aula marcada como Realizada.`)
+      toast.success(
+        `Presenças salvas: ${presentes} presente(s), ${presencas.length - presentes} ausente(s). Aula marcada como Realizada.`,
+      )
     },
     onError: () => toast.error('Erro ao registrar presenças.'),
   })

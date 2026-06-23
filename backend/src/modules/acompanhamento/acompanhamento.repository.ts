@@ -65,7 +65,9 @@ export class AcompanhamentoRepository {
           planoAtual: { select: { nome: true } },
           presencas: {
             select: {
-              id: true, status: true, dataRegistro: true,
+              id: true,
+              status: true,
+              dataRegistro: true,
               aula: { select: { dataHoraInicio: true, sala: true } },
             },
             orderBy: { dataRegistro: 'desc' },
@@ -73,7 +75,10 @@ export class AcompanhamentoRepository {
           },
           mensalidades: {
             select: {
-              id: true, status: true, valor: true, dataVencimento: true,
+              id: true,
+              status: true,
+              valor: true,
+              dataVencimento: true,
               plano: { select: { nome: true } },
             },
             orderBy: { dataVencimento: 'desc' },

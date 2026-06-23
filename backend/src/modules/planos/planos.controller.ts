@@ -8,9 +8,13 @@ export async function criar(request: FastifyRequest, reply: FastifyReply) {
     const body = request.body as any
     const plano = await planosService.criar(body)
     return reply.code(201).send({ success: true, data: plano })
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof ValidationError) {
       return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    }
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
     }
     logWarn('Erro ao criar plano', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao criar plano', code: 'INTERNAL_ERROR' })
@@ -51,6 +55,10 @@ export async function atualizar(request: FastifyRequest, reply: FastifyReply) {
   } catch (error: any) {
     if (error instanceof ValidationError) {
       return reply.code(400).send({ success: false, message: error.message, code: error.code })
+    }
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
     }
     if (error?.statusCode === 404) {
       return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })

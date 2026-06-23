@@ -33,7 +33,8 @@ export class TermosService {
       criadoPorId: criadoPorId ?? null,
     })
     logInfo('Termo criado (rascunho)', { id: termo.id, versao })
-    if (criadoPorId) await registrarLog({ usuarioId: criadoPorId, acao: 'CREATE', entidade: 'TermoUso', entidadeId: termo.id })
+    if (criadoPorId)
+      await registrarLog({ usuarioId: criadoPorId, acao: 'CREATE', entidade: 'TermoUso', entidadeId: termo.id })
     return termo
   }
 
@@ -44,7 +45,8 @@ export class TermosService {
     const validado = editarTermoSchema.parse(data)
     const atualizado = await this.repository.atualizar(id, validado)
     logInfo('Termo editado', { id })
-    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'TermoUso', entidadeId: id })
+    if (realizadoPorId)
+      await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'TermoUso', entidadeId: id })
     return atualizado
   }
 
@@ -52,7 +54,8 @@ export class TermosService {
     await this.buscarPorId(id)
     const termo = await this.repository.publicar(id)
     logInfo('Termo publicado', { id, versao: termo.versao })
-    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'TermoUso', entidadeId: id })
+    if (realizadoPorId)
+      await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'TermoUso', entidadeId: id })
     return termo
   }
 

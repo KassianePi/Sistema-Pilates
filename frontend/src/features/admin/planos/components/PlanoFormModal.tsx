@@ -31,7 +31,12 @@ export function PlanoFormModal({ open, onClose, plano }: Props) {
   const createPlano = useCreatePlano()
   const updatePlano = useUpdatePlano()
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting } } = useForm<FormData>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<FormData>({
     resolver: zodResolver(schema),
   })
 
@@ -80,7 +85,14 @@ export function PlanoFormModal({ open, onClose, plano }: Props) {
           <div className="grid grid-cols-3 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="valor">Valor (R$) *</Label>
-              <Input id="valor" type="number" step="0.01" min="0" {...register('valor', { valueAsNumber: true })} placeholder="0,00" />
+              <Input
+                id="valor"
+                type="number"
+                step="0.01"
+                min="0"
+                {...register('valor', { valueAsNumber: true })}
+                placeholder="0,00"
+              />
               {errors.valor && <p className="text-xs text-red-600">{errors.valor.message}</p>}
             </div>
 
@@ -92,13 +104,21 @@ export function PlanoFormModal({ open, onClose, plano }: Props) {
 
             <div className="space-y-1.5">
               <Label htmlFor="aulasSemanais">Aulas/semana *</Label>
-              <Input id="aulasSemanais" type="number" min="1" max="7" {...register('aulasSemanais', { valueAsNumber: true })} />
+              <Input
+                id="aulasSemanais"
+                type="number"
+                min="1"
+                max="7"
+                {...register('aulasSemanais', { valueAsNumber: true })}
+              />
               {errors.aulasSemanais && <p className="text-xs text-red-600">{errors.aulasSemanais.message}</p>}
             </div>
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
             <Button type="submit" disabled={isSubmitting || createPlano.isPending || updatePlano.isPending}>
               {isEditing ? 'Salvar alterações' : 'Criar plano'}
             </Button>

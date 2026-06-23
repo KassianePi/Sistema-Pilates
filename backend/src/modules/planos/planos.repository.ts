@@ -22,7 +22,12 @@ export class PlanosRepository {
     }
   }
 
-  async findAll(params: { ativo?: boolean; tipo?: string; page: number; limit: number }): Promise<{ planos: Plano[]; total: number }> {
+  async findAll(params: {
+    ativo?: boolean
+    tipo?: string
+    page: number
+    limit: number
+  }): Promise<{ planos: Plano[]; total: number }> {
     try {
       const { ativo, tipo, page, limit } = params
       const where: Record<string, unknown> = {}

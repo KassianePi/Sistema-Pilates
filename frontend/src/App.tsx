@@ -18,28 +18,70 @@ import { AdminLoginPage } from '@/pages/AdminLoginPage'
 import { AlunoLoginPage } from '@/pages/AlunoLoginPage'
 
 // Admin — carregamento lazy por rota
-const AdminDashboardPage = lazy(() => import('@/features/admin/dashboard/pages/AdminDashboardPage').then(m => ({ default: m.AdminDashboardPage })))
-const AlunosPage = lazy(() => import('@/features/admin/alunos/pages/AlunosPage').then(m => ({ default: m.AlunosPage })))
-const ProfessoresPage = lazy(() => import('@/features/admin/professores/pages/ProfessoresPage').then(m => ({ default: m.ProfessoresPage })))
-const AgendaPage = lazy(() => import('@/features/admin/agenda/pages/AgendaPage').then(m => ({ default: m.AgendaPage })))
-const FinanceiroPage = lazy(() => import('@/features/admin/financeiro/pages/FinanceiroPage').then(m => ({ default: m.FinanceiroPage })))
-const PlanosPage = lazy(() => import('@/features/admin/planos/pages/PlanosPage').then(m => ({ default: m.PlanosPage })))
-const RelatoriosPage = lazy(() => import('@/features/admin/relatorios/pages/RelatoriosPage').then(m => ({ default: m.RelatoriosPage })))
-const NotificacoesPage = lazy(() => import('@/features/admin/notificacoes/pages/NotificacoesPage').then(m => ({ default: m.NotificacoesPage })))
-const AcompanhamentoPage = lazy(() => import('@/features/admin/acompanhamento/pages/AcompanhamentoPage').then(m => ({ default: m.AcompanhamentoPage })))
-const UsuariosPage = lazy(() => import('@/features/admin/usuarios/pages/UsuariosPage').then(m => ({ default: m.UsuariosPage })))
-const ProfessorPerfilPage = lazy(() => import('@/features/admin/perfil/pages/ProfessorPerfilPage').then(m => ({ default: m.ProfessorPerfilPage })))
-const ModalidadesPage = lazy(() => import('@/features/admin/modalidades/pages/ModalidadesPage').then(m => ({ default: m.ModalidadesPage })))
-const AdminTermosPage = lazy(() => import('@/features/admin/termos/pages/AdminTermosPage').then(m => ({ default: m.AdminTermosPage })))
+const AdminDashboardPage = lazy(() =>
+  import('@/features/admin/dashboard/pages/AdminDashboardPage').then((m) => ({ default: m.AdminDashboardPage })),
+)
+const AlunosPage = lazy(() =>
+  import('@/features/admin/alunos/pages/AlunosPage').then((m) => ({ default: m.AlunosPage })),
+)
+const ProfessoresPage = lazy(() =>
+  import('@/features/admin/professores/pages/ProfessoresPage').then((m) => ({ default: m.ProfessoresPage })),
+)
+const AgendaPage = lazy(() =>
+  import('@/features/admin/agenda/pages/AgendaPage').then((m) => ({ default: m.AgendaPage })),
+)
+const FinanceiroPage = lazy(() =>
+  import('@/features/admin/financeiro/pages/FinanceiroPage').then((m) => ({ default: m.FinanceiroPage })),
+)
+const PlanosPage = lazy(() =>
+  import('@/features/admin/planos/pages/PlanosPage').then((m) => ({ default: m.PlanosPage })),
+)
+const RelatoriosPage = lazy(() =>
+  import('@/features/admin/relatorios/pages/RelatoriosPage').then((m) => ({ default: m.RelatoriosPage })),
+)
+const NotificacoesPage = lazy(() =>
+  import('@/features/admin/notificacoes/pages/NotificacoesPage').then((m) => ({ default: m.NotificacoesPage })),
+)
+const AcompanhamentoPage = lazy(() =>
+  import('@/features/admin/acompanhamento/pages/AcompanhamentoPage').then((m) => ({ default: m.AcompanhamentoPage })),
+)
+const UsuariosPage = lazy(() =>
+  import('@/features/admin/usuarios/pages/UsuariosPage').then((m) => ({ default: m.UsuariosPage })),
+)
+const ProfessorPerfilPage = lazy(() =>
+  import('@/features/admin/perfil/pages/ProfessorPerfilPage').then((m) => ({ default: m.ProfessorPerfilPage })),
+)
+const ModalidadesPage = lazy(() =>
+  import('@/features/admin/modalidades/pages/ModalidadesPage').then((m) => ({ default: m.ModalidadesPage })),
+)
+const AdminTermosPage = lazy(() =>
+  import('@/features/admin/termos/pages/AdminTermosPage').then((m) => ({ default: m.AdminTermosPage })),
+)
 
 // Portal aluno — carregamento lazy por rota
-const AlunoDashboardPage = lazy(() => import('@/features/aluno/dashboard/pages/AlunoDashboardPage').then(m => ({ default: m.AlunoDashboardPage })))
-const AlunoAgendaPage = lazy(() => import('@/features/aluno/agenda/pages/AlunoAgendaPage').then(m => ({ default: m.AlunoAgendaPage })))
-const AlunoPresencaPage = lazy(() => import('@/features/aluno/presenca/pages/AlunoPresencaPage').then(m => ({ default: m.AlunoPresencaPage })))
-const AlunoFinanceiroPage = lazy(() => import('@/features/aluno/financeiro/pages/AlunoFinanceiroPage').then(m => ({ default: m.AlunoFinanceiroPage })))
-const AlunoPerfilPage = lazy(() => import('@/features/aluno/perfil/pages/AlunoPerfilPage').then(m => ({ default: m.AlunoPerfilPage })))
-const AlunoNotificacoesPage = lazy(() => import('@/features/aluno/notificacoes/pages/AlunoNotificacoesPage').then(m => ({ default: m.AlunoNotificacoesPage })))
-const AlunoTermosPage = lazy(() => import('@/features/aluno/termos/pages/AlunoTermosPage').then(m => ({ default: m.AlunoTermosPage })))
+const AlunoDashboardPage = lazy(() =>
+  import('@/features/aluno/dashboard/pages/AlunoDashboardPage').then((m) => ({ default: m.AlunoDashboardPage })),
+)
+const AlunoAgendaPage = lazy(() =>
+  import('@/features/aluno/agenda/pages/AlunoAgendaPage').then((m) => ({ default: m.AlunoAgendaPage })),
+)
+const AlunoPresencaPage = lazy(() =>
+  import('@/features/aluno/presenca/pages/AlunoPresencaPage').then((m) => ({ default: m.AlunoPresencaPage })),
+)
+const AlunoFinanceiroPage = lazy(() =>
+  import('@/features/aluno/financeiro/pages/AlunoFinanceiroPage').then((m) => ({ default: m.AlunoFinanceiroPage })),
+)
+const AlunoPerfilPage = lazy(() =>
+  import('@/features/aluno/perfil/pages/AlunoPerfilPage').then((m) => ({ default: m.AlunoPerfilPage })),
+)
+const AlunoNotificacoesPage = lazy(() =>
+  import('@/features/aluno/notificacoes/pages/AlunoNotificacoesPage').then((m) => ({
+    default: m.AlunoNotificacoesPage,
+  })),
+)
+const AlunoTermosPage = lazy(() =>
+  import('@/features/aluno/termos/pages/AlunoTermosPage').then((m) => ({ default: m.AlunoTermosPage })),
+)
 
 function PageLoader() {
   return (
@@ -90,27 +132,140 @@ export default function App() {
                   <Route path="/admin" element={<RoleRedirect />} />
 
                   {/* Rotas acessíveis por múltiplos roles */}
-                  <Route path="/admin/agenda" element={<Suspense fallback={<PageLoader />}><AgendaPage /></Suspense>} />
-                  <Route path="/admin/notificacoes" element={<Suspense fallback={<PageLoader />}><NotificacoesPage /></Suspense>} />
+                  <Route
+                    path="/admin/agenda"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AgendaPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/admin/notificacoes"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <NotificacoesPage />
+                      </Suspense>
+                    }
+                  />
 
                   {/* Rotas restritas (ADMIN, RECEPCIONISTA, FINANCEIRO) */}
-                  <Route path="/admin/dashboard" element={<RoleGuard path="/admin/dashboard"><Suspense fallback={<PageLoader />}><AdminDashboardPage /></Suspense></RoleGuard>} />
-                  <Route path="/admin/alunos" element={<RoleGuard path="/admin/alunos"><Suspense fallback={<PageLoader />}><AlunosPage /></Suspense></RoleGuard>} />
-                  <Route path="/admin/professores" element={<RoleGuard path="/admin/professores"><Suspense fallback={<PageLoader />}><ProfessoresPage /></Suspense></RoleGuard>} />
+                  <Route
+                    path="/admin/dashboard"
+                    element={
+                      <RoleGuard path="/admin/dashboard">
+                        <Suspense fallback={<PageLoader />}>
+                          <AdminDashboardPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/alunos"
+                    element={
+                      <RoleGuard path="/admin/alunos">
+                        <Suspense fallback={<PageLoader />}>
+                          <AlunosPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/professores"
+                    element={
+                      <RoleGuard path="/admin/professores">
+                        <Suspense fallback={<PageLoader />}>
+                          <ProfessoresPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
 
                   {/* Rotas financeiras (ADMIN, FINANCEIRO) */}
-                  <Route path="/admin/financeiro" element={<RoleGuard path="/admin/financeiro"><Suspense fallback={<PageLoader />}><FinanceiroPage /></Suspense></RoleGuard>} />
-                  <Route path="/admin/planos" element={<RoleGuard path="/admin/planos"><Suspense fallback={<PageLoader />}><PlanosPage /></Suspense></RoleGuard>} />
-                  <Route path="/admin/relatorios" element={<RoleGuard path="/admin/relatorios"><Suspense fallback={<PageLoader />}><RelatoriosPage /></Suspense></RoleGuard>} />
+                  <Route
+                    path="/admin/financeiro"
+                    element={
+                      <RoleGuard path="/admin/financeiro">
+                        <Suspense fallback={<PageLoader />}>
+                          <FinanceiroPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/planos"
+                    element={
+                      <RoleGuard path="/admin/planos">
+                        <Suspense fallback={<PageLoader />}>
+                          <PlanosPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/relatorios"
+                    element={
+                      <RoleGuard path="/admin/relatorios">
+                        <Suspense fallback={<PageLoader />}>
+                          <RelatoriosPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
 
                   {/* Rotas exclusivas ADMIN */}
-                  <Route path="/admin/acompanhamento" element={<RoleGuard path="/admin/acompanhamento"><Suspense fallback={<PageLoader />}><AcompanhamentoPage /></Suspense></RoleGuard>} />
-                  <Route path="/admin/usuarios" element={<RoleGuard path="/admin/usuarios"><Suspense fallback={<PageLoader />}><UsuariosPage /></Suspense></RoleGuard>} />
-                  <Route path="/admin/modalidades" element={<RoleGuard path="/admin/modalidades"><Suspense fallback={<PageLoader />}><ModalidadesPage /></Suspense></RoleGuard>} />
-                  <Route path="/admin/termos" element={<RoleGuard path="/admin/termos"><Suspense fallback={<PageLoader />}><AdminTermosPage /></Suspense></RoleGuard>} />
+                  <Route
+                    path="/admin/acompanhamento"
+                    element={
+                      <RoleGuard path="/admin/acompanhamento">
+                        <Suspense fallback={<PageLoader />}>
+                          <AcompanhamentoPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/usuarios"
+                    element={
+                      <RoleGuard path="/admin/usuarios">
+                        <Suspense fallback={<PageLoader />}>
+                          <UsuariosPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/modalidades"
+                    element={
+                      <RoleGuard path="/admin/modalidades">
+                        <Suspense fallback={<PageLoader />}>
+                          <ModalidadesPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
+                  <Route
+                    path="/admin/termos"
+                    element={
+                      <RoleGuard path="/admin/termos">
+                        <Suspense fallback={<PageLoader />}>
+                          <AdminTermosPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
 
                   {/* Perfil próprio — PROFESSOR e outros roles com acesso */}
-                  <Route path="/admin/perfil" element={<RoleGuard path="/admin/perfil"><Suspense fallback={<PageLoader />}><ProfessorPerfilPage /></Suspense></RoleGuard>} />
+                  <Route
+                    path="/admin/perfil"
+                    element={
+                      <RoleGuard path="/admin/perfil">
+                        <Suspense fallback={<PageLoader />}>
+                          <ProfessorPerfilPage />
+                        </Suspense>
+                      </RoleGuard>
+                    }
+                  />
                 </Route>
               </Route>
 
@@ -118,13 +273,62 @@ export default function App() {
               <Route element={<ProtectedAlunoRoute />}>
                 <Route element={<AlunoLayout />}>
                   <Route path="/aluno" element={<Navigate to="/aluno/dashboard" replace />} />
-                  <Route path="/aluno/dashboard" element={<Suspense fallback={<PageLoader />}><AlunoDashboardPage /></Suspense>} />
-                  <Route path="/aluno/agenda" element={<Suspense fallback={<PageLoader />}><AlunoAgendaPage /></Suspense>} />
-                  <Route path="/aluno/presenca" element={<Suspense fallback={<PageLoader />}><AlunoPresencaPage /></Suspense>} />
-                  <Route path="/aluno/financeiro" element={<Suspense fallback={<PageLoader />}><AlunoFinanceiroPage /></Suspense>} />
-                  <Route path="/aluno/notificacoes" element={<Suspense fallback={<PageLoader />}><AlunoNotificacoesPage /></Suspense>} />
-                  <Route path="/aluno/termos" element={<Suspense fallback={<PageLoader />}><AlunoTermosPage /></Suspense>} />
-                  <Route path="/aluno/perfil" element={<Suspense fallback={<PageLoader />}><AlunoPerfilPage /></Suspense>} />
+                  <Route
+                    path="/aluno/dashboard"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoDashboardPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/aluno/agenda"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoAgendaPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/aluno/presenca"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoPresencaPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/aluno/financeiro"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoFinanceiroPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/aluno/notificacoes"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoNotificacoesPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/aluno/termos"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoTermosPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/aluno/perfil"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoPerfilPage />
+                      </Suspense>
+                    }
+                  />
                 </Route>
               </Route>
 

@@ -3,6 +3,8 @@ import fastifyJwt from '@fastify/jwt'
 import fastifyCors from '@fastify/cors'
 import fastifyHelmet from '@fastify/helmet'
 import fastifyRateLimit from '@fastify/rate-limit'
+import fastifySwagger from '@fastify/swagger'
+import fastifySwaggerUi from '@fastify/swagger-ui'
 
 import { logger, logInfo, logError, logFatal } from './shared/utils'
 import { AppError, ValidationError, UnauthorizedError } from './shared/errors'
@@ -22,6 +24,7 @@ import { configuracaoRoutes } from './modules/configuracao/configuracao.routes'
 import { estornosRoutes } from './modules/estornos/estornos.routes'
 import { modalidadesRoutes } from './modules/modalidades/modalidades.routes'
 import { termosRoutes } from './modules/termos/termos.routes'
+import { auditoriaRoutes } from './modules/auditoria/auditoria.routes'
 
 // Inicializa listeners de eventos dos módulos
 import './modules/notificacoes/notificacoes.service'
@@ -62,6 +65,7 @@ export async function createApp() {
           imgSrc: ["'self'", 'data:', 'https:'],
         },
       },
+      frameguard: { action: 'deny' },
     })
 
     await app.register(fastifyCors, {
@@ -80,6 +84,57 @@ export async function createApp() {
     })
 
     // ========================================
+    // 1.5. SWAGGER / OPENAPI
+    // ========================================
+
+    await app.register(fastifySwagger, {
+      openapi: {
+        info: {
+          title: 'Studio de Pilates — API',
+          description:
+            'Documentação da API do sistema de gestão do Studio de Pilates: alunos, professores, planos, agenda, presença, financeiro, estornos, termos e relatórios.',
+          version: '1.0.0',
+        },
+        servers: [{ url: '/api/v1', description: 'Prefixo padrão das rotas (v1)' }],
+        tags: [
+          { name: 'Autenticação', description: 'Login, registro, refresh token e perfil' },
+          { name: 'Alunos', description: 'Cadastro e gestão de alunos' },
+          { name: 'Professores', description: 'Cadastro e gestão de professores' },
+          { name: 'Planos', description: 'Planos de pilates' },
+          { name: 'Agenda', description: 'Aulas, matrícula e conflitos de horário' },
+          { name: 'Presença', description: 'Registro de presença em aulas' },
+          { name: 'Financeiro', description: 'Caixa, mensalidades e pagamentos' },
+          { name: 'Estornos', description: 'Solicitação e aprovação de reembolsos' },
+          { name: 'Termos', description: 'Termos de uso e aceite' },
+          { name: 'Relatórios', description: 'Geração e exportação de relatórios' },
+          { name: 'Modalidades', description: 'Modalidades de aula' },
+          { name: 'Notificações', description: 'Notificações do sistema' },
+          { name: 'Auditoria', description: 'Logs de auditoria' },
+          { name: 'Configuração', description: 'Configurações gerais do studio' },
+          { name: 'Acompanhamento', description: 'Acompanhamento de risco/evasão de alunos' },
+        ],
+        components: {
+          securitySchemes: {
+            bearerAuth: {
+              type: 'http',
+              scheme: 'bearer',
+              bearerFormat: 'JWT',
+              description: 'Access token JWT obtido em POST /api/v1/auth/login',
+            },
+          },
+        },
+      },
+    })
+
+    await app.register(fastifySwaggerUi, {
+      routePrefix: '/documentation',
+      uiConfig: {
+        docExpansion: 'list',
+        deepLinking: true,
+      },
+    })
+
+    // ========================================
     // 2. JWT PLUGIN
     // ========================================
 
@@ -89,6 +144,88 @@ export async function createApp() {
         expiresIn: '15m',
         algorithm: 'HS256',
       },
+    })
+
+    // ========================================
+    // 2.5. ERROR HANDLING GLOBAL
+    // ========================================
+    // Registrado antes das rotas para garantir que erros lançados durante a
+    // validação de schema do Fastify (preValidation, antes do controller
+    // rodar) também passem por aqui em vez do formato nativo do Fastify.
+
+    app.setErrorHandler(async (error, request, reply) => {
+      const requestId = request.id
+
+      if (error instanceof ValidationError) {
+        logError(`Validação falhou: ${error.message}`, error, { requestId })
+        return reply.status(error.statusCode).send(error.toJSON())
+      }
+
+      if (error instanceof UnauthorizedError) {
+        logError(`Acesso negado: ${error.message}`, error, { requestId })
+        return reply.status(error.statusCode).send(error.toJSON())
+      }
+
+      if (error instanceof AppError) {
+        logError(`Erro aplicação: ${error.message}`, error, { requestId })
+        return reply.status(error.statusCode).send(error.toJSON())
+      }
+
+      if (error.name === 'UnauthorizedError' || error.name === 'JwtError') {
+        logError(`JWT inválido: ${error.message}`, error, { requestId })
+        return reply
+          .status(401)
+          .send({ success: false, message: 'Token inválido ou expirado', code: 'TOKEN_INVALID', statusCode: 401 })
+      }
+
+      if (error.statusCode === 429) {
+        return reply
+          .status(429)
+          .send({ success: false, message: 'Muitas tentativas. Aguarde 15 minutos.', code: 'RATE_LIMIT_EXCEEDED' })
+      }
+
+      if (error.statusCode === 404) {
+        return reply
+          .status(404)
+          .send({ success: false, message: 'Rota não encontrada', code: 'NOT_FOUND', statusCode: 404 })
+      }
+
+      if (error.code === 'FST_ERR_VALIDATION') {
+        logError(`Validação de schema falhou: ${error.message}`, error, { requestId })
+        return reply
+          .status(400)
+          .send({ success: false, message: error.message, code: 'VALIDATION_ERROR', statusCode: 400 })
+      }
+
+      // Rede de segurança: erros de validação Zod lançados diretamente por
+      // services/controllers que não os convertem explicitamente em
+      // ValidationError (em vez de cair no 500 genérico abaixo).
+      if (error.name === 'ZodError') {
+        const validationError = ValidationError.fromZod(error)
+        logError(`Validação (Zod) falhou: ${validationError.message}`, error, { requestId })
+        return reply.status(400).send(validationError.toJSON())
+      }
+
+      logError(`Erro inesperado: ${error.message}`, error, { requestId, stack: error.stack })
+      const message = isDevelopment ? error.message : 'Erro interno do servidor'
+      const details = isDevelopment ? { stack: error.stack } : undefined
+
+      return reply.status(error.statusCode || 500).send({
+        success: false,
+        message,
+        code: 'INTERNAL_ERROR',
+        statusCode: error.statusCode || 500,
+        ...(details && { details }),
+      })
+    })
+
+    app.setNotFoundHandler((request, reply) => {
+      reply.status(404).send({
+        success: false,
+        message: `Rota ${request.method} ${request.url} não encontrada`,
+        code: 'NOT_FOUND',
+        statusCode: 404,
+      })
     })
 
     // ========================================
@@ -180,67 +317,7 @@ export async function createApp() {
     await app.register(estornosRoutes)
     await app.register(modalidadesRoutes)
     await app.register(termosRoutes)
-
-    // ========================================
-    // 7. ERROR HANDLING GLOBAL
-    // ========================================
-
-    app.setErrorHandler(async (error, request, reply) => {
-      const requestId = request.id
-
-      if (error instanceof ValidationError) {
-        logError(`Validação falhou: ${error.message}`, error, { requestId })
-        return reply.status(error.statusCode).send(error.toJSON())
-      }
-
-      if (error instanceof UnauthorizedError) {
-        logError(`Acesso negado: ${error.message}`, error, { requestId })
-        return reply.status(error.statusCode).send(error.toJSON())
-      }
-
-      if (error instanceof AppError) {
-        logError(`Erro aplicação: ${error.message}`, error, { requestId })
-        return reply.status(error.statusCode).send(error.toJSON())
-      }
-
-      if (error.name === 'UnauthorizedError' || error.name === 'JwtError') {
-        logError(`JWT inválido: ${error.message}`, error, { requestId })
-        return reply.status(401).send({ success: false, message: 'Token inválido ou expirado', code: 'TOKEN_INVALID', statusCode: 401 })
-      }
-
-      if (error.statusCode === 429) {
-        return reply.status(429).send({ success: false, message: 'Muitas tentativas. Aguarde 15 minutos.', code: 'RATE_LIMIT_EXCEEDED' })
-      }
-
-      if (error.statusCode === 404) {
-        return reply.status(404).send({ success: false, message: 'Rota não encontrada', code: 'NOT_FOUND', statusCode: 404 })
-      }
-
-      logError(`Erro inesperado: ${error.message}`, error, { requestId, stack: error.stack })
-      const message = isDevelopment ? error.message : 'Erro interno do servidor'
-      const details = isDevelopment ? { stack: error.stack } : undefined
-
-      return reply.status(error.statusCode || 500).send({
-        success: false,
-        message,
-        code: 'INTERNAL_ERROR',
-        statusCode: error.statusCode || 500,
-        ...(details && { details }),
-      })
-    })
-
-    // ========================================
-    // 8. NOT FOUND HANDLER
-    // ========================================
-
-    app.setNotFoundHandler((request, reply) => {
-      reply.status(404).send({
-        success: false,
-        message: `Rota ${request.method} ${request.url} não encontrada`,
-        code: 'NOT_FOUND',
-        statusCode: 404,
-      })
-    })
+    await app.register(auditoriaRoutes)
 
     logInfo('✅ Aplicação Fastify configurada com sucesso')
     return app

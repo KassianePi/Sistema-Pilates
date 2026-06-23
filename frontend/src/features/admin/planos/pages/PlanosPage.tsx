@@ -5,9 +5,14 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel,
-  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
-  AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { PlanoFormModal } from '../components/PlanoFormModal'
 import { usePlanos, useDeletePlano } from '../hooks/usePlanos'
@@ -54,7 +59,9 @@ export function PlanosPage() {
       <Card>
         <CardHeader className="pb-3">
           {data && (
-            <span className="text-sm text-cinza-medio">{data.total} plano{data.total !== 1 ? 's' : ''} cadastrado{data.total !== 1 ? 's' : ''}</span>
+            <span className="text-sm text-cinza-medio">
+              {data.total} plano{data.total !== 1 ? 's' : ''} cadastrado{data.total !== 1 ? 's' : ''}
+            </span>
           )}
         </CardHeader>
 
@@ -88,21 +95,43 @@ export function PlanosPage() {
                       </div>
                     </TableCell>
                     <TableCell className="font-semibold text-cinza-forte">{formatarValor(plano.valor)}</TableCell>
-                    <TableCell className="text-cinza-texto">{plano.duracaoMeses} {plano.duracaoMeses === 1 ? 'mês' : 'meses'}</TableCell>
+                    <TableCell className="text-cinza-texto">
+                      {plano.duracaoMeses} {plano.duracaoMeses === 1 ? 'mês' : 'meses'}
+                    </TableCell>
                     <TableCell className="text-cinza-texto">{plano.aulasSemanais}x/semana</TableCell>
                     <TableCell>
-                      {plano.ativo
-                        ? <Badge variant="success"><CheckCircle2 className="w-3 h-3 mr-1" />Ativo</Badge>
-                        : <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Inativo</Badge>
-                      }
+                      {plano.ativo ? (
+                        <Badge variant="success">
+                          <CheckCircle2 className="w-3 h-3 mr-1" />
+                          Ativo
+                        </Badge>
+                      ) : (
+                        <Badge variant="destructive">
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Inativo
+                        </Badge>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => { setPlanoEditando(plano); setModalOpen(true) }} title="Editar">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => {
+                            setPlanoEditando(plano)
+                            setModalOpen(true)
+                          }}
+                          title="Editar"
+                        >
                           <Pencil className="w-4 h-4" />
                         </Button>
-                        <Button size="icon" variant="ghost" onClick={() => setPlanoExcluindo(plano)} title="Excluir"
-                          className="hover:text-red-600 hover:bg-red-50">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setPlanoExcluindo(plano)}
+                          title="Excluir"
+                          className="hover:text-red-600 hover:bg-red-50"
+                        >
                           <Trash2 className="w-4 h-4" />
                         </Button>
                       </div>
@@ -115,18 +144,15 @@ export function PlanosPage() {
         </CardContent>
       </Card>
 
-      <PlanoFormModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        plano={planoEditando}
-      />
+      <PlanoFormModal open={modalOpen} onClose={() => setModalOpen(false)} plano={planoEditando} />
 
       <AlertDialog open={!!planoExcluindo} onOpenChange={(v) => !v && setPlanoExcluindo(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Remover plano?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação removerá permanentemente o plano <strong>{planoExcluindo?.nome}</strong>. Alunos vinculados a este plano não serão afetados.
+              Esta ação removerá permanentemente o plano <strong>{planoExcluindo?.nome}</strong>. Alunos vinculados a
+              este plano não serão afetados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

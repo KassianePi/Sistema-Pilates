@@ -66,7 +66,7 @@ export function isValidUUID(uuid: string): boolean {
  * Valida se string é um UUID válido (v4 ou com hífens removidos)
  *
  * Aceita: com ou sem hífens
- * Exemplo: 
+ * Exemplo:
  *   - Com hífens: 123e4567-e89b-12d3-a456-426614174000
  *   - Sem hífens: 123e4567e89b12d3a456426614174000
  *

@@ -42,11 +42,18 @@ sleep 2
 # IMPORTANTE: em um banco PRÉ-EXISTENTE (criado antes das migrações), execute
 # UMA ÚNICA VEZ o baseline antes do primeiro deploy:
 #   docker compose run --rm backend npx prisma migrate resolve --applied 0_init
+#
+# Em produção (docker-compose.prod.yml), as migrations rodam uma única vez em
+# um serviço dedicado ("migrate"). Os containers de backend sobem com
+# SKIP_MIGRATE=1 para não reexecutar `migrate deploy` concorrentemente.
 
-echo "🗄️  Aplicando migrações do Prisma (migrate deploy)..."
-npx prisma migrate deploy
-
-echo "✅ Migrações aplicadas com sucesso!"
+if [ "$SKIP_MIGRATE" = "1" ]; then
+  echo "⏭️  SKIP_MIGRATE=1 — pulando aplicação de migrações (já aplicadas pelo serviço dedicado)."
+else
+  echo "🗄️  Aplicando migrações do Prisma (migrate deploy)..."
+  npx prisma migrate deploy
+  echo "✅ Migrações aplicadas com sucesso!"
+fi
 
 # ============================================================================
 # 3. INICIAR O SERVIDOR

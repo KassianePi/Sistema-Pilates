@@ -9,6 +9,9 @@
     "./schemas": "./schemas/index.ts",
     "./schemas/*": "./schemas/*.ts"
   },
+  "scripts": {
+    "build:cjs": "tsc -p tsconfig.build.json"
+  },
   "dependencies": {
     "zod": "^3.23.8"
   }

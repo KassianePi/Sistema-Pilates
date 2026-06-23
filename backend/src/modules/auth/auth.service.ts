@@ -106,6 +106,10 @@ export class AuthService {
         throw error
       }
 
+      if (error instanceof Error && error.name === 'ZodError') {
+        throw ValidationError.fromZod(error)
+      }
+
       logWarn('Erro durante login', {
         email,
         error: error instanceof Error ? error.message : String(error),
@@ -196,6 +200,10 @@ export class AuthService {
     } catch (error) {
       if (error instanceof ValidationError) {
         throw error
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        throw ValidationError.fromZod(error)
       }
 
       logWarn('Erro durante registro', {
@@ -307,7 +315,11 @@ export class AuthService {
   ): Promise<RegisterResponse> {
     const total = await this.repository.count()
     if (total > 0) {
-      throw new AppError('Sistema já foi configurado. Use o login de admin para criar novos usuários.', 'SETUP_ALREADY_DONE', 409)
+      throw new AppError(
+        'Sistema já foi configurado. Use o login de admin para criar novos usuários.',
+        'SETUP_ALREADY_DONE',
+        409,
+      )
     }
 
     const dados = setupSchema.parse({ email, nome, cpf, senha, senhaConfirmacao, telefone })
@@ -332,7 +344,15 @@ export class AuthService {
     logInfo('✅ Setup inicial concluído — admin criado', { usuarioId: usuario.id, email: usuario.email })
     await registrarLog({ usuarioId: usuario.id, acao: 'CREATE', entidade: 'Usuario', entidadeId: usuario.id })
 
-    return { usuarioId: usuario.id, email: usuario.email, nome: usuario.nomeCompleto, funcao: usuario.funcao, accessToken, refreshToken, expiresIn }
+    return {
+      usuarioId: usuario.id,
+      email: usuario.email,
+      nome: usuario.nomeCompleto,
+      funcao: usuario.funcao,
+      accessToken,
+      refreshToken,
+      expiresIn,
+    }
   }
 
   /**
@@ -376,7 +396,15 @@ export class AuthService {
     logInfo('✅ Usuário criado pelo admin', { usuarioId: usuario.id, email: usuario.email, funcao: usuario.funcao })
     await registrarLog({ usuarioId: usuario.id, acao: 'CREATE', entidade: 'Usuario', entidadeId: usuario.id })
 
-    return { usuarioId: usuario.id, email: usuario.email, nome: usuario.nomeCompleto, funcao: usuario.funcao, accessToken, refreshToken, expiresIn }
+    return {
+      usuarioId: usuario.id,
+      email: usuario.email,
+      nome: usuario.nomeCompleto,
+      funcao: usuario.funcao,
+      accessToken,
+      refreshToken,
+      expiresIn,
+    }
   }
 
   /**
@@ -470,7 +498,12 @@ export class AuthService {
       const professor = await prisma.professor.findUnique({
         where: { usuarioId: usuario.id },
       })
-      return { ...base, professorId: professor?.id ?? null, especialidade: professor?.especialidade ?? null, bio: professor?.bio ?? null }
+      return {
+        ...base,
+        professorId: professor?.id ?? null,
+        especialidade: professor?.especialidade ?? null,
+        bio: professor?.bio ?? null,
+      }
     }
 
     if (usuario.funcao === 'ALUNO') {

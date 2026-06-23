@@ -4,14 +4,27 @@ import { logDebug, logError } from '../../shared/utils'
 import type { Aluno, CreateAlunoData, UpdateAlunoData } from './alunos.types'
 
 const includeRelations = {
-  usuario: { select: { id: true, nomeCompleto: true, email: true, telefone: true, cpf: true } },
-  planoAtual: { select: { id: true, nome: true, tipo: true, aulas: true, preco: true } },
+  usuario: {
+    select: {
+      id: true,
+      nomeCompleto: true,
+      email: true,
+      telefone: true,
+      cpf: true,
+    },
+  },
+  planoAtual: {
+    select: { id: true, nome: true, tipo: true, aulas: true, preco: true },
+  },
 }
 
 export class AlunosRepository {
   async findById(id: string): Promise<Aluno | null> {
     try {
-      return await prisma.aluno.findUnique({ where: { id }, include: includeRelations }) as any
+      return (await prisma.aluno.findUnique({
+        where: { id },
+        include: includeRelations,
+      })) as any
     } catch (error) {
       logError('Erro ao buscar aluno por ID', error as Error, { id })
       throw AppError.internal('Erro ao buscar aluno')
@@ -20,14 +33,23 @@ export class AlunosRepository {
 
   async findByUsuarioId(usuarioId: string): Promise<Aluno | null> {
     try {
-      return await prisma.aluno.findUnique({ where: { usuarioId }, include: includeRelations }) as any
+      return (await prisma.aluno.findUnique({
+        where: { usuarioId },
+        include: includeRelations,
+      })) as any
     } catch (error) {
       logError('Erro ao buscar aluno por usuarioId', error as Error)
       throw AppError.internal('Erro ao buscar aluno')
     }
   }
 
-  async findAll(params: { status?: string; planoId?: string; search?: string; page: number; limit: number }): Promise<{ alunos: Aluno[]; total: number }> {
+  async findAll(params: {
+    status?: string
+    planoId?: string
+    search?: string
+    page: number
+    limit: number
+  }): Promise<{ alunos: Aluno[]; total: number }> {
     try {
       const { status, planoId, search, page, limit } = params
       const where: Record<string, unknown> = {}
@@ -36,7 +58,13 @@ export class AlunosRepository {
       if (search) where.usuario = { nomeCompleto: { contains: search } }
 
       const [alunos, total] = await Promise.all([
-        prisma.aluno.findMany({ where: where as any, include: includeRelations, skip: (page - 1) * limit, take: limit, orderBy: { criadoEm: 'desc' } }),
+        prisma.aluno.findMany({
+          where: where as any,
+          include: includeRelations,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { criadoEm: 'desc' },
+        }),
         prisma.aluno.count({ where: where as any }),
       ])
 
@@ -97,7 +125,11 @@ export class AlunosRepository {
       valor: number
       mesReferencia: Date
       dataVencimento: Date
-      comprovante: { arquivo: string; nomeArquivo: string; tipoArquivo: string }
+      comprovante: {
+        arquivo: string
+        nomeArquivo: string
+        tipoArquivo: string
+      }
     },
   ): Promise<{ aluno: Aluno; mensalidadeId: string; comprovanteId: string }> {
     try {
@@ -151,10 +183,16 @@ export class AlunosRepository {
             status: 'PENDENTE' as any,
           },
         })
-        return { aluno: aluno as any, mensalidadeId: mensalidade.id, comprovanteId: comprovante.id }
+        return {
+          aluno: aluno as any,
+          mensalidadeId: mensalidade.id,
+          comprovanteId: comprovante.id,
+        }
       })
     } catch (error) {
-      logError('Erro ao criar aluno com matrícula', error as Error, { email: data.email })
+      logError('Erro ao criar aluno com matrícula', error as Error, {
+        email: data.email,
+      })
       throw AppError.internal('Erro ao cadastrar aluno')
     }
   }
@@ -180,18 +218,22 @@ export class AlunosRepository {
           where: { id },
           data: {
             ...(data.planoId !== undefined && { planoId: data.planoId }),
-            ...(data.dataNascimento !== undefined && { dataNascimento: data.dataNascimento }),
+            ...(data.dataNascimento !== undefined && {
+              dataNascimento: data.dataNascimento,
+            }),
             ...(data.endereco !== undefined && { endereco: data.endereco }),
             ...(data.cidade !== undefined && { cidade: data.cidade }),
             ...(data.estado !== undefined && { estado: data.estado }),
             ...(data.cep !== undefined && { cep: data.cep }),
-            ...(data.observacoes !== undefined && { observacoes: data.observacoes }),
+            ...(data.observacoes !== undefined && {
+              observacoes: data.observacoes,
+            }),
             ...(data.status && { status: data.status }),
           },
         })
       })
 
-      return await this.findById(id) as Aluno
+      return (await this.findById(id)) as Aluno
     } catch (error) {
       if (error instanceof AppError) throw error
       logError('Erro ao atualizar aluno', error as Error, { id })

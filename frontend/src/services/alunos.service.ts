@@ -35,7 +35,12 @@ export interface UpdateAlunoDTO {
 type BackendListResponse = { alunos: Aluno[]; total: number; page: number; limit: number; totalPages: number }
 
 export const alunosService = {
-  async listar(params?: { pagina?: number; limite?: number; busca?: string; status?: string }): Promise<PaginatedResponse<Aluno>> {
+  async listar(params?: {
+    pagina?: number
+    limite?: number
+    busca?: string
+    status?: string
+  }): Promise<PaginatedResponse<Aluno>> {
     const { data } = await api.get<ApiResponse<BackendListResponse>>('/alunos', {
       params: { search: params?.busca, status: params?.status, page: params?.pagina, limit: params?.limite },
     })

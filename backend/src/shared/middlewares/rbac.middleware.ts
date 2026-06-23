@@ -17,7 +17,7 @@ import { logWarn, logDebug } from '../utils/logger'
 export const ROLE_PERMISSIONS = {
   ADMIN: {
     // Acesso total
-    users: ['create', 'read', 'update', 'delete'],
+    usuarios: ['create', 'read', 'update', 'delete'],
     alunos: ['create', 'read', 'update', 'delete', 'bulk_delete'],
     professores: ['create', 'read', 'update', 'delete'],
     agenda: ['create', 'read', 'update', 'delete', 'manage'],

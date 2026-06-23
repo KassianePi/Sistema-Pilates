@@ -36,20 +36,30 @@ export function PixCard({ chavePix, tipoChavePix, nomeRecebedor, qrCodeBase64 }:
 
         {chavePix && (
           <div className="bg-branco-puro rounded-lg p-3 border border-lilas-medio/20 space-y-1">
-            <p className="text-xs text-cinza-texto">{tipoChavePix ? TIPO_CHAVE[tipoChavePix] ?? tipoChavePix : 'Chave PIX'}</p>
+            <p className="text-xs text-cinza-texto">
+              {tipoChavePix ? (TIPO_CHAVE[tipoChavePix] ?? tipoChavePix) : 'Chave PIX'}
+            </p>
             <div className="flex items-center gap-2">
               <p className="font-mono text-sm font-semibold text-cinza-forte flex-1 break-all">{chavePix}</p>
               <Button variant="outline" size="sm" onClick={copiar} className="shrink-0">
                 <Copy className="w-3.5 h-3.5 mr-1" /> Copiar
               </Button>
             </div>
-            {nomeRecebedor && <p className="text-xs text-cinza-texto">Recebedor: <strong>{nomeRecebedor}</strong></p>}
+            {nomeRecebedor && (
+              <p className="text-xs text-cinza-texto">
+                Recebedor: <strong>{nomeRecebedor}</strong>
+              </p>
+            )}
           </div>
         )}
 
         {qrCodeBase64 && (
           <div className="flex justify-center">
-            <img src={qrCodeBase64} alt="QR Code PIX" className="w-40 h-40 object-contain border border-bege-cartao rounded-lg bg-branco-puro" />
+            <img
+              src={qrCodeBase64}
+              alt="QR Code PIX"
+              className="w-40 h-40 object-contain border border-bege-cartao rounded-lg bg-branco-puro"
+            />
           </div>
         )}
 

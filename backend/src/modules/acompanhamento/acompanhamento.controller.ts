@@ -33,7 +33,8 @@ export async function detalheAluno(request: FastifyRequest, reply: FastifyReply)
     const data = await acompanhamentoService.detalhe(id)
     return reply.code(200).send({ success: true, data })
   } catch (error: any) {
-    if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+    if (error?.statusCode === 404)
+      return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
     logWarn('Erro ao carregar detalhe do aluno', { error: String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao carregar aluno', code: 'INTERNAL_ERROR' })
   }

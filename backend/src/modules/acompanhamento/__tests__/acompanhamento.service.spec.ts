@@ -88,10 +88,12 @@ describe('AcompanhamentoService — classificação de risco', () => {
       alunoBase({ id: 'a-1' }),
       alunoBase({ id: 'a-2', presencas: [{ status: 'PRESENTE', dataRegistro: diasAtras(1) }] }),
     ])
-    mockRepo.findUltimasPresencas.mockResolvedValue(new Map([
-      ['a-1', diasAtras(40)], // EM_RISCO
-      ['a-2', diasAtras(1)],  // OK
-    ]))
+    mockRepo.findUltimasPresencas.mockResolvedValue(
+      new Map([
+        ['a-1', diasAtras(40)], // EM_RISCO
+        ['a-2', diasAtras(1)], // OK
+      ]),
+    )
 
     const { alunos } = await service.listar({ risco: 'EM_RISCO' })
     expect(alunos).toHaveLength(1)

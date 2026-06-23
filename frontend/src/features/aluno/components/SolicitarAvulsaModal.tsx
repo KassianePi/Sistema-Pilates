@@ -32,7 +32,9 @@ export function SolicitarAvulsaModal({ onClose }: { onClose: () => void }) {
             Solicite uma aula avulsa ao studio. O administrador criará a cobrança e confirmará a data.
           </p>
           <div className="space-y-1.5">
-            <Label>Data desejada <span className="text-cinza-texto text-xs">(opcional)</span></Label>
+            <Label>
+              Data desejada <span className="text-cinza-texto text-xs">(opcional)</span>
+            </Label>
             <Input
               type="date"
               value={dataDesejada}
@@ -41,7 +43,9 @@ export function SolicitarAvulsaModal({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label>Observação <span className="text-cinza-texto text-xs">(opcional)</span></Label>
+            <Label>
+              Observação <span className="text-cinza-texto text-xs">(opcional)</span>
+            </Label>
             <Textarea
               placeholder="Ex: horário preferido, modalidade, professor..."
               rows={3}
@@ -50,8 +54,14 @@ export function SolicitarAvulsaModal({ onClose }: { onClose: () => void }) {
             />
           </div>
           <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose}>Cancelar</Button>
-            <Button onClick={submit} disabled={solicitar.isPending} className="bg-lilas-medio hover:bg-roxo-profundo text-branco-puro">
+            <Button variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={submit}
+              disabled={solicitar.isPending}
+              className="bg-lilas-medio hover:bg-roxo-profundo text-branco-puro"
+            >
               {solicitar.isPending ? 'Enviando...' : 'Enviar solicitação'}
             </Button>
           </div>

@@ -44,7 +44,11 @@ function mapNotificacao(raw: BackendNotificacao): Notificacao {
 }
 
 export const notificacoesService = {
-  async listar(params?: { pagina?: number; limite?: number; status?: 'NAO_LIDA' | 'LIDA' | 'ARQUIVADA' }): Promise<NotificacoesResult> {
+  async listar(params?: {
+    pagina?: number
+    limite?: number
+    status?: 'NAO_LIDA' | 'LIDA' | 'ARQUIVADA'
+  }): Promise<NotificacoesResult> {
     const { data } = await api.get<ApiResponse<BackendListResponse>>('/notificacoes', {
       params: { page: params?.pagina, limit: params?.limite, status: params?.status },
     })

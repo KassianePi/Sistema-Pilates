@@ -11,7 +11,7 @@ const includeRelations = {
 export class PresencaRepository {
   async findById(id: string): Promise<Presenca | null> {
     try {
-      return await prisma.presenca.findUnique({ where: { id }, include: includeRelations }) as any
+      return (await prisma.presenca.findUnique({ where: { id }, include: includeRelations })) as any
     } catch (error) {
       logError('Erro ao buscar presença', error as Error, { id })
       throw AppError.internal('Erro ao buscar presença')
@@ -20,17 +20,25 @@ export class PresencaRepository {
 
   async findByAlunoAula(alunoId: string, aulaId: string): Promise<Presenca | null> {
     try {
-      return await prisma.presenca.findUnique({
+      return (await prisma.presenca.findUnique({
         where: { alunoId_aulaId: { alunoId, aulaId } },
         include: includeRelations,
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao buscar presença por aluno/aula', error as Error)
       throw AppError.internal('Erro ao buscar presença')
     }
   }
 
-  async findAll(params: { alunoId?: string; aulaId?: string; status?: string; dataInicio?: Date; dataFim?: Date; page: number; limit: number }): Promise<{ presencas: Presenca[]; total: number }> {
+  async findAll(params: {
+    alunoId?: string
+    aulaId?: string
+    status?: string
+    dataInicio?: Date
+    dataFim?: Date
+    page: number
+    limit: number
+  }): Promise<{ presencas: Presenca[]; total: number }> {
     try {
       const { alunoId, aulaId, status, dataInicio, dataFim, page, limit } = params
       const where: Record<string, unknown> = {}
@@ -45,7 +53,13 @@ export class PresencaRepository {
       }
 
       const [presencas, total] = await Promise.all([
-        prisma.presenca.findMany({ where: where as any, include: includeRelations, skip: (page - 1) * limit, take: limit, orderBy: { dataRegistro: 'desc' } }),
+        prisma.presenca.findMany({
+          where: where as any,
+          include: includeRelations,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { dataRegistro: 'desc' },
+        }),
         prisma.presenca.count({ where: where as any }),
       ])
 
@@ -58,7 +72,7 @@ export class PresencaRepository {
 
   async create(data: CreatePresencaData): Promise<Presenca> {
     try {
-      return await prisma.presenca.create({ data: data as any, include: includeRelations }) as any
+      return (await prisma.presenca.create({ data: data as any, include: includeRelations })) as any
     } catch (error) {
       logError('Erro ao registrar presença', error as Error)
       throw AppError.internal('Erro ao registrar presença')
@@ -67,7 +81,7 @@ export class PresencaRepository {
 
   async update(id: string, data: UpdatePresencaData): Promise<Presenca> {
     try {
-      return await prisma.presenca.update({ where: { id }, data: data as any, include: includeRelations }) as any
+      return (await prisma.presenca.update({ where: { id }, data: data as any, include: includeRelations })) as any
     } catch (error) {
       logError('Erro ao atualizar presença', error as Error, { id })
       throw AppError.internal('Erro ao atualizar presença')

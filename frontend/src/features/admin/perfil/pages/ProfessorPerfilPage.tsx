@@ -17,7 +17,11 @@ import type { AdminUser } from '@/types/auth.types'
 
 const perfilSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter ao menos 3 caracteres'),
-  telefone: z.string().regex(/^\d{10,11}$/, 'Telefone inválido').optional().or(z.literal('')),
+  telefone: z
+    .string()
+    .regex(/^\d{10,11}$/, 'Telefone inválido')
+    .optional()
+    .or(z.literal('')),
   especialidade: z.string().max(200).optional().or(z.literal('')),
   bio: z.string().max(500, 'Bio deve ter no máximo 500 caracteres').optional().or(z.literal('')),
 })
@@ -42,7 +46,14 @@ function SecaoPix() {
     queryFn: configuracaoService.buscar,
   })
 
-  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<PixForm>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<PixForm>({
     resolver: zodResolver(pixSchema),
   })
 
@@ -72,7 +83,10 @@ function SecaoPix() {
   function onArquivoQr(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 1024 * 1024 * 2) { toast.error('QR Code deve ter no máximo 2MB.'); return }
+    if (file.size > 1024 * 1024 * 2) {
+      toast.error('QR Code deve ter no máximo 2MB.')
+      return
+    }
     const reader = new FileReader()
     reader.onload = (ev) => {
       const base64 = ev.target?.result as string
@@ -100,7 +114,10 @@ function SecaoPix() {
   if (isLoading) return <div className="text-cinza-medio text-sm py-4">Carregando...</div>
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="bg-branco-puro rounded-xl border border-bege-cartao p-6 space-y-5">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="bg-branco-puro rounded-xl border border-bege-cartao p-6 space-y-5"
+    >
       <h2 className="text-sm font-semibold text-cinza-forte uppercase tracking-wide flex items-center gap-2">
         <QrCode className="w-4 h-4 text-roxo-profundo" />
         Dados de Pagamento PIX
@@ -115,7 +132,9 @@ function SecaoPix() {
             <Key className="w-3.5 h-3.5" /> Tipo de chave
           </Label>
           <Select value={watch('tipoChavePix') ?? ''} onValueChange={(v) => setValue('tipoChavePix', v as any)}>
-            <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+            <SelectTrigger>
+              <SelectValue placeholder="Selecione" />
+            </SelectTrigger>
             <SelectContent>
               <SelectItem value="CPF">CPF</SelectItem>
               <SelectItem value="EMAIL">E-mail</SelectItem>
@@ -144,13 +163,30 @@ function SecaoPix() {
 
       <div className="space-y-2">
         <Label className="flex items-center gap-1.5 text-cinza-forte font-medium text-sm">
-          <QrCode className="w-3.5 h-3.5" /> QR Code PIX <span className="text-cinza-medio font-normal">(opcional, PNG/JPG, máx 2MB)</span>
+          <QrCode className="w-3.5 h-3.5" /> QR Code PIX{' '}
+          <span className="text-cinza-medio font-normal">(opcional, PNG/JPG, máx 2MB)</span>
         </Label>
-        <input ref={inputFileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={onArquivoQr} />
+        <input
+          ref={inputFileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={onArquivoQr}
+        />
         {preview ? (
           <div className="flex items-start gap-4">
-            <img src={preview} alt="QR Code PIX" className="w-32 h-32 object-contain border border-bege-cartao rounded-lg" />
-            <Button type="button" variant="outline" size="sm" onClick={removerQr} className="text-rosa-vibrante border-rosa-vibrante/30">
+            <img
+              src={preview}
+              alt="QR Code PIX"
+              className="w-32 h-32 object-contain border border-bege-cartao rounded-lg"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={removerQr}
+              className="text-rosa-vibrante border-rosa-vibrante/30"
+            >
               <X className="w-3.5 h-3.5 mr-1" /> Remover
             </Button>
           </div>
@@ -182,7 +218,12 @@ export function ProfessorPerfilPage() {
     queryFn: meService.getMeuPerfil,
   })
 
-  const { register, handleSubmit, reset, formState: { errors, isSubmitting, isDirty } } = useForm<PerfilForm>({
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting, isDirty },
+  } = useForm<PerfilForm>({
     resolver: zodResolver(perfilSchema),
   })
 
@@ -207,7 +248,12 @@ export function ProfessorPerfilPage() {
       }),
     onSuccess: (updated) => {
       queryClient.invalidateQueries({ queryKey: ['meu-perfil'] })
-      reset({ nomeCompleto: updated.nome, telefone: updated.telefone ?? '', especialidade: updated.especialidade ?? '', bio: updated.bio ?? '' })
+      reset({
+        nomeCompleto: updated.nome,
+        telefone: updated.telefone ?? '',
+        especialidade: updated.especialidade ?? '',
+        bio: updated.bio ?? '',
+      })
       toast.success('Perfil atualizado com sucesso.')
     },
     onError: () => toast.error('Erro ao atualizar perfil. Tente novamente.'),
@@ -241,7 +287,10 @@ export function ProfessorPerfilPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit((d) => mutation.mutate(d))} className="bg-branco-puro rounded-xl border border-bege-cartao p-6 space-y-5">
+      <form
+        onSubmit={handleSubmit((d) => mutation.mutate(d))}
+        className="bg-branco-puro rounded-xl border border-bege-cartao p-6 space-y-5"
+      >
         <h2 className="text-sm font-semibold text-cinza-forte uppercase tracking-wide mb-4">Dados Pessoais</h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -265,7 +314,11 @@ export function ProfessorPerfilPage() {
             <Label className="flex items-center gap-1.5 text-cinza-forte font-medium text-sm">
               <Mail className="w-3.5 h-3.5" /> E-mail
             </Label>
-            <Input value={perfil?.email ?? ''} disabled className="bg-bege-suave/50 border-cinza-medio/30 text-cinza-texto cursor-not-allowed" />
+            <Input
+              value={perfil?.email ?? ''}
+              disabled
+              className="bg-bege-suave/50 border-cinza-medio/30 text-cinza-texto cursor-not-allowed"
+            />
             <p className="text-cinza-medio text-xs">Para alterar o e-mail, contate o administrador.</p>
           </div>
         </div>
@@ -276,14 +329,23 @@ export function ProfessorPerfilPage() {
             <Label htmlFor="especialidade" className="flex items-center gap-1.5 text-cinza-forte font-medium text-sm">
               <Sparkles className="w-3.5 h-3.5" /> Especialidade
             </Label>
-            <Input id="especialidade" placeholder="Ex: Pilates Clínico, Reabilitação..." {...register('especialidade')} />
+            <Input
+              id="especialidade"
+              placeholder="Ex: Pilates Clínico, Reabilitação..."
+              {...register('especialidade')}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="bio" className="flex items-center gap-1.5 text-cinza-forte font-medium text-sm">
               <BookOpen className="w-3.5 h-3.5" /> Sobre mim
             </Label>
-            <textarea id="bio" rows={4} placeholder="Breve descrição sobre sua experiência..." {...register('bio')}
-              className="w-full rounded-md border border-cinza-medio/50 px-3 py-2 text-sm focus:outline-none focus:border-lilas-medio focus:ring-1 focus:ring-lilas-medio/20 resize-none bg-white" />
+            <textarea
+              id="bio"
+              rows={4}
+              placeholder="Breve descrição sobre sua experiência..."
+              {...register('bio')}
+              className="w-full rounded-md border border-cinza-medio/50 px-3 py-2 text-sm focus:outline-none focus:border-lilas-medio focus:ring-1 focus:ring-lilas-medio/20 resize-none bg-white"
+            />
           </div>
         </div>
 

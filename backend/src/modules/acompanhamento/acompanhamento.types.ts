@@ -30,7 +30,12 @@ export interface ResumoAcompanhamento {
 export interface DetalheAluno extends AlunoAcompanhamento {
   dataInicio: Date
   telefone: string | null
-  presencas: Array<{ id: string; status: string; dataRegistro: Date; aula: { dataHoraInicio: Date; sala: string } | null }>
+  presencas: Array<{
+    id: string
+    status: string
+    dataRegistro: Date
+    aula: { dataHoraInicio: Date; sala: string } | null
+  }>
   mensalidades: Array<{ id: string; status: string; valor: unknown; dataVencimento: Date; plano: string | null }>
   proximasAulas: Array<{ id: string; dataHoraInicio: Date; sala: string; status: string }>
 }

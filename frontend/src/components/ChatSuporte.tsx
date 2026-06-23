@@ -12,7 +12,7 @@ interface AnswerNode {
   id: NodeId
   pergunta: string
   opcoes?: { label: string; next: NodeId }[]
-  resposta?: string   // folha da árvore — exibe resposta final
+  resposta?: string // folha da árvore — exibe resposta final
 }
 
 const NODES: Record<NodeId, AnswerNode> = {
@@ -218,7 +218,11 @@ export function ChatSuporte() {
               <p className="text-white/60 text-xs">Respostas instantâneas</p>
             </div>
             {historico.length > 1 && (
-              <button onClick={voltar} className="hover:bg-white/10 p-1 rounded-lg transition-colors" aria-label="Voltar">
+              <button
+                onClick={voltar}
+                className="hover:bg-white/10 p-1 rounded-lg transition-colors"
+                aria-label="Voltar"
+              >
                 <ChevronLeft className="w-4 h-4" />
               </button>
             )}

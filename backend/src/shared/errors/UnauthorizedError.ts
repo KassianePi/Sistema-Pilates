@@ -7,7 +7,8 @@
  */
 
 export class UnauthorizedError extends Error {
-  readonly code: 'INVALID_CREDENTIALS' | 'TOKEN_EXPIRED' | 'TOKEN_INVALID' | 'INSUFFICIENT_PERMISSION' = 'INVALID_CREDENTIALS'
+  readonly code: 'INVALID_CREDENTIALS' | 'TOKEN_EXPIRED' | 'TOKEN_INVALID' | 'INSUFFICIENT_PERMISSION' =
+    'INVALID_CREDENTIALS'
   readonly statusCode: 401 | 403
   readonly details?: Record<string, any>
 
@@ -92,12 +93,7 @@ export class UnauthorizedError extends Error {
    * )
    */
   static insufficientPermission(message = 'Permissão insuficiente', requiredRole?: string): UnauthorizedError {
-    return new UnauthorizedError(
-      message,
-      'INSUFFICIENT_PERMISSION',
-      403,
-      requiredRole ? { requiredRole } : undefined,
-    )
+    return new UnauthorizedError(message, 'INSUFFICIENT_PERMISSION', 403, requiredRole ? { requiredRole } : undefined)
   }
 
   /**

@@ -4,9 +4,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { toast } from 'sonner'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-} from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -28,17 +26,31 @@ function formatarData(d: string) {
   return new Date(d).toLocaleDateString('pt-BR')
 }
 function formatarDataHora(d: string) {
-  return new Date(d).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+  return new Date(d).toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 const TIPOS_RELATORIO: { value: TipoRelatorio; label: string; descricao: string; icon: React.ElementType }[] = [
   { value: 'FREQUENCIA', label: 'Frequência', descricao: 'Presenças e ausências no período', icon: Users },
   { value: 'FINANCEIRO', label: 'Financeiro', descricao: 'Pagamentos realizados no período', icon: DollarSign },
-  { value: 'RECEITA_MENSAL', label: 'Receita Mensal', descricao: 'Mensalidades e receita do período', icon: TrendingUp },
+  {
+    value: 'RECEITA_MENSAL',
+    label: 'Receita Mensal',
+    descricao: 'Mensalidades e receita do período',
+    icon: TrendingUp,
+  },
   { value: 'PENDENCIAS_PAGAMENTO', label: 'Pendências', descricao: 'Mensalidades em aberto', icon: AlertCircle },
 ]
 
-const TIPO_BADGE: Record<TipoRelatorio, { label: string; variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive' | 'outline' }> = {
+const TIPO_BADGE: Record<
+  TipoRelatorio,
+  { label: string; variant: 'default' | 'secondary' | 'success' | 'warning' | 'destructive' | 'outline' }
+> = {
   FREQUENCIA: { label: 'Frequência', variant: 'secondary' },
   FINANCEIRO: { label: 'Financeiro', variant: 'success' },
   RECEITA_MENSAL: { label: 'Receita Mensal', variant: 'default' },
@@ -73,7 +85,7 @@ function ConteudoRelatorio({ relatorio }: { relatorio: Relatorio }) {
 
   if (relatorio.tipo === 'FREQUENCIA') {
     const presencas = (conteudo.presencas ?? []) as { status: string; _count: { id: number } }[]
-    const chartData = presencas.map(p => ({
+    const chartData = presencas.map((p) => ({
       name: STATUS_PRESENCA_LABEL[p.status] ?? p.status,
       quantidade: p._count.id,
     }))
@@ -81,7 +93,7 @@ function ConteudoRelatorio({ relatorio }: { relatorio: Relatorio }) {
     return (
       <div className="space-y-4">
         <div className="grid grid-cols-3 gap-3">
-          {presencas.map(p => (
+          {presencas.map((p) => (
             <div key={p.status} className="bg-bege-suave rounded-lg p-3 text-center">
               <p className="text-2xl font-bold text-cinza-forte">{p._count.id}</p>
               <p className="text-xs text-cinza-texto mt-0.5">{STATUS_PRESENCA_LABEL[p.status] ?? p.status}</p>
@@ -110,8 +122,8 @@ function ConteudoRelatorio({ relatorio }: { relatorio: Relatorio }) {
   }
 
   if (relatorio.tipo === 'FINANCEIRO') {
-    const pagamentos = conteudo.pagamentos as number ?? 0
-    const totalArrecadado = conteudo.totalArrecadado as number ?? 0
+    const pagamentos = (conteudo.pagamentos as number) ?? 0
+    const totalArrecadado = (conteudo.totalArrecadado as number) ?? 0
     return (
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-bege-suave rounded-lg p-4 text-center">
@@ -127,10 +139,10 @@ function ConteudoRelatorio({ relatorio }: { relatorio: Relatorio }) {
   }
 
   if (relatorio.tipo === 'RECEITA_MENSAL') {
-    const totalMensalidades = conteudo.totalMensalidades as number ?? 0
-    const totalBruto = conteudo.totalBruto as number ?? 0
-    const totalDesconto = conteudo.totalDesconto as number ?? 0
-    const totalLiquido = conteudo.totalLiquido as number ?? 0
+    const totalMensalidades = (conteudo.totalMensalidades as number) ?? 0
+    const totalBruto = (conteudo.totalBruto as number) ?? 0
+    const totalDesconto = (conteudo.totalDesconto as number) ?? 0
+    const totalLiquido = (conteudo.totalLiquido as number) ?? 0
     const chartData = [
       { name: 'Bruto', valor: totalBruto },
       { name: 'Desconto', valor: totalDesconto },
@@ -161,7 +173,10 @@ function ConteudoRelatorio({ relatorio }: { relatorio: Relatorio }) {
             <BarChart data={chartData} margin={{ top: 4, right: 8, left: -8, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--cinza-medio)" opacity={0.3} />
               <XAxis dataKey="name" tick={{ fontSize: 12, fill: 'var(--cinza-texto)' }} />
-              <YAxis tick={{ fontSize: 12, fill: 'var(--cinza-texto)' }} tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`} />
+              <YAxis
+                tick={{ fontSize: 12, fill: 'var(--cinza-texto)' }}
+                tickFormatter={(v) => `R$${(v / 1000).toFixed(0)}k`}
+              />
               <Tooltip formatter={(v) => [formatarValor(Number(v)), 'Valor']} />
               <Bar dataKey="valor" fill="var(--lilas-medio)" radius={[4, 4, 0, 0]} />
             </BarChart>
@@ -172,7 +187,7 @@ function ConteudoRelatorio({ relatorio }: { relatorio: Relatorio }) {
   }
 
   if (relatorio.tipo === 'PENDENCIAS_PAGAMENTO') {
-    const totalPendencias = conteudo.totalPendencias as number ?? 0
+    const totalPendencias = (conteudo.totalPendencias as number) ?? 0
     return (
       <div className="flex justify-center py-4">
         <div className="bg-amber-50 border border-amber-200 rounded-xl px-12 py-8 text-center">
@@ -253,7 +268,9 @@ export function RelatoriosPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-cinza-forte">Relatórios</h1>
-        <p className="text-sm text-cinza-texto mt-1">Gere e visualize relatórios de frequência, financeiro e mensalidades.</p>
+        <p className="text-sm text-cinza-texto mt-1">
+          Gere e visualize relatórios de frequência, financeiro e mensalidades.
+        </p>
       </div>
 
       {/* Formulário para gerar relatório */}
@@ -288,13 +305,18 @@ export function RelatoriosPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Professor responsável *</Label>
-                <Select onValueChange={(v) => form.setValue('professorId', v, { shouldValidate: true })} value={form.watch('professorId')}>
+                <Select
+                  onValueChange={(v) => form.setValue('professorId', v, { shouldValidate: true })}
+                  value={form.watch('professorId')}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder={professores.length === 0 ? 'Nenhum professor ativo' : 'Selecione'} />
                   </SelectTrigger>
                   <SelectContent>
                     {professores.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>{p.usuario.nomeCompleto}</SelectItem>
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.usuario.nomeCompleto}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -331,7 +353,9 @@ export function RelatoriosPage() {
               )}
             </div>
             <div className="space-y-1.5">
-              <Label>Descrição <span className="text-cinza-medio text-xs">(opcional)</span></Label>
+              <Label>
+                Descrição <span className="text-cinza-medio text-xs">(opcional)</span>
+              </Label>
               <Textarea rows={2} placeholder="Observações sobre o relatório..." {...form.register('descricao')} />
             </div>
 
@@ -370,7 +394,9 @@ export function RelatoriosPage() {
                 <SelectContent>
                   <SelectItem value="all">Todos os tipos</SelectItem>
                   {TIPOS_RELATORIO.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -412,15 +438,11 @@ export function RelatoriosPage() {
                       <TableCell>
                         <Badge variant={badge.variant}>{badge.label}</Badge>
                       </TableCell>
-                      <TableCell className="text-cinza-texto">
-                        {r.professor?.usuario.nomeCompleto ?? '—'}
-                      </TableCell>
+                      <TableCell className="text-cinza-texto">{r.professor?.usuario.nomeCompleto ?? '—'}</TableCell>
                       <TableCell className="text-cinza-texto text-sm">
                         {formatarData(r.dataPeriodoInicio)} – {formatarData(r.dataPeriodoFim)}
                       </TableCell>
-                      <TableCell className="text-cinza-texto text-sm">
-                        {formatarDataHora(r.criadoEm)}
-                      </TableCell>
+                      <TableCell className="text-cinza-texto text-sm">{formatarDataHora(r.criadoEm)}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1.5">
                           <Button size="sm" variant="outline" onClick={() => setModalRelatorio(r)}>
@@ -463,7 +485,8 @@ export function RelatoriosPage() {
             </DialogTitle>
             {modalRelatorio && (
               <p className="text-xs text-cinza-medio mt-0.5">
-                Período: {formatarData(modalRelatorio.dataPeriodoInicio)} a {formatarData(modalRelatorio.dataPeriodoFim)}
+                Período: {formatarData(modalRelatorio.dataPeriodoInicio)} a{' '}
+                {formatarData(modalRelatorio.dataPeriodoFim)}
                 {modalRelatorio.professor && ` · ${modalRelatorio.professor.usuario.nomeCompleto}`}
               </p>
             )}

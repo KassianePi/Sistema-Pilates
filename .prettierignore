@@ -1,0 +1,10 @@
+node_modules/
+dist/
+build/
+coverage/
+*.sql
+*.md
+package-lock.json
+backend/prisma/migrations/
+database/migrations/
+database/scripts/*.sql

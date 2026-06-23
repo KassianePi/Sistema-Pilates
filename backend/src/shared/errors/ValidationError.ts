@@ -58,11 +58,12 @@ export class ValidationError extends Error {
    * }
    */
   static fromZod(zodError: any): ValidationError {
-    const details = zodError.errors?.map((err: any) => ({
-      field: err.path?.join('.') || 'unknown',
-      message: err.message,
-      value: err.received,
-    })) || []
+    const details =
+      zodError.errors?.map((err: any) => ({
+        field: err.path?.join('.') || 'unknown',
+        message: err.message,
+        value: err.received,
+      })) || []
 
     return new ValidationError('Dados inválidos', details)
   }

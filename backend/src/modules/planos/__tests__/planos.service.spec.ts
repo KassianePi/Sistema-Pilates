@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PlanosService } from '../planos.service'
+import { ValidationError } from '../../../shared/errors'
 
 describe('PlanosService', () => {
   let service: PlanosService
@@ -33,13 +34,22 @@ describe('PlanosService', () => {
     it('deve lançar erro se nome já existe', async () => {
       mockRepo.findByNome.mockResolvedValue({ id: 'outro-id', nome: 'Mensal' })
 
-      await expect(service.criar({ nome: 'Mensal', tipo: 'MENSAL', aulas: 4, preco: 200 }))
-        .rejects.toThrow('Já existe um plano com este nome')
+      // ValidationError.forField usa "Validação falhou: <campo>" como mensagem
+      // top-level (padrão usado em todo o backend) e a razão específica vai em details[0].message
+      let erroCapturado: any
+      try {
+        await service.criar({ nome: 'Mensal', tipo: 'MENSAL', aulas: 4, preco: 200 })
+      } catch (error) {
+        erroCapturado = error
+      }
+
+      expect(erroCapturado).toBeInstanceOf(ValidationError)
+      expect(erroCapturado.message).toBe('Validação falhou: nome')
+      expect(erroCapturado.details[0].message).toBe('Já existe um plano com este nome')
     })
 
     it('deve lançar erro de validação para aulas inválidas', async () => {
-      await expect(service.criar({ nome: 'X', tipo: 'MENSAL', aulas: 0, preco: 200 }))
-        .rejects.toThrow()
+      await expect(service.criar({ nome: 'X', tipo: 'MENSAL', aulas: 0, preco: 200 })).rejects.toThrow()
     })
   })
 

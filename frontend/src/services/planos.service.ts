@@ -25,7 +25,17 @@ function tipoToDuracao(tipo: TipoPlano): number {
   return map[tipo] ?? 1
 }
 
-type BackendPlano = { id: string; nome: string; descricao?: string | null; preco: number; aulas: number; tipo: TipoPlano; ativo: boolean; createdAt: string; updatedAt: string }
+type BackendPlano = {
+  id: string
+  nome: string
+  descricao?: string | null
+  preco: number
+  aulas: number
+  tipo: TipoPlano
+  ativo: boolean
+  createdAt: string
+  updatedAt: string
+}
 type BackendListResponse = { planos: BackendPlano[]; total: number; page: number; limit: number; totalPages: number }
 
 function mapPlano(raw: BackendPlano): Plano {

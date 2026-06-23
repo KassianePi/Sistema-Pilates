@@ -14,7 +14,11 @@ export function SelectValue(props: React.ComponentPropsWithoutRef<typeof SelectP
   return <SelectPrimitive.Value {...props} />
 }
 
-export function SelectTrigger({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>) {
+export function SelectTrigger({
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Trigger>) {
   return (
     <SelectPrimitive.Trigger
       className={cn(
@@ -31,7 +35,12 @@ export function SelectTrigger({ className, children, ...props }: React.Component
   )
 }
 
-export function SelectContent({ className, children, position = 'popper', ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>) {
+export function SelectContent({
+  className,
+  children,
+  position = 'popper',
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Content>) {
   return (
     <SelectPrimitive.Portal>
       <SelectPrimitive.Content
@@ -43,7 +52,13 @@ export function SelectContent({ className, children, position = 'popper', ...pro
         position={position}
         {...props}
       >
-        <SelectPrimitive.Viewport className={cn('p-1', position === 'popper' && 'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]')}>
+        <SelectPrimitive.Viewport
+          className={cn(
+            'p-1',
+            position === 'popper' &&
+              'h-[var(--radix-select-trigger-height)] w-full min-w-[var(--radix-select-trigger-width)]',
+          )}
+        >
           {children}
         </SelectPrimitive.Viewport>
       </SelectPrimitive.Content>
@@ -51,7 +66,11 @@ export function SelectContent({ className, children, position = 'popper', ...pro
   )
 }
 
-export function SelectItem({ className, children, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>) {
+export function SelectItem({
+  className,
+  children,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Item>) {
   return (
     <SelectPrimitive.Item
       className={cn(
@@ -71,9 +90,17 @@ export function SelectItem({ className, children, ...props }: React.ComponentPro
 }
 
 export function SelectLabel({ className, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Label>) {
-  return <SelectPrimitive.Label className={cn('py-1.5 pl-8 pr-2 text-xs font-semibold text-cinza-medio', className)} {...props} />
+  return (
+    <SelectPrimitive.Label
+      className={cn('py-1.5 pl-8 pr-2 text-xs font-semibold text-cinza-medio', className)}
+      {...props}
+    />
+  )
 }
 
-export function SelectSeparator({ className, ...props }: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>) {
+export function SelectSeparator({
+  className,
+  ...props
+}: React.ComponentPropsWithoutRef<typeof SelectPrimitive.Separator>) {
   return <SelectPrimitive.Separator className={cn('-mx-1 my-1 h-px bg-bege-suave', className)} {...props} />
 }

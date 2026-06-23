@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+.env.production
 .env.production.local
 
 # ====== NODE ======
@@ -46,6 +47,17 @@ logs/
 # ====== PRISMA ======
 prisma/migrations/
 .prisma/
+
+# ====== BACKUPS ======
+database/backups/*
+!database/backups/.gitkeep
+
+# ====== CERTIFICADOS SSL ======
+nginx/ssl/*
+!nginx/ssl/.gitkeep
+*.key
+*.crt
+*.csr
 
 # ====== CACHE ======
 .cache/

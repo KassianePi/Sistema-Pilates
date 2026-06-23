@@ -35,7 +35,8 @@ export class EstornosService {
       include: { plano: true },
     })
     if (!mensalidade) throw ValidationError.forField('mensalidadeId', 'Mensalidade não encontrada')
-    if (String(mensalidade.alunoId) !== alunoId) throw new AppError('Mensalidade não pertence a este aluno', 'FORBIDDEN', 403)
+    if (String(mensalidade.alunoId) !== alunoId)
+      throw new AppError('Mensalidade não pertence a este aluno', 'FORBIDDEN', 403)
     if (mensalidade.status !== 'PAGO' && mensalidade.status !== 'PARCIAL') {
       throw AppError.badRequest('Apenas mensalidades pagas podem ser estornadas')
     }
@@ -72,19 +73,23 @@ export class EstornosService {
     })
 
     // Notificar todos os admins ativos sobre a solicitação de estorno
-    const nomeAluno = (await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { nomeCompleto: true } }))?.nomeCompleto ?? 'Aluno'
+    const nomeAluno =
+      (await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { nomeCompleto: true } }))?.nomeCompleto ??
+      'Aluno'
     const admins = await prisma.usuario.findMany({ where: { funcao: 'ADMIN', status: 'ATIVO' }, select: { id: true } })
     const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(estorno.valorEstorno)
-    await Promise.all(admins.map((admin) =>
-      prisma.notificacao.create({
-        data: {
-          usuarioId: admin.id,
-          tipo: 'MENSAGEM_ADMIN',
-          titulo: `Solicitação de reembolso — ${nomeAluno}`,
-          mensagem: `${nomeAluno} solicitou um reembolso proporcional no valor de ${valorFmt} (${diasEstornados} aula(s) não utilizada(s)). Acesse Financeiro > Reembolsos para analisar.`,
-        } as any,
-      })
-    ))
+    await Promise.all(
+      admins.map((admin) =>
+        prisma.notificacao.create({
+          data: {
+            usuarioId: admin.id,
+            tipo: 'MENSAGEM_ADMIN',
+            titulo: `Solicitação de reembolso — ${nomeAluno}`,
+            mensagem: `${nomeAluno} solicitou um reembolso proporcional no valor de ${valorFmt} (${diasEstornados} aula(s) não utilizada(s)). Acesse Financeiro > Reembolsos para analisar.`,
+          } as any,
+        }),
+      ),
+    )
 
     logInfo('Estorno solicitado', { id: estorno.id, alunoId, valorEstorno: estorno.valorEstorno })
     return estorno
@@ -93,7 +98,13 @@ export class EstornosService {
   async listar(params: { alunoId?: string; status?: string; page?: number; limit?: number }) {
     const validado = listarSchema.parse(params)
     const { estornos, total } = await this.repository.findAll(validado)
-    return { estornos, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
+    return {
+      estornos,
+      total,
+      page: validado.page,
+      limit: validado.limit,
+      totalPages: Math.ceil(total / validado.limit),
+    }
   }
 
   async buscarPorId(id: string): Promise<Estorno> {
@@ -108,7 +119,13 @@ export class EstornosService {
 
     const atualizado = await this.repository.updateStatus(id, 'APROVADO', aprovadoPorId)
 
-    await registrarLog({ usuarioId: aprovadoPorId, acao: 'UPDATE', entidade: 'Estorno', entidadeId: id, dadosNovos: { status: 'APROVADO' } })
+    await registrarLog({
+      usuarioId: aprovadoPorId,
+      acao: 'UPDATE',
+      entidade: 'Estorno',
+      entidadeId: id,
+      dadosNovos: { status: 'APROVADO' },
+    })
     logInfo('Estorno aprovado', { id, aprovadoPorId })
     await this.notificarAluno(
       atualizado.alunoId,
@@ -124,7 +141,13 @@ export class EstornosService {
 
     const atualizado = await this.repository.updateStatus(id, 'NEGADO', aprovadoPorId)
 
-    await registrarLog({ usuarioId: aprovadoPorId, acao: 'UPDATE', entidade: 'Estorno', entidadeId: id, dadosNovos: { status: 'NEGADO' } })
+    await registrarLog({
+      usuarioId: aprovadoPorId,
+      acao: 'UPDATE',
+      entidade: 'Estorno',
+      entidadeId: id,
+      dadosNovos: { status: 'NEGADO' },
+    })
     logInfo('Estorno negado', { id, aprovadoPorId })
     await this.notificarAluno(
       atualizado.alunoId,
@@ -136,7 +159,8 @@ export class EstornosService {
 
   async marcarProcessado(id: string, aprovadoPorId: string): Promise<Estorno> {
     const estorno = await this.buscarPorId(id)
-    if (estorno.status !== 'APROVADO') throw AppError.badRequest('Apenas estornos aprovados podem ser marcados como processados')
+    if (estorno.status !== 'APROVADO')
+      throw AppError.badRequest('Apenas estornos aprovados podem ser marcados como processados')
 
     const atualizado = await this.repository.updateStatus(id, 'PROCESSADO', aprovadoPorId)
     logInfo('Estorno processado', { id })
@@ -158,7 +182,9 @@ export class EstornosService {
       const aluno = await prisma.aluno.findUnique({ where: { id: alunoId }, select: { usuarioId: true } })
       if (!aluno) return
       await notificacoesService.criar({ usuarioId: aluno.usuarioId, tipo: 'ESTORNO_ATUALIZADO', titulo, mensagem })
-    } catch { /* silencioso */ }
+    } catch {
+      /* silencioso */
+    }
   }
 }
 

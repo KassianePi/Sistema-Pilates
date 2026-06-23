@@ -44,8 +44,8 @@ export function NotificacoesPage() {
   const marcarLida = useMarcarLida()
   const arquivar = useArquivar()
 
-  const notificacoes = (data?.data ?? []).filter(n => !n.arquivada)
-  const naoLidas = notificacoes.filter(n => !n.lida).length
+  const notificacoes = (data?.data ?? []).filter((n) => !n.arquivada)
+  const naoLidas = notificacoes.filter((n) => !n.lida).length
 
   return (
     <div className="space-y-6">
@@ -78,30 +78,49 @@ export function NotificacoesPage() {
               {notificacoes.map((n) => {
                 const meta = getNotificacaoMeta(n.tipo)
                 return (
-                <li key={n.id} className={`flex items-start gap-4 py-4 ${!n.lida ? 'bg-lilas-claro/30 -mx-6 px-6' : ''}`}>
-                  <div className={`p-2 rounded-lg shrink-0 ${meta.iconBg}`}>
-                    <meta.Icon className={`w-4 h-4 ${meta.iconColor}`} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className={`text-sm font-medium ${!n.lida ? 'text-cinza-forte' : 'text-cinza-texto'}`}>{n.titulo}</p>
-                      {!n.lida && <Badge variant="secondary" className="text-xs">Nova</Badge>}
+                  <li
+                    key={n.id}
+                    className={`flex items-start gap-4 py-4 ${!n.lida ? 'bg-lilas-claro/30 -mx-6 px-6' : ''}`}
+                  >
+                    <div className={`p-2 rounded-lg shrink-0 ${meta.iconBg}`}>
+                      <meta.Icon className={`w-4 h-4 ${meta.iconColor}`} />
                     </div>
-                    <p className="text-sm text-cinza-texto mt-0.5">{n.mensagem}</p>
-                    <p className="text-xs text-cinza-medio mt-1">{formatarData(n.createdAt)}</p>
-                  </div>
-                  <div className="flex items-center gap-1 shrink-0">
-                    {!n.lida && (
-                      <Button size="icon" variant="ghost" title="Marcar como lida" onClick={() => marcarLida.mutate(n.id)}>
-                        <CheckCheck className="w-4 h-4" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className={`text-sm font-medium ${!n.lida ? 'text-cinza-forte' : 'text-cinza-texto'}`}>
+                          {n.titulo}
+                        </p>
+                        {!n.lida && (
+                          <Badge variant="secondary" className="text-xs">
+                            Nova
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-cinza-texto mt-0.5">{n.mensagem}</p>
+                      <p className="text-xs text-cinza-medio mt-1">{formatarData(n.createdAt)}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!n.lida && (
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          title="Marcar como lida"
+                          onClick={() => marcarLida.mutate(n.id)}
+                        >
+                          <CheckCheck className="w-4 h-4" />
+                        </Button>
+                      )}
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        title="Arquivar"
+                        onClick={() => arquivar.mutate(n.id)}
+                        className="hover:text-cinza-forte"
+                      >
+                        <Archive className="w-4 h-4" />
                       </Button>
-                    )}
-                    <Button size="icon" variant="ghost" title="Arquivar" onClick={() => arquivar.mutate(n.id)}
-                      className="hover:text-cinza-forte">
-                      <Archive className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </li>
+                    </div>
+                  </li>
                 )
               })}
             </ul>

@@ -1,8 +1,20 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import {
-  User, Mail, Phone, IdCard, CreditCard, CalendarDays, GraduationCap,
-  Layers, Tag, Pencil, Check, X, FileText, ChevronRight,
+  User,
+  Mail,
+  Phone,
+  IdCard,
+  CreditCard,
+  CalendarDays,
+  GraduationCap,
+  Layers,
+  Tag,
+  Pencil,
+  Check,
+  X,
+  FileText,
+  ChevronRight,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -14,12 +26,13 @@ import { LoadingState } from '../../components/LoadingState'
 import { useAlunoPerfil, useAtualizarPerfil } from '../../hooks/useAlunoPerfil'
 import { formatarData, primeiroNome } from '../../utils/format'
 
-const STATUS_MATRICULA: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
-  ATIVO: { label: 'Ativa', variant: 'success' },
-  INATIVO: { label: 'Inativa', variant: 'outline' },
-  SUSPENSO: { label: 'Suspensa', variant: 'warning' },
-  FORMADO: { label: 'Formado', variant: 'secondary' as never },
-}
+const STATUS_MATRICULA: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> =
+  {
+    ATIVO: { label: 'Ativa', variant: 'success' },
+    INATIVO: { label: 'Inativa', variant: 'outline' },
+    SUSPENSO: { label: 'Suspensa', variant: 'warning' },
+    FORMADO: { label: 'Formado', variant: 'secondary' as never },
+  }
 
 function Campo({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value?: React.ReactNode }) {
   return (
@@ -49,10 +62,7 @@ export function AlunoPerfilPage() {
 
   function salvar() {
     const digits = telefone.replace(/\D/g, '')
-    atualizar.mutate(
-      { nomeCompleto: nome.trim(), telefone: digits || null },
-      { onSuccess: () => setEditando(false) },
-    )
+    atualizar.mutate({ nomeCompleto: nome.trim(), telefone: digits || null }, { onSuccess: () => setEditando(false) })
   }
 
   if (isLoading || !perfil) {
@@ -64,7 +74,9 @@ export function AlunoPerfilPage() {
     )
   }
 
-  const statusMat = perfil.statusMatricula ? STATUS_MATRICULA[perfil.statusMatricula] ?? { label: perfil.statusMatricula, variant: 'outline' as const } : null
+  const statusMat = perfil.statusMatricula
+    ? (STATUS_MATRICULA[perfil.statusMatricula] ?? { label: perfil.statusMatricula, variant: 'outline' as const })
+    : null
 
   return (
     <div className="space-y-6">
@@ -111,8 +123,15 @@ export function AlunoPerfilPage() {
                 <Input value={nome} onChange={(e) => setNome(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>Telefone <span className="text-cinza-texto text-xs">(somente números, com DDD)</span></Label>
-                <Input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="11999998888" inputMode="numeric" />
+                <Label>
+                  Telefone <span className="text-cinza-texto text-xs">(somente números, com DDD)</span>
+                </Label>
+                <Input
+                  value={telefone}
+                  onChange={(e) => setTelefone(e.target.value)}
+                  placeholder="11999998888"
+                  inputMode="numeric"
+                />
               </div>
               <Campo icon={Mail} label="E-mail" value={perfil.email} />
               <div className="flex gap-2 justify-end pt-1">
@@ -144,7 +163,11 @@ export function AlunoPerfilPage() {
             <Campo icon={Layers} label="Modalidade" value={perfil.modalidade} />
             <Campo icon={Tag} label="Categoria" value={perfil.categoria} />
             <Campo icon={GraduationCap} label="Professor principal" value={perfil.professorPrincipal} />
-            <Campo icon={CalendarDays} label="Início da matrícula" value={perfil.dataInicio ? formatarData(perfil.dataInicio) : '—'} />
+            <Campo
+              icon={CalendarDays}
+              label="Início da matrícula"
+              value={perfil.dataInicio ? formatarData(perfil.dataInicio) : '—'}
+            />
             <Campo icon={User} label="Status da matrícula" value={statusMat?.label} />
           </div>
           <p className="text-xs text-cinza-texto">
@@ -162,7 +185,9 @@ export function AlunoPerfilPage() {
             </span>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-cinza-forte text-sm">Termos de Uso e Prestação de Serviços</p>
-              <p className="text-xs text-cinza-texto mt-0.5">Veja o documento vigente, baixe o PDF e consulte seu aceite.</p>
+              <p className="text-xs text-cinza-texto mt-0.5">
+                Veja o documento vigente, baixe o PDF e consulte seu aceite.
+              </p>
             </div>
             <ChevronRight className="w-4 h-4 text-cinza-medio group-hover:text-lilas-medio transition-colors shrink-0" />
           </Link>

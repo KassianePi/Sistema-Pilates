@@ -12,7 +12,7 @@ const includeRelations = {
 export class AgendaRepository {
   async findById(id: string): Promise<Aula | null> {
     try {
-      return await prisma.aula.findUnique({ where: { id }, include: includeRelations }) as any
+      return (await prisma.aula.findUnique({ where: { id }, include: includeRelations })) as any
     } catch (error) {
       logError('Erro ao buscar aula por ID', error as Error, { id })
       throw AppError.internal('Erro ao buscar aula')
@@ -20,8 +20,15 @@ export class AgendaRepository {
   }
 
   async findAll(params: {
-    professorId?: string; status?: string; tipo?: string; categoria?: string; modalidadeId?: string
-    dataInicio?: Date; dataFim?: Date; page: number; limit: number
+    professorId?: string
+    status?: string
+    tipo?: string
+    categoria?: string
+    modalidadeId?: string
+    dataInicio?: Date
+    dataFim?: Date
+    page: number
+    limit: number
   }): Promise<{ aulas: Aula[]; total: number }> {
     try {
       const { professorId, status, tipo, categoria, modalidadeId, dataInicio, dataFim, page, limit } = params
@@ -40,7 +47,13 @@ export class AgendaRepository {
       }
 
       const [aulas, total] = await Promise.all([
-        prisma.aula.findMany({ where: where as any, include: includeRelations, skip: (page - 1) * limit, take: limit, orderBy: { dataHoraInicio: 'asc' } }),
+        prisma.aula.findMany({
+          where: where as any,
+          include: includeRelations,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy: { dataHoraInicio: 'asc' },
+        }),
         prisma.aula.count({ where: where as any }),
       ])
 
@@ -59,7 +72,10 @@ export class AgendaRepository {
    * - 'historico': aulas passadas ou encerradas em que o aluno esteve inscrito
    */
   async findForAluno(params: {
-    alunoId: string; escopo: 'minhas' | 'gerais' | 'historico'; page: number; limit: number
+    alunoId: string
+    escopo: 'minhas' | 'gerais' | 'historico'
+    page: number
+    limit: number
   }): Promise<{ aulas: Aula[]; total: number }> {
     try {
       const { alunoId, escopo, page, limit } = params
@@ -108,7 +124,13 @@ export class AgendaRepository {
       }
 
       const [aulas, total] = await Promise.all([
-        prisma.aula.findMany({ where: where as any, include: includeAluno as any, skip: (page - 1) * limit, take: limit, orderBy }),
+        prisma.aula.findMany({
+          where: where as any,
+          include: includeAluno as any,
+          skip: (page - 1) * limit,
+          take: limit,
+          orderBy,
+        }),
         prisma.aula.count({ where: where as any }),
       ])
 
@@ -140,13 +162,13 @@ export class AgendaRepository {
 
   async create(data: CreateAulaData): Promise<Aula> {
     try {
-      return await prisma.aula.create({
+      return (await prisma.aula.create({
         data: {
           ...data,
           modalidadeId: data.modalidadeId ?? null,
         } as any,
         include: includeRelations,
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao criar aula', error as Error)
       throw AppError.internal('Erro ao criar aula')
@@ -155,14 +177,14 @@ export class AgendaRepository {
 
   async update(id: string, data: UpdateAulaData): Promise<Aula> {
     try {
-      return await prisma.aula.update({
+      return (await prisma.aula.update({
         where: { id },
         data: {
           ...data,
           ...(data.modalidadeId !== undefined && { modalidadeId: data.modalidadeId ?? null }),
         } as any,
         include: includeRelations,
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao atualizar aula', error as Error, { id })
       throw AppError.internal('Erro ao atualizar aula')
@@ -208,7 +230,9 @@ export class AgendaRepository {
   }
 
   /** Alunos com inscrição ATIVA na aula. */
-  async findInscritos(aulaId: string): Promise<Array<{ id: string; usuario: { nomeCompleto: string }; planoAtual: { nome: string } | null }>> {
+  async findInscritos(
+    aulaId: string,
+  ): Promise<Array<{ id: string; usuario: { nomeCompleto: string }; planoAtual: { nome: string } | null }>> {
     try {
       const inscricoes = await prisma.inscricaoAula.findMany({
         where: { aulaId, status: 'ATIVA' },

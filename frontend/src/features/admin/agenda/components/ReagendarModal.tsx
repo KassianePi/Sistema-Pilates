@@ -52,16 +52,22 @@ export function ReagendarModal({ aula, onClose, pending, onConfirm }: ReagendarM
         </p>
         <div className="grid grid-cols-2 gap-4 mt-2">
           <div className="space-y-1.5">
-            <Label>Nova data <span className="text-rosa-vibrante">*</span></Label>
+            <Label>
+              Nova data <span className="text-rosa-vibrante">*</span>
+            </Label>
             <Input type="date" value={data} onChange={(e) => setData(e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>Novo horário <span className="text-rosa-vibrante">*</span></Label>
+            <Label>
+              Novo horário <span className="text-rosa-vibrante">*</span>
+            </Label>
             <Input type="time" value={hora} onChange={(e) => setHora(e.target.value)} />
           </div>
         </div>
         <div className="space-y-1.5 mt-1">
-          <Label>Justificativa <span className="text-rosa-vibrante">*</span></Label>
+          <Label>
+            Justificativa <span className="text-rosa-vibrante">*</span>
+          </Label>
           <Textarea
             rows={3}
             value={justificativa}
@@ -76,7 +82,9 @@ export function ReagendarModal({ aula, onClose, pending, onConfirm }: ReagendarM
           )}
         </div>
         <DialogFooter className="mt-2">
-          <Button type="button" variant="outline" onClick={onClose}>Cancelar</Button>
+          <Button type="button" variant="outline" onClick={onClose}>
+            Cancelar
+          </Button>
           <Button type="button" onClick={confirmar} disabled={pending}>
             {pending ? 'Reagendando...' : 'Reagendar'}
           </Button>

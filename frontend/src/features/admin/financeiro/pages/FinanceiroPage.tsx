@@ -1,5 +1,17 @@
 import { useState } from 'react'
-import { ArrowDownCircle, ArrowUpCircle, CheckCircle2, Clock, AlertTriangle, X, RotateCcw, FileCheck, FileX, Loader2, Eye } from 'lucide-react'
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  X,
+  RotateCcw,
+  FileCheck,
+  FileX,
+  Loader2,
+  Eye,
+} from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -14,10 +26,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
-import {
-  useMensalidades, useCreateMensalidade,
-  usePagamentos, useRegistrarPagamento,
-} from '../hooks/useFinanceiro'
+import { useMensalidades, useCreateMensalidade, usePagamentos, useRegistrarPagamento } from '../hooks/useFinanceiro'
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { usePlanos } from '@/features/admin/planos/hooks/usePlanos'
 import { estornosService } from '@/services/estornos.service'
@@ -32,7 +41,10 @@ function formatarData(d: string) {
   return new Date(d).toLocaleDateString('pt-BR')
 }
 
-const STATUS_MENSALIDADE: Record<StatusMensalidade, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
+const STATUS_MENSALIDADE: Record<
+  StatusMensalidade,
+  { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }
+> = {
   PAGO: { label: 'Pago', variant: 'success' },
   PENDENTE: { label: 'Pendente', variant: 'warning' },
   VENCIDO: { label: 'Vencido', variant: 'destructive' },
@@ -40,14 +52,20 @@ const STATUS_MENSALIDADE: Record<StatusMensalidade, { label: string; variant: 's
   PARCIAL: { label: 'Parcial', variant: 'warning' },
 }
 
-const STATUS_ESTORNO: Record<StatusEstorno, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
+const STATUS_ESTORNO: Record<
+  StatusEstorno,
+  { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }
+> = {
   SOLICITADO: { label: 'Solicitado', variant: 'warning' },
   APROVADO: { label: 'Aprovado', variant: 'success' },
   PROCESSADO: { label: 'Processado', variant: 'outline' },
   NEGADO: { label: 'Negado', variant: 'destructive' },
 }
 
-const STATUS_COMPROVANTE: Record<StatusComprovante, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> = {
+const STATUS_COMPROVANTE: Record<
+  StatusComprovante,
+  { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }
+> = {
   PENDENTE: { label: 'Pendente', variant: 'warning' },
   APROVADO: { label: 'Aprovado', variant: 'success' },
   REJEITADO: { label: 'Rejeitado', variant: 'destructive' },
@@ -61,17 +79,19 @@ const METODOS_PAGAMENTO: { value: MetodoPagamento; label: string }[] = [
   { value: 'TRANSFERENCIA', label: 'Transferência' },
 ]
 
-const mensalidadeSchema = z.object({
-  tipo: z.enum(['MENSAL', 'AVULSO']).default('MENSAL'),
-  alunoId: z.string().min(1, 'Selecione um aluno'),
-  planoId: z.string().optional(),
-  valor: z.number().positive('Valor deve ser positivo'),
-  vencimento: z.string().min(1, 'Informe o vencimento'),
-}).superRefine((data, ctx) => {
-  if (data.tipo === 'MENSAL' && !data.planoId) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Selecione um plano', path: ['planoId'] })
-  }
-})
+const mensalidadeSchema = z
+  .object({
+    tipo: z.enum(['MENSAL', 'AVULSO']),
+    alunoId: z.string().min(1, 'Selecione um aluno'),
+    planoId: z.string().optional(),
+    valor: z.number().positive('Valor deve ser positivo'),
+    vencimento: z.string().min(1, 'Informe o vencimento'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.tipo === 'MENSAL' && !data.planoId) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'Selecione um plano', path: ['planoId'] })
+    }
+  })
 
 const pagamentoSchema = z.object({
   mensalidadeId: z.string().min(1, 'Selecione uma mensalidade'),
@@ -82,17 +102,26 @@ const pagamentoSchema = z.object({
 })
 
 export function FinanceiroPage() {
-  const [abaSelecionada, setAbaSelecionada] = useState<'mensalidades' | 'pagamentos' | 'estornos' | 'comprovantes'>('mensalidades')
+  const [abaSelecionada, setAbaSelecionada] = useState<'mensalidades' | 'pagamentos' | 'estornos' | 'comprovantes'>(
+    'mensalidades',
+  )
   const [filtroStatusMensalidade, setFiltroStatusMensalidade] = useState('')
   const [filtroStatusEstorno, setFiltroStatusEstorno] = useState<StatusEstorno | ''>('SOLICITADO')
   const [filtroStatusComprovante, setFiltroStatusComprovante] = useState<StatusComprovante | ''>('PENDENTE')
   const [modalRejeitarId, setModalRejeitarId] = useState<string | null>(null)
   const [motivoRejeicao, setMotivoRejeicao] = useState('')
-  const [modalVisualizarComprovante, setModalVisualizarComprovante] = useState<{ arquivo: string; nomeArquivo: string; tipoArquivo: string } | null>(null)
+  const [modalVisualizarComprovante, setModalVisualizarComprovante] = useState<{
+    arquivo: string
+    nomeArquivo: string
+    tipoArquivo: string
+  } | null>(null)
   const [modalMensalidade, setModalMensalidade] = useState(false)
   const [modalPagamento, setModalPagamento] = useState<Mensalidade | null>(null)
 
-  const { data: mensalidadesData, isLoading: loadingMensalidades } = useMensalidades({ status: filtroStatusMensalidade || undefined, limite: 20 })
+  const { data: mensalidadesData, isLoading: loadingMensalidades } = useMensalidades({
+    status: filtroStatusMensalidade || undefined,
+    limite: 20,
+  })
   const { data: pagamentosData, isLoading: loadingPagamentos } = usePagamentos({ limite: 20 })
   const createMensalidade = useCreateMensalidade()
   const registrarPagamento = useRegistrarPagamento()
@@ -108,17 +137,26 @@ export function FinanceiroPage() {
   })
   const aprovarEstorno = useMutation({
     mutationFn: estornosService.aprovar,
-    onSuccess: () => { toast.success('Reembolso aprovado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onSuccess: () => {
+      toast.success('Reembolso aprovado.')
+      queryClient.invalidateQueries({ queryKey: ['estornos-admin'] })
+    },
     onError: () => toast.error('Erro ao aprovar reembolso.'),
   })
   const negarEstorno = useMutation({
     mutationFn: estornosService.negar,
-    onSuccess: () => { toast.success('Reembolso negado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onSuccess: () => {
+      toast.success('Reembolso negado.')
+      queryClient.invalidateQueries({ queryKey: ['estornos-admin'] })
+    },
     onError: () => toast.error('Erro ao negar reembolso.'),
   })
   const processarEstorno = useMutation({
     mutationFn: estornosService.processar,
-    onSuccess: () => { toast.success('Reembolso marcado como processado.'); queryClient.invalidateQueries({ queryKey: ['estornos-admin'] }) },
+    onSuccess: () => {
+      toast.success('Reembolso marcado como processado.')
+      queryClient.invalidateQueries({ queryKey: ['estornos-admin'] })
+    },
     onError: () => toast.error('Erro ao processar reembolso.'),
   })
 
@@ -185,12 +223,14 @@ export function FinanceiroPage() {
       {/* Abas Mensalidades / Pagamentos */}
       <div>
         <div className="flex gap-1 bg-bege-suave p-1 rounded-lg w-fit mb-6 flex-wrap">
-          {([
-            { key: 'mensalidades', label: 'Mensalidades' },
-            { key: 'pagamentos', label: 'Pagamentos' },
-            { key: 'estornos', label: 'Reembolsos' },
-            { key: 'comprovantes', label: 'Comprovantes' },
-          ] as const).map(({ key, label }) => (
+          {(
+            [
+              { key: 'mensalidades', label: 'Mensalidades' },
+              { key: 'pagamentos', label: 'Pagamentos' },
+              { key: 'estornos', label: 'Reembolsos' },
+              { key: 'comprovantes', label: 'Comprovantes' },
+            ] as const
+          ).map(({ key, label }) => (
             <button
               key={key}
               onClick={() => setAbaSelecionada(key)}
@@ -210,7 +250,10 @@ export function FinanceiroPage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <Select value={filtroStatusMensalidade || 'all'} onValueChange={(v) => setFiltroStatusMensalidade(v === 'all' ? '' : v)}>
+                  <Select
+                    value={filtroStatusMensalidade || 'all'}
+                    onValueChange={(v) => setFiltroStatusMensalidade(v === 'all' ? '' : v)}
+                  >
                     <SelectTrigger className="w-40">
                       <SelectValue placeholder="Todos" />
                     </SelectTrigger>
@@ -223,12 +266,14 @@ export function FinanceiroPage() {
                   </Select>
                   {filtroStatusMensalidade && (
                     <Button variant="ghost" size="sm" onClick={() => setFiltroStatusMensalidade('')}>
-                      <X className="w-3 h-3 mr-1" />Limpar
+                      <X className="w-3 h-3 mr-1" />
+                      Limpar
                     </Button>
                   )}
                 </div>
                 <Button size="sm" onClick={() => setModalMensalidade(true)}>
-                  <ArrowUpCircle className="w-4 h-4" />Nova mensalidade
+                  <ArrowUpCircle className="w-4 h-4" />
+                  Nova mensalidade
                 </Button>
               </div>
             </CardHeader>
@@ -270,7 +315,8 @@ export function FinanceiroPage() {
                         <TableCell className="text-right">
                           {(m.status === 'PENDENTE' || m.status === 'VENCIDO') && (
                             <Button size="sm" variant="outline" onClick={() => abrirModalPagamento(m)}>
-                              <ArrowDownCircle className="w-3.5 h-3.5" />Registrar pagamento
+                              <ArrowDownCircle className="w-3.5 h-3.5" />
+                              Registrar pagamento
                             </Button>
                           )}
                         </TableCell>
@@ -307,10 +353,14 @@ export function FinanceiroPage() {
                   <TableBody>
                     {(pagamentosData?.data ?? []).map((p) => (
                       <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.mensalidade?.aluno?.usuario?.nomeCompleto ?? '—'}</TableCell>
+                        <TableCell className="font-medium">
+                          {p.mensalidade?.aluno?.usuario?.nomeCompleto ?? '—'}
+                        </TableCell>
                         <TableCell className="text-cinza-texto">{p.mensalidade?.plano?.nome ?? '—'}</TableCell>
                         <TableCell className="font-semibold text-green-700">{formatarValor(p.valor)}</TableCell>
-                        <TableCell className="text-cinza-texto">{METODOS_PAGAMENTO.find(m => m.value === p.metodoPagamento)?.label ?? p.metodoPagamento}</TableCell>
+                        <TableCell className="text-cinza-texto">
+                          {METODOS_PAGAMENTO.find((m) => m.value === p.metodoPagamento)?.label ?? p.metodoPagamento}
+                        </TableCell>
                         <TableCell className="text-cinza-texto">{formatarData(p.dataPagamento)}</TableCell>
                       </TableRow>
                     ))}
@@ -327,7 +377,7 @@ export function FinanceiroPage() {
               <div className="flex items-center gap-3">
                 <Select
                   value={filtroStatusEstorno || 'all'}
-                  onValueChange={(v) => setFiltroStatusEstorno(v === 'all' ? '' : v as StatusEstorno)}
+                  onValueChange={(v) => setFiltroStatusEstorno(v === 'all' ? '' : (v as StatusEstorno))}
                 >
                   <SelectTrigger className="w-44">
                     <SelectValue placeholder="Todos os status" />
@@ -342,7 +392,8 @@ export function FinanceiroPage() {
                 </Select>
                 {filtroStatusEstorno && (
                   <Button variant="ghost" size="sm" onClick={() => setFiltroStatusEstorno('')}>
-                    <X className="w-3 h-3 mr-1" />Limpar
+                    <X className="w-3 h-3 mr-1" />
+                    Limpar
                   </Button>
                 )}
               </div>
@@ -376,19 +427,23 @@ export function FinanceiroPage() {
                       const aprovado = e.status === 'APROVADO'
                       return (
                         <TableRow key={e.id}>
-                          <TableCell className="font-medium">
-                            {e.aluno?.usuario?.nomeCompleto ?? '—'}
-                          </TableCell>
+                          <TableCell className="font-medium">{e.aluno?.usuario?.nomeCompleto ?? '—'}</TableCell>
                           <TableCell className="text-cinza-texto text-sm">
                             <div>{e.mensalidade?.plano?.nome ?? 'Avulso'}</div>
                             {e.mensalidade?.mesReferencia && (
-                              <div className="text-xs text-cinza-medio">{formatarData(e.mensalidade.mesReferencia)}</div>
+                              <div className="text-xs text-cinza-medio">
+                                {formatarData(e.mensalidade.mesReferencia)}
+                              </div>
                             )}
                           </TableCell>
                           <TableCell className="text-center">{e.diasContratados}</TableCell>
                           <TableCell className="text-center">{e.diasComparecidos}</TableCell>
-                          <TableCell className="text-center font-semibold text-rosa-vibrante">{e.diasEstornados}</TableCell>
-                          <TableCell className="font-semibold text-cinza-forte">{formatarValor(Number(e.valorEstorno))}</TableCell>
+                          <TableCell className="text-center font-semibold text-rosa-vibrante">
+                            {e.diasEstornados}
+                          </TableCell>
+                          <TableCell className="font-semibold text-cinza-forte">
+                            {formatarValor(Number(e.valorEstorno))}
+                          </TableCell>
                           <TableCell>
                             <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
                           </TableCell>
@@ -428,7 +483,10 @@ export function FinanceiroPage() {
                                 </Button>
                               )}
                               {e.motivo && (
-                                <span className="text-xs text-cinza-medio italic max-w-[120px] truncate" title={e.motivo}>
+                                <span
+                                  className="text-xs text-cinza-medio italic max-w-[120px] truncate"
+                                  title={e.motivo}
+                                >
                                   {e.motivo}
                                 </span>
                               )}
@@ -453,7 +511,7 @@ export function FinanceiroPage() {
                 </CardTitle>
                 <Select
                   value={filtroStatusComprovante || 'all'}
-                  onValueChange={(v) => setFiltroStatusComprovante(v === 'all' ? '' : v as StatusComprovante)}
+                  onValueChange={(v) => setFiltroStatusComprovante(v === 'all' ? '' : (v as StatusComprovante))}
                 >
                   <SelectTrigger className="w-40">
                     <SelectValue placeholder="Todos" />
@@ -489,17 +547,29 @@ export function FinanceiroPage() {
                   </TableHeader>
                   <TableBody>
                     {(comprovantesData?.comprovantes ?? []).map((c: any) => {
-                      const st = STATUS_COMPROVANTE[c.status as StatusComprovante] ?? { label: c.status, variant: 'outline' as const }
+                      const st = STATUS_COMPROVANTE[c.status as StatusComprovante] ?? {
+                        label: c.status,
+                        variant: 'outline' as const,
+                      }
                       return (
                         <TableRow key={c.id}>
                           <TableCell className="font-medium">{c.aluno?.usuario?.nomeCompleto ?? '—'}</TableCell>
-                          <TableCell className="text-sm text-cinza-texto">{c.mensalidade?.plano?.nome ?? 'Avulso'}</TableCell>
-                          <TableCell className="text-sm text-cinza-texto max-w-[160px] truncate" title={c.nomeArquivo}>{c.nomeArquivo}</TableCell>
+                          <TableCell className="text-sm text-cinza-texto">
+                            {c.mensalidade?.plano?.nome ?? 'Avulso'}
+                          </TableCell>
+                          <TableCell className="text-sm text-cinza-texto max-w-[160px] truncate" title={c.nomeArquivo}>
+                            {c.nomeArquivo}
+                          </TableCell>
                           <TableCell className="text-sm">{formatarData(c.dataEnvio)}</TableCell>
                           <TableCell>
                             <Badge variant={st.variant}>{st.label}</Badge>
                             {c.status === 'REJEITADO' && c.observacoes && (
-                              <p className="text-xs text-cinza-medio mt-0.5 max-w-[160px] truncate" title={c.observacoes}>{c.observacoes}</p>
+                              <p
+                                className="text-xs text-cinza-medio mt-0.5 max-w-[160px] truncate"
+                                title={c.observacoes}
+                              >
+                                {c.observacoes}
+                              </p>
                             )}
                           </TableCell>
                           <TableCell className="text-right">
@@ -509,7 +579,13 @@ export function FinanceiroPage() {
                                   size="sm"
                                   variant="outline"
                                   className="text-roxo-profundo border-roxo-profundo/30 hover:bg-roxo-profundo/5 text-xs"
-                                  onClick={() => setModalVisualizarComprovante({ arquivo: c.arquivo, nomeArquivo: c.nomeArquivo, tipoArquivo: c.tipoArquivo })}
+                                  onClick={() =>
+                                    setModalVisualizarComprovante({
+                                      arquivo: c.arquivo,
+                                      nomeArquivo: c.nomeArquivo,
+                                      tipoArquivo: c.tipoArquivo,
+                                    })
+                                  }
                                 >
                                   <Eye className="w-3 h-3 mr-1" /> Ver
                                 </Button>
@@ -529,7 +605,10 @@ export function FinanceiroPage() {
                                     size="sm"
                                     variant="outline"
                                     className="text-red-600 border-red-300 hover:bg-red-50 text-xs"
-                                    onClick={() => { setModalRejeitarId(c.id); setMotivoRejeicao('') }}
+                                    onClick={() => {
+                                      setModalRejeitarId(c.id)
+                                      setMotivoRejeicao('')
+                                    }}
                                     disabled={analisarComprovante.isPending}
                                   >
                                     <FileX className="w-3 h-3 mr-1" /> Rejeitar
@@ -550,14 +629,24 @@ export function FinanceiroPage() {
       </div>
 
       {/* Modal: Rejeitar Comprovante */}
-      <Dialog open={!!modalRejeitarId} onOpenChange={(v) => { if (!v) { setModalRejeitarId(null); setMotivoRejeicao('') } }}>
+      <Dialog
+        open={!!modalRejeitarId}
+        onOpenChange={(v) => {
+          if (!v) {
+            setModalRejeitarId(null)
+            setMotivoRejeicao('')
+          }
+        }}
+      >
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>Rejeitar comprovante</DialogTitle>
           </DialogHeader>
           <div className="space-y-3 mt-2">
             <div className="space-y-1.5">
-              <Label>Motivo da rejeição <span className="text-cinza-medio text-xs">(opcional)</span></Label>
+              <Label>
+                Motivo da rejeição <span className="text-cinza-medio text-xs">(opcional)</span>
+              </Label>
               <Textarea
                 rows={3}
                 value={motivoRejeicao}
@@ -567,10 +656,25 @@ export function FinanceiroPage() {
             </div>
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="outline" onClick={() => { setModalRejeitarId(null); setMotivoRejeicao('') }}>Cancelar</Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setModalRejeitarId(null)
+                setMotivoRejeicao('')
+              }}
+            >
+              Cancelar
+            </Button>
             <Button
               variant="destructive"
-              onClick={() => modalRejeitarId && analisarComprovante.mutate({ id: modalRejeitarId, acao: 'REJEITADO', observacoes: motivoRejeicao || undefined })}
+              onClick={() =>
+                modalRejeitarId &&
+                analisarComprovante.mutate({
+                  id: modalRejeitarId,
+                  acao: 'REJEITADO',
+                  observacoes: motivoRejeicao || undefined,
+                })
+              }
               disabled={analisarComprovante.isPending}
             >
               {analisarComprovante.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar rejeição'}
@@ -604,7 +708,9 @@ export function FinanceiroPage() {
             ) : null}
           </div>
           <DialogFooter className="mt-3">
-            <Button variant="outline" onClick={() => setModalVisualizarComprovante(null)}>Fechar</Button>
+            <Button variant="outline" onClick={() => setModalVisualizarComprovante(null)}>
+              Fechar
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -645,11 +751,17 @@ export function FinanceiroPage() {
                 value={formMensalidade.watch('alunoId') || undefined}
                 onValueChange={(v) => formMensalidade.setValue('alunoId', v, { shouldValidate: true })}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione o aluno" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o aluno" />
+                </SelectTrigger>
                 <SelectContent>
-                  {alunos.filter(a => a.status === 'ATIVO').map(a => (
-                    <SelectItem key={a.id} value={a.id}>{a.usuario.nomeCompleto}</SelectItem>
-                  ))}
+                  {alunos
+                    .filter((a) => a.status === 'ATIVO')
+                    .map((a) => (
+                      <SelectItem key={a.id} value={a.id}>
+                        {a.usuario.nomeCompleto}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               {formMensalidade.formState.errors.alunoId && (
@@ -664,11 +776,17 @@ export function FinanceiroPage() {
                   value={formMensalidade.watch('planoId') || undefined}
                   onValueChange={(v) => formMensalidade.setValue('planoId', v, { shouldValidate: true })}
                 >
-                  <SelectTrigger><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o plano" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {planos.filter(p => p.ativo).map(p => (
-                      <SelectItem key={p.id} value={p.id}>{p.nome} — {formatarValor(p.valor)}</SelectItem>
-                    ))}
+                    {planos
+                      .filter((p) => p.ativo)
+                      .map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.nome} — {formatarValor(p.valor)}
+                        </SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
                 {formMensalidade.formState.errors.planoId && (
@@ -680,7 +798,12 @@ export function FinanceiroPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Valor (R$) *</Label>
-                <Input type="number" step="0.01" min="0" {...formMensalidade.register('valor', { valueAsNumber: true })} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...formMensalidade.register('valor', { valueAsNumber: true })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Vencimento *</Label>
@@ -688,8 +811,12 @@ export function FinanceiroPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setModalMensalidade(false)}>Cancelar</Button>
-              <Button type="submit" disabled={createMensalidade.isPending}>Criar</Button>
+              <Button type="button" variant="outline" onClick={() => setModalMensalidade(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={createMensalidade.isPending}>
+                Criar
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>
@@ -710,7 +837,12 @@ export function FinanceiroPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Valor (R$) *</Label>
-                <Input type="number" step="0.01" min="0" {...formPagamento.register('valor', { valueAsNumber: true })} />
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  {...formPagamento.register('valor', { valueAsNumber: true })}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label>Data do pagamento *</Label>
@@ -723,15 +855,25 @@ export function FinanceiroPage() {
                 value={formPagamento.watch('metodo')}
                 onValueChange={(v) => formPagamento.setValue('metodo', v as MetodoPagamento)}
               >
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {METODOS_PAGAMENTO.map(m => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                  {METODOS_PAGAMENTO.map((m) => (
+                    <SelectItem key={m.value} value={m.value}>
+                      {m.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <DialogFooter>
-              <Button type="button" variant="outline" onClick={() => setModalPagamento(null)}>Cancelar</Button>
-              <Button type="submit" disabled={registrarPagamento.isPending}>Confirmar pagamento</Button>
+              <Button type="button" variant="outline" onClick={() => setModalPagamento(null)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={registrarPagamento.isPending}>
+                Confirmar pagamento
+              </Button>
             </DialogFooter>
           </form>
         </DialogContent>

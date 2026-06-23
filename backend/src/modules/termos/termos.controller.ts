@@ -4,11 +4,18 @@ import { ValidationError } from '../../shared/errors'
 import { logWarn } from '../../shared/utils'
 
 function tratarErro(error: any, reply: FastifyReply, msgGenerica: string) {
-  if (error instanceof ValidationError) return reply.code(400).send({ success: false, message: error.message, code: error.code })
-  if (error?.name === 'ZodError') return reply.code(400).send({ success: false, message: error.errors?.[0]?.message ?? 'Dados inválidos', code: 'VALIDATION_ERROR' })
-  if (error?.statusCode === 404) return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
-  if (error?.statusCode === 403) return reply.code(403).send({ success: false, message: error.message, code: 'FORBIDDEN' })
-  if (error?.statusCode === 400) return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
+  if (error instanceof ValidationError)
+    return reply.code(400).send({ success: false, message: error.message, code: error.code })
+  if (error?.name === 'ZodError')
+    return reply
+      .code(400)
+      .send({ success: false, message: error.errors?.[0]?.message ?? 'Dados inválidos', code: 'VALIDATION_ERROR' })
+  if (error?.statusCode === 404)
+    return reply.code(404).send({ success: false, message: error.message, code: 'NOT_FOUND' })
+  if (error?.statusCode === 403)
+    return reply.code(403).send({ success: false, message: error.message, code: 'FORBIDDEN' })
+  if (error?.statusCode === 400)
+    return reply.code(400).send({ success: false, message: error.message, code: 'BAD_REQUEST' })
   logWarn(msgGenerica, { error: String(error) })
   return reply.code(500).send({ success: false, message: msgGenerica, code: 'INTERNAL_ERROR' })
 }

@@ -54,13 +54,9 @@ export function iniciarJobAulasVencidas(): NodeJS.Timeout {
   logInfo('Job aulas vencidas iniciado (intervalo: 1h)')
 
   // Executa na inicialização para cobrir downtime
-  finalizarAulasPassadas().catch((err) =>
-    logWarn('Job aulas: erro na execução inicial', { error: String(err) }),
-  )
+  finalizarAulasPassadas().catch((err) => logWarn('Job aulas: erro na execução inicial', { error: String(err) }))
 
   return setInterval(() => {
-    finalizarAulasPassadas().catch((err) =>
-      logWarn('Job aulas: erro na execução periódica', { error: String(err) }),
-    )
+    finalizarAulasPassadas().catch((err) => logWarn('Job aulas: erro na execução periódica', { error: String(err) }))
   }, INTERVALO_MS)
 }

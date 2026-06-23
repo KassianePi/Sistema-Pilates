@@ -15,13 +15,25 @@ const COMPROVANTE_MAX_BYTES = 5 * 1024 * 1024
 export class AlunosService {
   constructor(private repository: AlunosRepository) {}
 
-  async criar(data: {
-    email: string; nomeCompleto: string; cpf: string; telefone?: string | null
-    senha: string; planoId?: string | null; dataInicio: string
-    dataNascimento?: string | null; endereco?: string | null; cidade?: string | null
-    estado?: string | null; cep?: string | null; observacoes?: string | null
-    comprovante?: { arquivo: string; nomeArquivo: string; tipoArquivo: string } | null
-  }, realizadoPorId?: string): Promise<Aluno> {
+  async criar(
+    data: {
+      email: string
+      nomeCompleto: string
+      cpf: string
+      telefone?: string | null
+      senha: string
+      planoId?: string | null
+      dataInicio: string
+      dataNascimento?: string | null
+      endereco?: string | null
+      cidade?: string | null
+      estado?: string | null
+      cep?: string | null
+      observacoes?: string | null
+      comprovante?: { arquivo: string; nomeArquivo: string; tipoArquivo: string } | null
+    },
+    realizadoPorId?: string,
+  ): Promise<Aluno> {
     const validado = createAlunoSchema.parse(data)
 
     const emailExistente = await prisma.usuario.findUnique({ where: { email: validado.email } })
@@ -41,7 +53,10 @@ export class AlunosService {
     // Cadastro com plano exige comprovante de matrícula → fluxo atômico (aluno + mensalidade + comprovante)
     if (validado.planoId && plano) {
       if (!validado.comprovante) {
-        throw ValidationError.forField('comprovante', 'O comprovante de pagamento é obrigatório para matrícula com plano.')
+        throw ValidationError.forField(
+          'comprovante',
+          'O comprovante de pagamento é obrigatório para matrícula com plano.',
+        )
       }
       this.validarComprovante(validado.comprovante)
 
@@ -72,11 +87,20 @@ export class AlunosService {
       )
 
       logInfo('Aluno criado com matrícula + comprovante', { id: aluno.id, comprovanteId })
-      await registrarLog({ usuarioId: realizadoPorId ?? aluno.usuarioId, acao: 'CREATE', entidade: 'Aluno', entidadeId: aluno.id })
-      await notificacoesService.notificarAdmins(
-        'Nova matrícula com comprovante',
-        `O aluno ${validado.nomeCompleto} foi cadastrado e enviou comprovante de pagamento. Acesse Financeiro > Comprovantes para analisar.`,
-      ).catch(() => {/* silencioso */})
+      await registrarLog({
+        usuarioId: realizadoPorId ?? aluno.usuarioId,
+        acao: 'CREATE',
+        entidade: 'Aluno',
+        entidadeId: aluno.id,
+      })
+      await notificacoesService
+        .notificarAdmins(
+          'Nova matrícula com comprovante',
+          `O aluno ${validado.nomeCompleto} foi cadastrado e enviou comprovante de pagamento. Acesse Financeiro > Comprovantes para analisar.`,
+        )
+        .catch(() => {
+          /* silencioso */
+        })
       return aluno
     }
 
@@ -98,7 +122,12 @@ export class AlunosService {
     })
 
     logInfo('Aluno criado', { id: aluno.id })
-    await registrarLog({ usuarioId: realizadoPorId ?? aluno.usuarioId, acao: 'CREATE', entidade: 'Aluno', entidadeId: aluno.id })
+    await registrarLog({
+      usuarioId: realizadoPorId ?? aluno.usuarioId,
+      acao: 'CREATE',
+      entidade: 'Aluno',
+      entidadeId: aluno.id,
+    })
     return aluno
   }
 
@@ -130,7 +159,11 @@ export class AlunosService {
     return { alunos, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
   }
 
-  async atualizar(id: string, data: UpdateAlunoData & { email?: string; senha?: string }, realizadoPorId?: string): Promise<Aluno> {
+  async atualizar(
+    id: string,
+    data: UpdateAlunoData & { email?: string; senha?: string },
+    realizadoPorId?: string,
+  ): Promise<Aluno> {
     const alunoAtual = await this.buscarPorId(id)
     const validado = updateAlunoSchema.parse(data)
 
@@ -155,7 +188,8 @@ export class AlunosService {
       status: validado.status as any,
     })
     logInfo('Aluno atualizado', { id })
-    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'Aluno', entidadeId: id })
+    if (realizadoPorId)
+      await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'Aluno', entidadeId: id })
     return aluno
   }
 
@@ -169,7 +203,8 @@ export class AlunosService {
     })
 
     logInfo(`Aluno ${novoStatus.toLowerCase()}`, { id })
-    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'Aluno', entidadeId: id })
+    if (realizadoPorId)
+      await registrarLog({ usuarioId: realizadoPorId, acao: 'UPDATE', entidade: 'Aluno', entidadeId: id })
     return this.buscarPorId(id)
   }
 
@@ -177,7 +212,8 @@ export class AlunosService {
     await this.buscarPorId(id)
     await this.repository.delete(id)
     logInfo('Aluno excluído', { id })
-    if (realizadoPorId) await registrarLog({ usuarioId: realizadoPorId, acao: 'DELETE', entidade: 'Aluno', entidadeId: id })
+    if (realizadoPorId)
+      await registrarLog({ usuarioId: realizadoPorId, acao: 'DELETE', entidade: 'Aluno', entidadeId: id })
   }
 }
 

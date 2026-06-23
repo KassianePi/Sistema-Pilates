@@ -6,10 +6,10 @@ import type { Estorno, CreateEstornoData, StatusEstorno } from './estornos.types
 export class EstornosRepository {
   async create(data: CreateEstornoData): Promise<Estorno> {
     try {
-      return await prisma.estorno.create({
+      return (await prisma.estorno.create({
         data: data as any,
         include: this.includeBasico(),
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao criar estorno', error as Error)
       throw AppError.internal('Erro ao criar estorno')
@@ -18,10 +18,10 @@ export class EstornosRepository {
 
   async findById(id: string): Promise<Estorno | null> {
     try {
-      return await prisma.estorno.findUnique({
+      return (await prisma.estorno.findUnique({
         where: { id },
         include: this.includeBasico(),
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao buscar estorno', error as Error, { id })
       throw AppError.internal('Erro ao buscar estorno')
@@ -30,10 +30,10 @@ export class EstornosRepository {
 
   async findByMensalidade(mensalidadeId: string): Promise<Estorno | null> {
     try {
-      return await prisma.estorno.findFirst({
+      return (await prisma.estorno.findFirst({
         where: { mensalidadeId, status: { not: 'NEGADO' } } as any,
         include: this.includeBasico(),
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao buscar estorno por mensalidade', error as Error)
       throw AppError.internal('Erro ao buscar estorno')
@@ -70,11 +70,11 @@ export class EstornosRepository {
 
   async updateStatus(id: string, status: StatusEstorno, aprovadoPorId?: string): Promise<Estorno> {
     try {
-      return await prisma.estorno.update({
+      return (await prisma.estorno.update({
         where: { id },
         data: { status, ...(aprovadoPorId && { aprovadoPorId }) } as any,
         include: this.includeBasico(),
-      }) as any
+      })) as any
     } catch (error) {
       logError('Erro ao atualizar status do estorno', error as Error, { id })
       throw AppError.internal('Erro ao atualizar estorno')

@@ -13,7 +13,14 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { authService } from './auth.service'
 import { ValidationError, UnauthorizedError, AppError } from '../../shared/errors'
-import { loginSchema, registerSchema, refreshTokenSchema, changePasswordSchema, setupSchema, criarUsuarioSchema } from '../../shared/schemas'
+import {
+  loginSchema,
+  registerSchema,
+  refreshTokenSchema,
+  changePasswordSchema,
+  setupSchema,
+  criarUsuarioSchema,
+} from '../../shared/schemas'
 import { logInfo, logDebug, logWarn } from '../../shared/utils'
 
 /**
@@ -220,6 +227,10 @@ export async function criarUsuario(request: FastifyRequest, reply: FastifyReply)
     if (error instanceof ValidationError) {
       return reply.code(400).send({ success: false, message: error.message, code: error.code })
     }
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      return reply.code(400).send({ success: false, message: validationError.message, code: validationError.code })
+    }
     logWarn('Controller: erro ao criar usuário', { error: error instanceof Error ? error.message : String(error) })
     return reply.code(500).send({ success: false, message: 'Erro ao criar usuário', code: 'CREATE_USER_ERROR' })
   }
@@ -345,11 +356,13 @@ export async function logout(request: FastifyRequest, reply: FastifyReply) {
  */
 export async function listarUsuarios(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const query = z.object({
-      page: z.coerce.number().int().min(1).default(1),
-      limit: z.coerce.number().int().min(1).max(100).default(20),
-      funcao: z.string().optional(),
-    }).parse(request.query)
+    const query = z
+      .object({
+        page: z.coerce.number().int().min(1).default(1),
+        limit: z.coerce.number().int().min(1).max(100).default(20),
+        funcao: z.string().optional(),
+      })
+      .parse(request.query)
 
     const resultado = await authService.listarUsuarios(query.page, query.limit, query.funcao)
     return reply.code(200).send({ success: true, data: resultado })
@@ -366,12 +379,18 @@ export async function listarUsuarios(request: FastifyRequest, reply: FastifyRepl
 export async function atualizarUsuario(request: FastifyRequest, reply: FastifyReply) {
   try {
     const { id } = z.object({ id: z.string().uuid() }).parse(request.params)
-    const dados = z.object({
-      nomeCompleto: z.string().min(3).optional(),
-      telefone: z.string().regex(/^\d{10,11}$/).nullable().optional(),
-      email: z.string().email().optional(),
-      senha: z.string().min(6).max(128).optional(),
-    }).parse(request.body)
+    const dados = z
+      .object({
+        nomeCompleto: z.string().min(3).optional(),
+        telefone: z
+          .string()
+          .regex(/^\d{10,11}$/)
+          .nullable()
+          .optional(),
+        email: z.string().email().optional(),
+        senha: z.string().min(6).max(128).optional(),
+      })
+      .parse(request.body)
 
     const adminId = request.usuarioId as string
     const usuario = await authService.atualizarDados(id, dados, adminId)
@@ -420,7 +439,9 @@ export async function alterarStatusUsuario(request: FastifyRequest, reply: Fasti
     if (error instanceof ValidationError) {
       return reply.code(400).send({ success: false, message: error.message, code: error.code })
     }
-    logWarn('Controller: erro ao alterar status do usuário', { error: error instanceof Error ? error.message : String(error) })
+    logWarn('Controller: erro ao alterar status do usuário', {
+      error: error instanceof Error ? error.message : String(error),
+    })
     return reply.code(500).send({ success: false, message: 'Erro ao alterar status', code: 'STATUS_UPDATE_ERROR' })
   }
 }
@@ -450,12 +471,18 @@ export async function getMeuPerfil(request: FastifyRequest, reply: FastifyReply)
 export async function atualizarMeuPerfil(request: FastifyRequest, reply: FastifyReply) {
   try {
     const usuarioId = request.usuarioId as string
-    const dados = z.object({
-      nomeCompleto: z.string().min(3).optional(),
-      telefone: z.string().regex(/^\d{10,11}$/).nullable().optional(),
-      bio: z.string().max(500).nullable().optional(),
-      especialidade: z.string().max(200).nullable().optional(),
-    }).parse(request.body)
+    const dados = z
+      .object({
+        nomeCompleto: z.string().min(3).optional(),
+        telefone: z
+          .string()
+          .regex(/^\d{10,11}$/)
+          .nullable()
+          .optional(),
+        bio: z.string().max(500).nullable().optional(),
+        especialidade: z.string().max(200).nullable().optional(),
+      })
+      .parse(request.body)
 
     const perfil = await authService.atualizarMeuPerfil(usuarioId, dados)
     return reply.code(200).send({ success: true, data: perfil })
@@ -524,6 +551,16 @@ export async function changePassword(request: FastifyRequest, reply: FastifyRepl
         success: false,
         message: error.message,
         code: error.code,
+      })
+    }
+
+    if (error instanceof Error && error.name === 'ZodError') {
+      const validationError = ValidationError.fromZod(error)
+      logWarn('Controller: validação falhou na mudança de senha', { error: validationError.message })
+      return reply.code(400).send({
+        success: false,
+        message: validationError.message,
+        code: validationError.code,
       })
     }
 

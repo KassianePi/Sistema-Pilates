@@ -62,7 +62,11 @@ function mapUsuario(raw: BackendUsuario): UsuarioSistema {
 }
 
 export const usuariosService = {
-  async listar(params?: { page?: number; limit?: number; funcao?: string }): Promise<{ data: UsuarioSistema[]; total: number; totalPages: number }> {
+  async listar(params?: {
+    page?: number
+    limit?: number
+    funcao?: string
+  }): Promise<{ data: UsuarioSistema[]; total: number; totalPages: number }> {
     const { data } = await api.get<ApiResponse<ListarResponse>>('/usuarios', { params })
     const r = data.data
     return { data: r.usuarios.map(mapUsuario), total: r.total, totalPages: r.totalPages }

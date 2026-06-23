@@ -17,10 +17,7 @@ export function SeletorAlunos({ value, onChange, capacidade }: SeletorAlunosProp
   const [busca, setBusca] = useState('')
   const { data: alunosData, isLoading } = useAlunos({ limite: 200 })
 
-  const alunos = useMemo(
-    () => (alunosData?.data ?? []).filter((a) => a.status === 'ATIVO'),
-    [alunosData],
-  )
+  const alunos = useMemo(() => (alunosData?.data ?? []).filter((a) => a.status === 'ATIVO'), [alunosData])
   const filtrados = useMemo(
     () => alunos.filter((a) => a.usuario.nomeCompleto.toLowerCase().includes(busca.trim().toLowerCase())),
     [alunos, busca],
@@ -46,12 +43,19 @@ export function SeletorAlunos({ value, onChange, capacidade }: SeletorAlunosProp
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="relative flex-1 min-w-[180px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-cinza-medio" />
-          <Input placeholder="Buscar aluno..." className="pl-9 h-9" value={busca} onChange={(e) => setBusca(e.target.value)} />
+          <Input
+            placeholder="Buscar aluno..."
+            className="pl-9 h-9"
+            value={busca}
+            onChange={(e) => setBusca(e.target.value)}
+          />
         </div>
         <Button type="button" variant="outline" size="sm" onClick={selecionarTodos} disabled={alunos.length === 0}>
           <Users className="w-3.5 h-3.5 mr-1" /> Todos os ativos
         </Button>
-        <Badge variant={atingiuCapacidade ? 'warning' : 'secondary'}>{value.length} / {capacidade} vagas</Badge>
+        <Badge variant={atingiuCapacidade ? 'warning' : 'secondary'}>
+          {value.length} / {capacidade} vagas
+        </Badge>
       </div>
 
       <div className="max-h-64 overflow-y-auto divide-y divide-bege-cartao border border-bege-cartao rounded-md">
@@ -75,11 +79,15 @@ export function SeletorAlunos({ value, onChange, capacidade }: SeletorAlunosProp
                   bloqueado && 'opacity-40 cursor-not-allowed',
                 )}
               >
-                {marcado
-                  ? <CheckSquare2 className="w-5 h-5 text-roxo-profundo flex-shrink-0" />
-                  : <Square className="w-5 h-5 text-cinza-medio flex-shrink-0" />}
+                {marcado ? (
+                  <CheckSquare2 className="w-5 h-5 text-roxo-profundo flex-shrink-0" />
+                ) : (
+                  <Square className="w-5 h-5 text-cinza-medio flex-shrink-0" />
+                )}
                 <div className="min-w-0">
-                  <p className={cn('text-sm font-medium truncate', marcado ? 'text-roxo-profundo' : 'text-cinza-forte')}>
+                  <p
+                    className={cn('text-sm font-medium truncate', marcado ? 'text-roxo-profundo' : 'text-cinza-forte')}
+                  >
                     {aluno.usuario.nomeCompleto}
                   </p>
                   {aluno.planoAtual && <p className="text-xs text-cinza-medio truncate">{aluno.planoAtual.nome}</p>}
@@ -90,7 +98,9 @@ export function SeletorAlunos({ value, onChange, capacidade }: SeletorAlunosProp
         )}
       </div>
       {atingiuCapacidade && (
-        <p className="text-xs text-amber-600">Capacidade máxima atingida. Remova um aluno para adicionar outro ou aumente a capacidade da aula.</p>
+        <p className="text-xs text-amber-600">
+          Capacidade máxima atingida. Remova um aluno para adicionar outro ou aumente a capacidade da aula.
+        </p>
       )}
     </div>
   )

@@ -1,0 +1,14 @@
+{
+  "name": "studio-pilates-monorepo",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Host dos git hooks (Husky + lint-staged) do monorepo Studio de Pilates. Não é um workspace npm — backend, frontend e packages/shared continuam com node_modules e lockfiles próprios (ver docs/DECISOES_TECNICAS.md).",
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.10"
+  }
+}

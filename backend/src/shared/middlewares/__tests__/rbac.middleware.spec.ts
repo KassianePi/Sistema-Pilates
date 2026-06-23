@@ -32,7 +32,9 @@ describe('RBAC Middleware', () => {
       expect(hasPermission('PROFESSOR', 'alunos', 'read')).toBe(true)
       expect(hasPermission('PROFESSOR', 'alunos', 'delete')).toBe(false)
       expect(hasPermission('PROFESSOR', 'presenca', 'create')).toBe(true)
-      expect(hasPermission('PROFESSOR', 'pagamentos', 'read')).toBe(false)
+      // Professor tem acesso de leitura/atualização a pagamentos (tela Financeiro do portal)
+      expect(hasPermission('PROFESSOR', 'pagamentos', 'read')).toBe(true)
+      expect(hasPermission('PROFESSOR', 'pagamentos', 'delete')).toBe(false)
     })
 
     it('RECEPCIONISTA pode gerenciar aulas e alunos', () => {

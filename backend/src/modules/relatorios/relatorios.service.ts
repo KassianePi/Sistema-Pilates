@@ -9,7 +9,14 @@ import type { Relatorio } from './relatorios.types'
 export class RelatoriosService {
   constructor(private repository: RelatoriosRepository) {}
 
-  async gerar(data: { professorId: string; tipo: string; titulo: string; descricao?: string | null; dataPeriodoInicio: string; dataPeriodoFim: string }): Promise<Relatorio> {
+  async gerar(data: {
+    professorId: string
+    tipo: string
+    titulo: string
+    descricao?: string | null
+    dataPeriodoInicio: string
+    dataPeriodoFim: string
+  }): Promise<Relatorio> {
     const validado = createRelatorioSchema.parse(data)
 
     const professor = await prisma.professor.findUnique({ where: { id: validado.professorId } })
@@ -61,7 +68,13 @@ export class RelatoriosService {
         })
         const totalBruto = mensalidades.reduce((acc, m) => acc + parseFloat(m.valor.toString()), 0)
         const totalDesconto = mensalidades.reduce((acc, m) => acc + parseFloat(m.desconto.toString()), 0)
-        return { totalMensalidades: mensalidades.length, totalBruto, totalDesconto, totalLiquido: totalBruto - totalDesconto, periodo: { inicio, fim } }
+        return {
+          totalMensalidades: mensalidades.length,
+          totalBruto,
+          totalDesconto,
+          totalLiquido: totalBruto - totalDesconto,
+          periodo: { inicio, fim },
+        }
       }
       case 'PENDENCIAS_PAGAMENTO': {
         const pendencias = await prisma.mensalidade.count({ where: { status: { in: ['PENDENTE', 'VENCIDO'] } } })
@@ -78,7 +91,14 @@ export class RelatoriosService {
     return relatorio
   }
 
-  async listar(params: { professorId?: string; tipo?: string; dataInicio?: string; dataFim?: string; page?: number; limit?: number }) {
+  async listar(params: {
+    professorId?: string
+    tipo?: string
+    dataInicio?: string
+    dataFim?: string
+    page?: number
+    limit?: number
+  }) {
     const validado = listRelatoriosSchema.parse(params)
     const { relatorios, total } = await this.repository.findAll({
       professorId: validado.professorId,
@@ -88,7 +108,13 @@ export class RelatoriosService {
       page: validado.page,
       limit: validado.limit,
     })
-    return { relatorios, total, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
+    return {
+      relatorios,
+      total,
+      page: validado.page,
+      limit: validado.limit,
+      totalPages: Math.ceil(total / validado.limit),
+    }
   }
 
   async exportarPorId(id: string): Promise<Buffer> {
@@ -96,7 +122,14 @@ export class RelatoriosService {
     return gerarExcel(relatorio)
   }
 
-  async gerarEExportar(data: { professorId: string; tipo: string; titulo: string; descricao?: string | null; dataPeriodoInicio: string; dataPeriodoFim: string }): Promise<Buffer> {
+  async gerarEExportar(data: {
+    professorId: string
+    tipo: string
+    titulo: string
+    descricao?: string | null
+    dataPeriodoInicio: string
+    dataPeriodoFim: string
+  }): Promise<Buffer> {
     const validado = createRelatorioSchema.parse(data)
 
     const professor = await prisma.professor.findUnique({ where: { id: validado.professorId } })
@@ -117,7 +150,7 @@ export class RelatoriosService {
       conteudo: JSON.stringify(conteudo),
       criadoEm: new Date(),
       atualizadoEm: new Date(),
-      professor: professor ? { usuario: { nomeCompleto: '' } } as any : undefined,
+      professor: professor ? ({ usuario: { nomeCompleto: '' } } as any) : undefined,
     }
 
     return gerarExcel(relatorioTemp)

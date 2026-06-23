@@ -39,9 +39,15 @@ describe('AlunosService', () => {
 
   describe('criar', () => {
     it('deve lançar erro se CPF inválido', async () => {
-      await expect(service.criar({
-        email: 'a@b.com', nomeCompleto: 'Nome', cpf: '123', senha: 'senha123', dataInicio: '2026-01-01',
-      })).rejects.toThrow()
+      await expect(
+        service.criar({
+          email: 'a@b.com',
+          nomeCompleto: 'Nome',
+          cpf: '123',
+          senha: 'senha123',
+          dataInicio: '2026-01-01',
+        }),
+      ).rejects.toThrow()
     })
   })
 

@@ -50,7 +50,11 @@ export interface PontoEvolucao {
 const MESES_CURTOS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez']
 
 /** Evolução do % de presença nos últimos N meses (inclui o mês corrente). */
-export function calcularEvolucaoMensal(presencas: PresencaAluno[], meses = 6, referencia = new Date()): PontoEvolucao[] {
+export function calcularEvolucaoMensal(
+  presencas: PresencaAluno[],
+  meses = 6,
+  referencia = new Date(),
+): PontoEvolucao[] {
   const pontos: PontoEvolucao[] = []
   for (let i = meses - 1; i >= 0; i--) {
     const d = new Date(referencia.getFullYear(), referencia.getMonth() - i, 1)

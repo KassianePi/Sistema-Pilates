@@ -30,7 +30,14 @@ export class NotificacoesService {
       limit: validado.limit,
     })
     const naoLidas = await this.repository.countNaoLidas(usuarioId)
-    return { notificacoes, total, naoLidas, page: validado.page, limit: validado.limit, totalPages: Math.ceil(total / validado.limit) }
+    return {
+      notificacoes,
+      total,
+      naoLidas,
+      page: validado.page,
+      limit: validado.limit,
+      totalPages: Math.ceil(total / validado.limit),
+    }
   }
 
   async marcarComoLida(id: string, usuarioId: string): Promise<Notificacao> {
@@ -50,14 +57,16 @@ export class NotificacoesService {
   async notificarAdmins(titulo: string, mensagem: string): Promise<void> {
     const { prisma } = await import('../../database/prisma.client')
     const admins = await prisma.usuario.findMany({ where: { funcao: 'ADMIN', status: 'ATIVO' }, select: { id: true } })
-    await Promise.all(admins.map(admin =>
-      this.repository.create({
-        usuarioId: admin.id,
-        tipo: 'MENSAGEM_ADMIN',
-        titulo,
-        mensagem,
-      })
-    ))
+    await Promise.all(
+      admins.map((admin) =>
+        this.repository.create({
+          usuarioId: admin.id,
+          tipo: 'MENSAGEM_ADMIN',
+          titulo,
+          mensagem,
+        }),
+      ),
+    )
   }
 }
 
@@ -76,7 +85,9 @@ eventBus.on('pagamento.realizado', async (data: { alunoId: string; valor: number
       titulo: 'Pagamento confirmado',
       mensagem: `Recebemos o seu pagamento de ${valorFmt}. Obrigado!`,
     })
-  } catch { /* silencioso */ }
+  } catch {
+    /* silencioso */
+  }
 })
 
 eventBus.on('mensalidade.vencida', async (data: { mensalidadeId: string; usuarioId: string; dataVencimento: Date }) => {
@@ -88,7 +99,9 @@ eventBus.on('mensalidade.vencida', async (data: { mensalidadeId: string; usuario
       titulo: 'Mensalidade vencida',
       mensagem: `Sua mensalidade com vencimento em ${dataFmt} está em atraso. Regularize o pagamento e envie o comprovante pelo portal.`,
     })
-  } catch { /* silencioso */ }
+  } catch {
+    /* silencioso */
+  }
 })
 
 // Observação: a notificação de cancelamento/suspensão/reagendamento/exclusão de aula
