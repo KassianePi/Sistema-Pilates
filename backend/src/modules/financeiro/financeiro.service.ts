@@ -1,6 +1,7 @@
 import { FinanceiroRepository } from './financeiro.repository'
 import { AppError, ValidationError } from '../../shared/errors'
-import { logInfo } from '../../shared/utils'
+import { logInfo, logError, inicioDoMes, parseDataLocal } from '../../shared/utils'
+import { mensalidadesAutomaticasService } from '../mensalidades-automaticas/mensalidades-automaticas.service'
 import {
   createMensalidadeSchema,
   updateMensalidadeSchema,
@@ -13,6 +14,7 @@ import { prisma } from '../../database/prisma.client'
 import { eventBus } from '../../events/event-bus'
 import { registrarLog } from '../auditoria/auditoria.service'
 import { notificacoesService } from '../notificacoes/notificacoes.service'
+import { USUARIO_SISTEMA_ID } from '../pagamentos-pix/pagamentos-pix.constants'
 import type { Mensalidade, Pagamento } from './financeiro.types'
 
 export class FinanceiroService {
@@ -41,12 +43,19 @@ export class FinanceiroService {
       if (!plano) throw ValidationError.forField('planoId', FINANCEIRO_ERRORS.PLANO_NOT_FOUND)
     }
 
+    // Normaliza mesReferencia de mensalidades MENSAL para o 1º dia do mês —
+    // necessário para a constraint única (alunoId, mesReferencia, tipo) tratar
+    // "mesmo mês" de forma consistente entre criação manual e automática
+    // (ver módulo mensalidades-automaticas). AVULSO mantém a data exata.
+    const mesReferencia = parseDataLocal(validado.mesReferencia)
+    const mesReferenciaNormalizada = validado.tipo === 'MENSAL' ? inicioDoMes(mesReferencia) : mesReferencia
+
     const mensalidade = await this.repository.createMensalidade({
       alunoId: validado.alunoId,
       planoId: validado.planoId ?? null,
       tipo: (validado.tipo ?? 'MENSAL') as any,
-      mesReferencia: new Date(validado.mesReferencia),
-      dataVencimento: new Date(validado.dataVencimento),
+      mesReferencia: mesReferenciaNormalizada,
+      dataVencimento: parseDataLocal(validado.dataVencimento),
       valor: validado.valor,
       desconto: validado.desconto,
       observacoes: validado.observacoes,
@@ -112,8 +121,8 @@ export class FinanceiroService {
       planoId: validado.planoId,
       tipo: validado.tipo,
       status: validado.status,
-      dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
-      dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,
+      dataInicio: validado.dataInicio ? parseDataLocal(validado.dataInicio) : undefined,
+      dataFim: validado.dataFim ? parseDataLocal(validado.dataFim) : undefined,
       page: validado.page,
       limit: validado.limit,
     })
@@ -135,7 +144,7 @@ export class FinanceiroService {
 
     const validado = updateMensalidadeSchema.parse(data)
     const atualizada = await this.repository.updateMensalidadeStatus(id, validado.status || mensalidade.status, {
-      dataVencimento: validado.dataVencimento ? new Date(validado.dataVencimento) : undefined,
+      dataVencimento: validado.dataVencimento ? parseDataLocal(validado.dataVencimento) : undefined,
       valor: validado.valor,
       desconto: validado.desconto,
       observacoes: validado.observacoes,
@@ -178,7 +187,7 @@ export class FinanceiroService {
       usuarioId,
       valor: validado.valor,
       metodo: validado.metodo as any,
-      dataPagamento: validado.dataPagamento ? new Date(validado.dataPagamento) : new Date(),
+      dataPagamento: validado.dataPagamento ? parseDataLocal(validado.dataPagamento) : new Date(),
       referencia: validado.referencia,
       observacoes: validado.observacoes,
     })
@@ -194,7 +203,75 @@ export class FinanceiroService {
     })
     logInfo('Pagamento registrado', { id: pagamento.id })
     await registrarLog({ usuarioId, acao: 'CREATE', entidade: 'Pagamento', entidadeId: pagamento.id })
+
+    // Quitação confirmada → já gera a mensalidade do mês seguinte, sem
+    // esperar a janela do job agendado (ver gerarProximaAposPagamento).
+    if (novoStatus === 'PAGO') {
+      await mensalidadesAutomaticasService.gerarProximaAposPagamento(mensalidade.id).catch((error) => {
+        logError('Falha ao gerar próxima mensalidade após pagamento manual', error as Error, {
+          mensalidadeId: mensalidade.id,
+        })
+      })
+    }
+
     return pagamento
+  }
+
+  /**
+   * Baixa automática de mensalidade via gateway de pagamento (ex.: confirmação
+   * de PIX pelo Mercado Pago). Único método que aplica essa regra — o webhook
+   * do gateway nunca mexe direto em Mensalidade/Pagamento, só valida a
+   * notificação e chama este método. Idempotente: chamar mais de uma vez para
+   * a mesma mensalidade não duplica pagamento nem baixa (ver
+   * `baixarComPagamentoAutomatico` no repository).
+   */
+  async baixarMensalidadePorGateway(data: {
+    mensalidadeId: string
+    valor: number
+    referenciaExterna: string
+  }): Promise<{ processado: boolean }> {
+    const mensalidade = await this.repository.findMensalidadeById(data.mensalidadeId)
+    if (!mensalidade) throw AppError.notFound('Mensalidade', data.mensalidadeId)
+
+    const { processado, pagamento } = await this.repository.baixarComPagamentoAutomatico({
+      mensalidadeId: data.mensalidadeId,
+      usuarioId: USUARIO_SISTEMA_ID,
+      valor: data.valor,
+      referencia: data.referenciaExterna,
+    })
+
+    if (!processado || !pagamento) {
+      logInfo('Baixa via gateway ignorada (idempotência): mensalidade já processada', {
+        mensalidadeId: data.mensalidadeId,
+      })
+      return { processado: false }
+    }
+
+    eventBus.emit('pagamento.realizado', {
+      pagamentoId: pagamento.id,
+      alunoId: mensalidade.alunoId,
+      valor: data.valor,
+    })
+    logInfo('Mensalidade baixada automaticamente via gateway', {
+      mensalidadeId: data.mensalidadeId,
+      pagamentoId: pagamento.id,
+    })
+    await registrarLog({
+      usuarioId: USUARIO_SISTEMA_ID,
+      acao: 'CREATE',
+      entidade: 'Pagamento',
+      entidadeId: pagamento.id,
+    })
+
+    // Baixa via gateway é sempre quitação total (ver baixarComPagamentoAutomatico) →
+    // já gera a mensalidade do mês seguinte na hora.
+    await mensalidadesAutomaticasService.gerarProximaAposPagamento(data.mensalidadeId).catch((error) => {
+      logError('Falha ao gerar próxima mensalidade após baixa via gateway', error as Error, {
+        mensalidadeId: data.mensalidadeId,
+      })
+    })
+
+    return { processado: true }
   }
 
   async listarPagamentos(params: {
@@ -211,8 +288,8 @@ export class FinanceiroService {
       mensalidadeId: validado.mensalidadeId,
       caixaId: validado.caixaId,
       metodo: validado.metodo,
-      dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
-      dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,
+      dataInicio: validado.dataInicio ? parseDataLocal(validado.dataInicio) : undefined,
+      dataFim: validado.dataFim ? parseDataLocal(validado.dataFim) : undefined,
       page: validado.page,
       limit: validado.limit,
     })

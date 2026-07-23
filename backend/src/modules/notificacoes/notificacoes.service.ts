@@ -90,6 +90,27 @@ eventBus.on('pagamento.realizado', async (data: { alunoId: string; valor: number
   }
 })
 
+eventBus.on(
+  'mensalidade.gerada',
+  async (data: { mensalidadeId: string; alunoId: string; usuarioId: string; valor: number; competencia: Date }) => {
+    try {
+      const valorFmt = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(data.valor)
+      const competenciaFmt = new Date(data.competencia).toLocaleDateString('pt-BR', {
+        month: 'long',
+        year: 'numeric',
+      })
+      await notificacoesService.criar({
+        usuarioId: data.usuarioId,
+        tipo: 'MENSALIDADE_CRIADA',
+        titulo: 'Nova cobrança disponível',
+        mensagem: `Foi gerada automaticamente a mensalidade de ${competenciaFmt} no valor de ${valorFmt}. Acesse o portal para gerar o PIX e pagar.`,
+      })
+    } catch {
+      /* silencioso */
+    }
+  },
+)
+
 eventBus.on('mensalidade.vencida', async (data: { mensalidadeId: string; usuarioId: string; dataVencimento: Date }) => {
   try {
     const dataFmt = new Date(data.dataVencimento).toLocaleDateString('pt-BR')
@@ -98,6 +119,35 @@ eventBus.on('mensalidade.vencida', async (data: { mensalidadeId: string; usuario
       tipo: 'PAGAMENTO_VENCIDO',
       titulo: 'Mensalidade vencida',
       mensagem: `Sua mensalidade com vencimento em ${dataFmt} está em atraso. Regularize o pagamento e envie o comprovante pelo portal.`,
+    })
+  } catch {
+    /* silencioso */
+  }
+})
+
+eventBus.on('presenca.registrada', async (data: { presencaId: string; alunoId: string }) => {
+  try {
+    const { prisma } = await import('../../database/prisma.client')
+    const presenca = await prisma.presenca.findUnique({
+      where: { id: data.presencaId },
+      select: {
+        status: true,
+        aluno: { select: { usuarioId: true } },
+        aula: { select: { dataHoraInicio: true } },
+      },
+    })
+    if (!presenca) return
+    const dataFmt = new Date(presenca.aula.dataHoraInicio).toLocaleDateString('pt-BR')
+    const mensagens: Record<string, string> = {
+      PRESENTE: `Sua presença na aula de ${dataFmt} foi confirmada.`,
+      AUSENTE: `Você foi marcado(a) como ausente na aula de ${dataFmt}.`,
+      FALTA_JUSTIFICADA: `Sua falta na aula de ${dataFmt} foi registrada como justificada.`,
+    }
+    await notificacoesService.criar({
+      usuarioId: presenca.aluno.usuarioId,
+      tipo: 'PRESENCA_REGISTRADA',
+      titulo: 'Presença registrada',
+      mensagem: mensagens[presenca.status] ?? `Sua presença na aula de ${dataFmt} foi registrada.`,
     })
   } catch {
     /* silencioso */

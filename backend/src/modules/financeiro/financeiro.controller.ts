@@ -1,9 +1,10 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
 import { financeiroService } from './financeiro.service'
 import { ValidationError, AppError } from '../../shared/errors'
-import { logWarn } from '../../shared/utils'
+import { logWarn, logError } from '../../shared/utils'
 import { prisma } from '../../database/prisma.client'
 import { notificacoesService } from '../notificacoes/notificacoes.service'
+import { mensalidadesAutomaticasService } from '../mensalidades-automaticas/mensalidades-automaticas.service'
 
 // ===================== MENSALIDADES =====================
 
@@ -347,6 +348,16 @@ export async function analisarComprovante(request: FastifyRequest, reply: Fastif
 
       return comp
     })
+
+    // Comprovante aprovado quita a mensalidade → já gera a do mês seguinte na
+    // hora, sem esperar a janela do job agendado.
+    if (acao === 'APROVADO' && atualizado.mensalidade) {
+      await mensalidadesAutomaticasService.gerarProximaAposPagamento(atualizado.mensalidadeId).catch((error) => {
+        logError('Falha ao gerar próxima mensalidade após aprovação de comprovante', error as Error, {
+          mensalidadeId: atualizado.mensalidadeId,
+        })
+      })
+    }
 
     // Notificar o aluno
     const titulo = acao === 'APROVADO' ? 'Comprovante aprovado!' : 'Comprovante rejeitado'

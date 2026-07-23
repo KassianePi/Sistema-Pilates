@@ -53,6 +53,9 @@ model Usuario {
   comprovantesAnalisados  ComprovantePagemento[] @relation("ComprovantesAnalisados")
   aulasAlteradas          Aula[]        @relation("AulaAlteradaPor")
   termosCriados           TermoUso[]    @relation("TermosCriados")
+  avaliacoesRegistradas   AvaliacaoCorporal[]
+  evolucoesRegistradas    EvolucaoAula[]
+  execucoesGeracaoMensalidades ExecucaoJobMensalidades[] @relation("ExecucoesGeracaoMensalidades")
 
   @@index([email])
   @@index([cpf])
@@ -76,6 +79,10 @@ model Aluno {
   usuarioId       String       @unique @db.VarChar(36)
   planoId         String?      @db.VarChar(36) @map("plano_id")
   dataInicio      DateTime     @map("data_inicio")
+  // Dia do mês (1-31) usado para calcular o vencimento das próximas mensalidades
+  // geradas automaticamente. Fonte única de verdade — a geração nunca deriva o
+  // vencimento somando meses à última mensalidade.
+  diaVencimento   Int          @default(10) @map("dia_vencimento")
   dataNascimento  DateTime?    @map("data_nascimento")
   ultimoAcesso    DateTime?    @map("ultimo_acesso")
   endereco        String?      @db.VarChar(255)
@@ -96,6 +103,8 @@ model Aluno {
   estornos        Estorno[]
   comprovantes    ComprovantePagemento[]
   termosAceites   TermoAceite[]
+  avaliacoes      AvaliacaoCorporal[]
+  evolucoes       EvolucaoAula[]
 
   @@index([usuarioId])
   @@index([status])
@@ -188,6 +197,7 @@ model Modalidade {
   id           String   @id @default(uuid()) @db.VarChar(36)
   nome         String   @unique @db.VarChar(100)
   descricao    String?  @db.VarChar(255)
+  valor        Decimal? @db.Decimal(10, 2)
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now()) @map("criado_em")
   atualizadoEm DateTime @default(now()) @updatedAt @map("atualizado_em")
@@ -224,6 +234,7 @@ model Aula {
   inscricoes       InscricaoAula[]
   reposicoesOrigem Reposicao[] @relation("AulaOriginal")
   reposicoesAlvo   Reposicao[] @relation("ReposicaoAula")
+  evolucoes        EvolucaoAula[]
 
   @@index([professorId])
   @@index([modalidadeId])
@@ -396,7 +407,13 @@ model Mensalidade {
   pagamentos      Pagamento[]
   estornos        Estorno[]
   comprovantes    ComprovantePagemento[]
+  cobrancasPix    CobrancaPix[]
 
+  // Idempotência da geração automática: nunca duas mensalidades do mesmo
+  // aluno/competência/tipo. mesReferencia de tipo=MENSAL é sempre normalizada
+  // para o 1º dia do mês (ver FinanceiroService.criarMensalidade e
+  // MensalidadesAutomaticasService) para essa constraint funcionar de verdade.
+  @@unique([alunoId, mesReferencia, tipo])
   @@index([alunoId])
   @@index([status])
   @@index([tipo])
@@ -428,6 +445,119 @@ model Pagamento {
   @@index([caixaId])
   @@index([dataPagamento])
   @@map("pagamentos")
+}
+
+// ============================================================================
+// 🔁 MÓDULO PAGAMENTOS PIX — Cobrança PIX automatizada (Mercado Pago)
+// ============================================================================
+
+enum StatusCobrancaPix {
+  PENDENTE
+  APROVADO
+  REJEITADO
+  CANCELADO
+  EXPIRADO
+}
+
+model CobrancaPix {
+  id                String            @id @default(uuid()) @db.VarChar(36)
+  mensalidadeId     String            @db.VarChar(36) @map("mensalidade_id")
+  gateway           String            @default("MERCADO_PAGO") @db.VarChar(30)
+  externalPaymentId String?           @unique @db.VarChar(50) @map("external_payment_id")
+  externalReference String            @db.VarChar(36) @map("external_reference")
+  status            StatusCobrancaPix @default(PENDENTE)
+  statusDetail      String?           @db.VarChar(100) @map("status_detail")
+  valor             Decimal           @db.Decimal(10, 2)
+  qrCode            String?           @db.LongText @map("qr_code")
+  qrCodeBase64      String?           @db.LongText @map("qr_code_base64")
+  ticketUrl         String?           @db.VarChar(500) @map("ticket_url")
+  dataExpiracao     DateTime?         @map("data_expiracao")
+  dataAprovacao     DateTime?         @map("data_aprovacao")
+  criadoEm          DateTime          @default(now()) @map("criado_em")
+  atualizadoEm      DateTime          @default(now()) @updatedAt @map("atualizado_em")
+
+  mensalidade       Mensalidade          @relation(fields: [mensalidadeId], references: [id], onDelete: Cascade)
+  eventosWebhook    WebhookMercadoPago[]
+
+  @@index([mensalidadeId])
+  @@index([status])
+  @@map("cobrancas_pix")
+}
+
+model WebhookMercadoPago {
+  id                   String       @id @default(uuid()) @db.VarChar(36)
+  cobrancaPixId        String?      @db.VarChar(36) @map("cobranca_pix_id")
+  externalEventId      String       @unique @db.VarChar(100) @map("external_event_id")
+  topico               String       @db.VarChar(30)
+  paymentIdMp          String?      @db.VarChar(50) @map("payment_id_mp")
+  payload              Json
+  processadoComSucesso Boolean      @default(false) @map("processado_com_sucesso")
+  erro                 String?      @db.LongText
+  recebidoEm           DateTime     @default(now()) @map("recebido_em")
+
+  cobrancaPix          CobrancaPix? @relation(fields: [cobrancaPixId], references: [id])
+
+  @@index([cobrancaPixId])
+  @@map("webhooks_mercado_pago")
+}
+
+// ============================================================================
+// 🔁 MÓDULO MENSALIDADES AUTOMÁTICAS — Geração automática + lock + histórico
+// ============================================================================
+
+enum OrigemExecucaoJob {
+  CRON
+  MANUAL
+}
+
+enum StatusExecucaoJob {
+  EM_ANDAMENTO
+  SUCESSO
+  PARCIAL
+  ERRO
+}
+
+// Lock de execução única: impede duas execuções (cron + manual, ou duas
+// réplicas do backend) processarem a lista de alunos ao mesmo tempo. Não usa
+// GET_LOCK() do MySQL porque locks nomeados são presos à conexão que os
+// obteve, e o Prisma usa um pool — nada garante que RELEASE_LOCK rode na
+// mesma conexão do GET_LOCK. Uma tabela com lease/expiração evita esse
+// problema e funciona normalmente com o pool de conexões.
+model JobLock {
+  chave     String            @id @db.VarChar(100)
+  travadoEm DateTime          @map("travado_em")
+  expiraEm  DateTime          @map("expira_em")
+  origem    OrigemExecucaoJob
+
+  @@map("job_locks")
+}
+
+// Histórico persistido de cada execução real (dry-run nunca grava aqui — ver
+// MensalidadesAutomaticasService). Preparado para um card de status no
+// Dashboard Administrativo (🟢 SUCESSO / 🟡 PARCIAL / 🔴 ERRO) sem precisar
+// interpretar logs.
+model ExecucaoJobMensalidades {
+  id                   String            @id @default(uuid()) @db.VarChar(36)
+  origem               OrigemExecucaoJob
+  status               StatusExecucaoJob @default(EM_ANDAMENTO)
+  dryRun               Boolean           @default(false) @map("dry_run")
+  executadoPorId       String?           @db.VarChar(36) @map("executado_por_id")
+  iniciadoEm           DateTime          @map("iniciado_em")
+  finalizadoEm         DateTime?         @map("finalizado_em")
+  duracaoMs            Int?              @map("duracao_ms")
+  totalAlunosElegiveis Int               @default(0) @map("total_alunos_elegiveis")
+  alunosAnalisados     Int               @default(0) @map("alunos_analisados")
+  mensalidadesCriadas  Int               @default(0) @map("mensalidades_criadas")
+  alunosIgnorados      Int               @default(0) @map("alunos_ignorados")
+  detalhesIgnorados    Json              @map("detalhes_ignorados")
+  erros                Json
+  criadoEm             DateTime          @default(now()) @map("criado_em")
+
+  executadoPor         Usuario?          @relation("ExecucoesGeracaoMensalidades", fields: [executadoPorId], references: [id], onDelete: SetNull)
+
+  @@index([iniciadoEm])
+  @@index([status])
+  @@map("execucoes_job_mensalidades")
 }
 
 // ============================================================================
@@ -571,13 +701,24 @@ model ComprovantePagemento {
 // ============================================================================
 
 model ConfiguracaoStudio {
-  id            String   @id @default("studio")
-  chavePix      String?  @db.VarChar(255) @map("chave_pix")
-  tipoChavePix  String?  @db.VarChar(20)  @map("tipo_chave_pix")
-  nomeRecebedor String?  @db.VarChar(255) @map("nome_recebedor")
-  qrCodeBase64  String?  @db.LongText     @map("qr_code_base64")
-  criadoEm      DateTime @default(now())  @map("criado_em")
-  atualizadoEm  DateTime @default(now()) @updatedAt @map("atualizado_em")
+  id                String   @id @default("studio")
+  chavePix          String?  @db.VarChar(255) @map("chave_pix")
+  tipoChavePix      String?  @db.VarChar(20)  @map("tipo_chave_pix")
+  nomeRecebedor     String?  @db.VarChar(255) @map("nome_recebedor")
+  qrCodeBase64      String?  @db.LongText     @map("qr_code_base64")
+  // Liga/desliga o fluxo automático de PIX (Mercado Pago) no portal do aluno,
+  // sem depender de deploy — se desligado, volta a mostrar o fluxo manual
+  // (chave PIX estática + upload de comprovante).
+  usarPixAutomatico Boolean  @default(true)   @map("usar_pix_automatico")
+  // Geração automática de mensalidades — ver módulo mensalidades-automaticas.
+  // cronGeracaoMensalidades é lida só no boot do processo (ver job); mudar o
+  // valor exige restart do backend para valer.
+  geracaoAutomaticaAtiva    Boolean  @default(true)   @map("geracao_automatica_ativa")
+  diasAntesGeracao          Int      @default(5)      @map("dias_antes_geracao")
+  maximoMensalidadesFuturas Int      @default(1)      @map("maximo_mensalidades_futuras")
+  cronGeracaoMensalidades   String   @default("0 0,6,12,18 * * *") @db.VarChar(50) @map("cron_geracao_mensalidades")
+  criadoEm          DateTime @default(now())  @map("criado_em")
+  atualizadoEm      DateTime @default(now()) @updatedAt @map("atualizado_em")
 
   @@map("configuracao_studio")
 }
@@ -656,4 +797,67 @@ model TermoAceite {
   @@index([termoId])
   @@index([alunoId])
   @@map("termos_aceites")
+}
+
+// ============================================================================
+// 🩺 MÓDULO AVALIAÇÕES — Avaliação corporal do aluno
+// ============================================================================
+
+model AvaliacaoCorporal {
+  id                 String   @id @default(uuid()) @db.VarChar(36)
+  alunoId            String   @db.VarChar(36) @map("aluno_id")
+  registradoPorId    String   @db.VarChar(36) @map("registrado_por_id")
+  dataAvaliacao      DateTime @map("data_avaliacao")
+  peso               Decimal? @db.Decimal(5, 2)
+  altura             Decimal? @db.Decimal(4, 2)
+  medidas            Json?
+  queixaPrincipal    String?  @db.VarChar(500) @map("queixa_principal")
+  historicoMedico    String?  @db.LongText @map("historico_medico")
+  observacoesPostura String?  @db.LongText @map("observacoes_postura")
+  observacoesGerais  String?  @db.LongText @map("observacoes_gerais")
+  criadoEm           DateTime @default(now()) @map("criado_em")
+  atualizadoEm       DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  aluno         Aluno           @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  registradoPor Usuario         @relation(fields: [registradoPorId], references: [id])
+  fotos         AvaliacaoFoto[]
+
+  @@index([alunoId])
+  @@index([dataAvaliacao])
+  @@map("avaliacoes_corporais")
+}
+
+model AvaliacaoFoto {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  avaliacaoId String   @db.VarChar(36) @map("avaliacao_id")
+  arquivo     String   @db.LongText
+  tipoArquivo String   @db.VarChar(50) @map("tipo_arquivo")
+  criadoEm    DateTime @default(now()) @map("criado_em")
+
+  avaliacao AvaliacaoCorporal @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+
+  @@index([avaliacaoId])
+  @@map("avaliacoes_fotos")
+}
+
+// ============================================================================
+// 📈 MÓDULO EVOLUÇÃO — Evolução do aluno por aula
+// ============================================================================
+
+model EvolucaoAula {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  alunoId         String   @db.VarChar(36) @map("aluno_id")
+  aulaId          String   @db.VarChar(36) @map("aula_id")
+  registradoPorId String   @db.VarChar(36) @map("registrado_por_id")
+  observacao      String   @db.LongText
+  criadoEm        DateTime @default(now()) @map("criado_em")
+  atualizadoEm    DateTime @default(now()) @updatedAt @map("atualizado_em")
+
+  aluno         Aluno   @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+  aula          Aula    @relation(fields: [aulaId], references: [id], onDelete: Cascade)
+  registradoPor Usuario @relation(fields: [registradoPorId], references: [id])
+
+  @@index([alunoId])
+  @@index([aulaId])
+  @@map("evolucoes_aula")
 }

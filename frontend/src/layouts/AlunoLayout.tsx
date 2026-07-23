@@ -1,6 +1,6 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, CalendarDays, ClipboardList, Receipt, User, LogOut, Bell } from 'lucide-react'
+import { LayoutDashboard, CalendarDays, ClipboardList, Receipt, User, LogOut, Bell, HeartPulse } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import type { AlunoUser } from '@/types/auth.types'
@@ -14,12 +14,13 @@ const navItems = [
   { label: 'Agenda', to: '/aluno/agenda', icon: CalendarDays },
   { label: 'Frequência', to: '/aluno/presenca', icon: ClipboardList },
   { label: 'Financeiro', to: '/aluno/financeiro', icon: Receipt },
+  { label: 'Avaliações', to: '/aluno/avaliacoes', icon: HeartPulse },
   { label: 'Notificações', to: '/aluno/notificacoes', icon: Bell },
   { label: 'Meu Perfil', to: '/aluno/perfil', icon: User },
 ]
 
-// Barra inferior (mobile): destinos do dia a dia. Perfil e Sair ficam no topo.
-const bottomNavItems = navItems.filter((i) => i.to !== '/aluno/perfil')
+// Barra inferior (mobile): apenas os destinos do dia a dia (evita lotar a barra).
+const bottomNavItems = navItems.filter((i) => i.to !== '/aluno/perfil' && i.to !== '/aluno/avaliacoes')
 
 export function AlunoLayout() {
   const { user, logout } = useAuth()

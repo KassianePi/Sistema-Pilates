@@ -173,6 +173,49 @@ export class FinanceiroRepository {
     }
   }
 
+  /**
+   * Baixa idempotente de mensalidade via gateway externo (PIX automatizado).
+   * O update de status é condicional (`status: { not: 'PAGO' } `) dentro da
+   * mesma transação que cria o Pagamento: se outra chamada concorrente (ex.:
+   * webhook duplicado) já baixou a mensalidade, `count` vem 0 e nada mais é
+   * criado — essa é a proteção real contra pagamento duplicado.
+   */
+  async baixarComPagamentoAutomatico(data: {
+    mensalidadeId: string
+    usuarioId: string
+    valor: number
+    referencia: string
+  }): Promise<{ processado: boolean; pagamento: Pagamento | null }> {
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const resultado = await tx.mensalidade.updateMany({
+          where: { id: data.mensalidadeId, status: { not: 'PAGO' } },
+          data: { status: 'PAGO' },
+        })
+        if (resultado.count === 0) {
+          return { processado: false, pagamento: null }
+        }
+
+        const pagamento = await tx.pagamento.create({
+          data: {
+            mensalidadeId: data.mensalidadeId,
+            usuarioId: data.usuarioId,
+            valor: data.valor,
+            metodo: 'PIX',
+            dataPagamento: new Date(),
+            referencia: data.referencia,
+          },
+        })
+        return { processado: true, pagamento: pagamento as any }
+      })
+    } catch (error) {
+      logError('Erro ao baixar mensalidade automaticamente via gateway', error as Error, {
+        mensalidadeId: data.mensalidadeId,
+      })
+      throw AppError.internal('Erro ao baixar mensalidade')
+    }
+  }
+
   async createPagamento(data: CreatePagamentoData): Promise<Pagamento> {
     try {
       return (await prisma.pagamento.create({

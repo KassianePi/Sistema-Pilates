@@ -23,6 +23,7 @@ import { LoadingState } from '../../components/LoadingState'
 import { EmptyState } from '../../components/EmptyState'
 import { StatusBadge } from '../../components/StatusBadge'
 import { PixCard } from '../../components/PixCard'
+import { PagamentoPixCard } from '../../components/PagamentoPixCard'
 import { TimelineFinanceira } from '../../components/TimelineFinanceira'
 import { EnviarComprovanteModal } from '../../components/EnviarComprovanteModal'
 import { ReembolsoModal } from '../../components/ReembolsoModal'
@@ -108,6 +109,9 @@ export function AlunoFinanceiroPage() {
   const proximaCobranca =
     pendentes.slice().sort((a, b) => new Date(a.vencimento).getTime() - new Date(b.vencimento).getTime())[0] ?? null
   const temPix = !!(config?.chavePix || config?.qrCodeBase64)
+  // Config persistida (ConfiguracaoStudio.usarPixAutomatico) — permite a cliente reverter
+  // para o fluxo manual sem depender de deploy. Default true enquanto a config não carrega.
+  const usarPixAutomatico = config?.usarPixAutomatico ?? true
   const timeline = useMemo(() => montarTimelineFinanceira({ mensalidades, comprovantes }), [mensalidades, comprovantes])
   const mensStatus = mensalidadeAtual ? getStatusMeta('mensalidade', mensalidadeAtual.status) : null
 
@@ -168,13 +172,18 @@ export function AlunoFinanceiroPage() {
             <KpiCard label="Total pago" icon={CheckCircle2} tone="success" value={formatarValor(totalPago)} />
           </div>
 
-          {pendentes.length > 0 && temPix && (
-            <PixCard
-              chavePix={config?.chavePix}
-              tipoChavePix={config?.tipoChavePix}
-              nomeRecebedor={config?.nomeRecebedor}
-              qrCodeBase64={config?.qrCodeBase64}
-            />
+          {pendentes.length > 0 && mensalidadeAtual && usarPixAutomatico ? (
+            <PagamentoPixCard mensalidadeId={mensalidadeAtual.id} onVerDetalhes={() => trocarAba('resumo')} />
+          ) : (
+            pendentes.length > 0 &&
+            temPix && (
+              <PixCard
+                chavePix={config?.chavePix}
+                tipoChavePix={config?.tipoChavePix}
+                nomeRecebedor={config?.nomeRecebedor}
+                qrCodeBase64={config?.qrCodeBase64}
+              />
+            )
           )}
 
           {/* Histórico de mensalidades */}
@@ -245,13 +254,15 @@ export function AlunoFinanceiroPage() {
                           {jaEnviou ? (
                             <span className="text-xs text-amber-600 italic">Comprovante enviado</span>
                           ) : (
-                            <Button
-                              size="sm"
-                              className="text-xs bg-roxo-profundo text-branco-puro hover:bg-roxo-profundo/90"
-                              onClick={() => setComprovanteModal({ id: m.id, nomePlano })}
-                            >
-                              <Upload className="w-3 h-3 mr-1" /> Enviar comprovante
-                            </Button>
+                            !usarPixAutomatico && (
+                              <Button
+                                size="sm"
+                                className="text-xs bg-roxo-profundo text-branco-puro hover:bg-roxo-profundo/90"
+                                onClick={() => setComprovanteModal({ id: m.id, nomePlano })}
+                              >
+                                <Upload className="w-3 h-3 mr-1" /> Enviar comprovante
+                              </Button>
+                            )
                           )}
                         </div>
                       </li>

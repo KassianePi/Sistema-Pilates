@@ -1,6 +1,6 @@
 import { AlunosRepository } from './alunos.repository'
 import { AppError, ValidationError } from '../../shared/errors'
-import { logInfo } from '../../shared/utils'
+import { logInfo, inicioDoMes, parseDataLocal } from '../../shared/utils'
 import { hashPassword } from '../../shared/utils/hash'
 import { createAlunoSchema, updateAlunoSchema, listAlunosSchema } from '../../shared/schemas'
 import { ALUNOS_ERRORS } from './alunos.constants'
@@ -24,6 +24,7 @@ export class AlunosService {
       senha: string
       planoId?: string | null
       dataInicio: string
+      diaVencimento?: number
       dataNascimento?: string | null
       endereco?: string | null
       cidade?: string | null
@@ -60,7 +61,7 @@ export class AlunosService {
       }
       this.validarComprovante(validado.comprovante)
 
-      const dataInicio = new Date(validado.dataInicio)
+      const dataInicio = parseDataLocal(validado.dataInicio)
       const { aluno, comprovanteId } = await this.repository.createWithMatricula(
         {
           email: validado.email,
@@ -70,7 +71,8 @@ export class AlunosService {
           senhaHash,
           planoId: validado.planoId,
           dataInicio,
-          dataNascimento: validado.dataNascimento ? new Date(validado.dataNascimento) : null,
+          diaVencimento: validado.diaVencimento ?? dataInicio.getDate(),
+          dataNascimento: validado.dataNascimento ? parseDataLocal(validado.dataNascimento) : null,
           endereco: validado.endereco,
           cidade: validado.cidade,
           estado: validado.estado,
@@ -80,7 +82,11 @@ export class AlunosService {
         {
           planoId: validado.planoId,
           valor: Number(plano.preco),
-          mesReferencia: dataInicio,
+          // mesReferencia normalizada para o 1º dia do mês — mesma regra de
+          // FinanceiroService.criarMensalidade, necessária para a constraint
+          // única (alunoId, mesReferencia, tipo) e para a geração automática
+          // reconhecer esta como a mensalidade "base" da competência.
+          mesReferencia: inicioDoMes(dataInicio),
           dataVencimento: dataInicio,
           comprovante: validado.comprovante,
         },
@@ -112,8 +118,9 @@ export class AlunosService {
       telefone: validado.telefone,
       senhaHash,
       planoId: validado.planoId,
-      dataInicio: new Date(validado.dataInicio),
-      dataNascimento: validado.dataNascimento ? new Date(validado.dataNascimento) : null,
+      dataInicio: parseDataLocal(validado.dataInicio),
+      diaVencimento: validado.diaVencimento ?? parseDataLocal(validado.dataInicio).getDate(),
+      dataNascimento: validado.dataNascimento ? parseDataLocal(validado.dataNascimento) : null,
       endereco: validado.endereco,
       cidade: validado.cidade,
       estado: validado.estado,
@@ -184,7 +191,7 @@ export class AlunosService {
     const aluno = await this.repository.update(id, {
       ...validado,
       senhaHash,
-      dataNascimento: validado.dataNascimento ? new Date(validado.dataNascimento) : undefined,
+      dataNascimento: validado.dataNascimento ? parseDataLocal(validado.dataNascimento) : undefined,
       status: validado.status as any,
     })
     logInfo('Aluno atualizado', { id })

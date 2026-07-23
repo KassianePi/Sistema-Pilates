@@ -7,6 +7,7 @@
 import { prisma } from '../../database/prisma.client'
 import { AppError } from '../../shared/errors'
 import { logDebug, logError } from '../../shared/utils'
+import { USUARIO_SISTEMA_ID } from '../pagamentos-pix/pagamentos-pix.constants'
 import type { Usuario, CreateUsuarioData } from './auth.types'
 
 /**
@@ -249,7 +250,12 @@ export class AuthRepository {
    */
   async count(): Promise<number> {
     try {
-      return await prisma.usuario.count()
+      // Exclui o usuário interno de sistema (Mercado Pago), semeado no boot via
+      // seedUsuarioSistema(). Ele não é um usuário "cadastrado" no sentido do
+      // produto — é um artefato interno para baixas automáticas de PIX. Sem
+      // essa exclusão, o setup inicial (primeiro admin) sempre retornaria 409
+      // num banco recém-criado, porque já haveria 1 usuário (o de sistema).
+      return await prisma.usuario.count({ where: { id: { not: USUARIO_SISTEMA_ID } } })
     } catch (error) {
       logError('Erro ao contar usuários', error as Error)
       throw AppError.internal('Erro ao contar usuários')

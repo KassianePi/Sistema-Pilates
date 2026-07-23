@@ -1,5 +1,5 @@
 import { AuditoriaRepository } from './auditoria.repository'
-import { logInfo } from '../../shared/utils'
+import { logInfo, parseDataLocal } from '../../shared/utils'
 import { listAuditoriaSchema } from '../../shared/schemas'
 import type { LogAuditoria, CreateLogAuditoriaData } from './auditoria.types'
 import type { TipoAcao } from '@prisma/client'
@@ -32,8 +32,8 @@ export class AuditoriaService {
       usuarioId: validado.usuarioId,
       acao: validado.acao,
       entidade: validado.entidade,
-      dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
-      dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,
+      dataInicio: validado.dataInicio ? parseDataLocal(validado.dataInicio) : undefined,
+      dataFim: validado.dataFim ? parseDataLocal(validado.dataFim) : undefined,
       page: validado.page,
       limit: validado.limit,
     })
@@ -53,8 +53,8 @@ export class AuditoriaService {
       usuarioId: validado.usuarioId,
       acao: validado.acao,
       entidade: validado.entidade,
-      dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
-      dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,
+      dataInicio: validado.dataInicio ? parseDataLocal(validado.dataInicio) : undefined,
+      dataFim: validado.dataFim ? parseDataLocal(validado.dataFim) : undefined,
       page: 1,
       limit: EXPORT_LIMIT,
     })

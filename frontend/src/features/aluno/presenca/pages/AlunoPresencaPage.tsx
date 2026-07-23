@@ -1,5 +1,16 @@
 import { useMemo, useState } from 'react'
-import { ClipboardList, CheckCircle2, Percent, CalendarCheck, X, CalendarDays, TrendingUp } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
+import {
+  ClipboardList,
+  CheckCircle2,
+  Percent,
+  CalendarCheck,
+  X,
+  CalendarDays,
+  TrendingUp,
+  NotebookPen,
+  CalendarPlus,
+} from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -11,16 +22,29 @@ import { EmptyState } from '../../components/EmptyState'
 import { StatusBadge } from '../../components/StatusBadge'
 import { CalendarioPresenca } from '../../components/CalendarioPresenca'
 import { EvolucaoFrequencia } from '../../components/EvolucaoFrequencia'
+import { SolicitarReposicaoModal } from '../../components/SolicitarReposicaoModal'
 import { useAlunoFrequencia } from '../../hooks/useAlunoFrequencia'
+import { useMinhasReposicoes } from '../../hooks/useAlunoReposicoes'
 import { calcularKpisFrequencia, calcularEvolucaoMensal } from '../../utils/frequencia'
-import { formatarData } from '../../utils/format'
+import { formatarData, formatarDataHora } from '../../utils/format'
+import { evolucoesService } from '@/services/evolucoes.service'
 
 export function AlunoPresencaPage() {
   const [dataInicio, setDataInicio] = useState('')
   const [dataFim, setDataFim] = useState('')
+  const [reposicaoAula, setReposicaoAula] = useState<{ id: string; data: string } | null>(null)
 
   const { data, isLoading } = useAlunoFrequencia()
   const presencas = useMemo(() => data ?? [], [data])
+  const { data: evolucoes } = useQuery({
+    queryKey: ['minhas-evolucoes'],
+    queryFn: () => evolucoesService.listarMinhas({ limit: 20 }),
+  })
+  const { data: reposicoes } = useMinhasReposicoes()
+  const aulasComPedido = useMemo(
+    () => new Set((reposicoes?.reposicoes ?? []).map((r) => r.aulaOriginalId)),
+    [reposicoes],
+  )
 
   const kpis = useMemo(() => calcularKpisFrequencia(presencas), [presencas])
   const evolucao = useMemo(() => calcularEvolucaoMensal(presencas, 6), [presencas])
@@ -112,7 +136,7 @@ export function AlunoPresencaPage() {
             ) : (
               <ul className="divide-y divide-bege-cartao -my-2">
                 {lista.map((p) => (
-                  <li key={p.id} className="flex items-center justify-between py-3 gap-3">
+                  <li key={p.id} className="flex items-center justify-between py-3 gap-3 flex-wrap">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-cinza-forte">{p.aula.titulo}</p>
                       <p className="text-xs text-cinza-texto">
@@ -120,13 +144,71 @@ export function AlunoPresencaPage() {
                         {p.aula.horaInicio ? ` — ${p.aula.horaInicio}` : ''}
                       </p>
                     </div>
-                    <StatusBadge domain="presenca" status={p.status} />
+                    <div className="flex items-center gap-2">
+                      {p.status === 'AUSENTE' && p.aula.id && !aulasComPedido.has(p.aula.id) && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setReposicaoAula({ id: p.aula.id, data: formatarData(p.aula.data) })}
+                        >
+                          <CalendarPlus className="w-3.5 h-3.5 mr-1" /> Repor
+                        </Button>
+                      )}
+                      <StatusBadge domain="presenca" status={p.status} />
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </SectionCard>
+
+          {/* Reposições solicitadas */}
+          {reposicoes && reposicoes.reposicoes.length > 0 && (
+            <SectionCard title="Minhas reposições" icon={CalendarPlus}>
+              <ul className="divide-y divide-bege-cartao -my-2">
+                {reposicoes.reposicoes.map((r) => (
+                  <li key={r.id} className="flex items-center justify-between py-3 gap-3 flex-wrap">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-cinza-forte">
+                        Aula de {r.aulaOriginal ? formatarData(r.aulaOriginal.dataHoraInicio.slice(0, 10)) : '—'}
+                      </p>
+                      <p className="text-xs text-cinza-texto">
+                        {r.status === 'AGENDADA' && r.aulaReposicao
+                          ? `Reposição em ${formatarDataHora(r.aulaReposicao.dataHoraInicio)}`
+                          : r.motivo}
+                      </p>
+                    </div>
+                    <StatusBadge domain="reposicao" status={r.status} />
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          {/* Evolução registrada pelo professor */}
+          {evolucoes && evolucoes.evolucoes.length > 0 && (
+            <SectionCard title="Evolução" icon={NotebookPen}>
+              <ul className="divide-y divide-bege-cartao -my-2">
+                {evolucoes.evolucoes.map((e) => (
+                  <li key={e.id} className="py-3">
+                    <p className="text-xs text-cinza-medio">
+                      {e.aula ? formatarDataHora(e.aula.dataHoraInicio) : '—'}
+                    </p>
+                    <p className="text-sm text-cinza-texto mt-1">{e.observacao}</p>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
         </>
+      )}
+
+      {reposicaoAula && (
+        <SolicitarReposicaoModal
+          aulaOriginalId={reposicaoAula.id}
+          dataAula={reposicaoAula.data}
+          onClose={() => setReposicaoAula(null)}
+        />
       )}
     </div>
   )

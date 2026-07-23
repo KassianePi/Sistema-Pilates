@@ -5,18 +5,17 @@ export function formatarValor(v: number | null | undefined): string {
 }
 
 /**
- * Converte uma string em Date tratando datas puras "YYYY-MM-DD" como horário LOCAL.
- * (Sem isso, o JS interpreta a data pura como UTC e o fuso negativo exibe o dia anterior.)
+ * Datas "puras" (vencimento, data de início, nascimento...) chegam da API como
+ * meia-noite UTC — não representam um instante real, só um dia de calendário.
+ * Exibir com toLocaleDateString sem fixar o fuso converte pro horário local do
+ * navegador e, em fusos negativos (Brasil), mostra o dia anterior. Fixando
+ * timeZone: 'UTC' a data exibida é sempre o dia gravado, não importa o fuso de
+ * quem está vendo a tela.
  */
-function paraData(d: string): Date {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d)
-  return m ? new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3])) : new Date(d)
-}
-
 export function formatarData(d?: string | null): string {
   if (!d) return '—'
-  const dt = paraData(d)
-  return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('pt-BR')
+  const dt = new Date(d)
+  return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 }
 
 export function formatarDataHora(d?: string | null): string {
@@ -29,8 +28,10 @@ export function formatarDataHora(d?: string | null): string {
 
 export function formatarDataLonga(d?: string | null): string {
   if (!d) return '—'
-  const dt = paraData(d)
-  return isNaN(dt.getTime()) ? '—' : dt.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })
+  const dt = new Date(d)
+  return isNaN(dt.getTime())
+    ? '—'
+    : dt.toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' })
 }
 
 export function primeiroNome(nome?: string | null): string {

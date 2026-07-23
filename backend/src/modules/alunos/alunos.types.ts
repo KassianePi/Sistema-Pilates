@@ -5,6 +5,7 @@ export interface Aluno {
   usuarioId: string
   planoId: string | null
   dataInicio: Date
+  diaVencimento: number
   dataNascimento: Date | null
   ultimoAcesso: Date | null
   endereco: string | null
@@ -39,6 +40,7 @@ export interface CreateAlunoData {
   senhaHash: string
   planoId?: string | null
   dataInicio: Date
+  diaVencimento?: number
   dataNascimento?: Date | null
   endereco?: string | null
   cidade?: string | null
@@ -53,6 +55,7 @@ export interface UpdateAlunoData {
   senhaHash?: string
   telefone?: string | null
   planoId?: string | null
+  diaVencimento?: number
   dataNascimento?: Date | null
   endereco?: string | null
   cidade?: string | null

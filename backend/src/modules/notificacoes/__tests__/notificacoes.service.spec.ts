@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NotificacoesService } from '../notificacoes.service'
 import { AppError } from '../../../shared/errors'
+import { eventBus } from '../../../events/event-bus'
+import { prisma } from '../../../database/prisma.client'
 
 vi.mock('../../../events/event-bus', () => ({
   eventBus: { on: vi.fn(), emit: vi.fn() },
@@ -9,6 +11,8 @@ vi.mock('../../../events/event-bus', () => ({
 vi.mock('../../../database/prisma.client', () => ({
   prisma: {
     usuario: { findMany: vi.fn().mockResolvedValue([{ id: 'admin-1' }, { id: 'admin-2' }]) },
+    presenca: { findUnique: vi.fn() },
+    notificacao: { create: vi.fn().mockResolvedValue({ id: 'notif-x' }) },
   },
 }))
 
@@ -124,6 +128,44 @@ describe('NotificacoesService', () => {
       expect(mockRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ usuarioId: 'admin-1', tipo: 'MENSAGEM_ADMIN' }),
       )
+    })
+  })
+
+  describe('listener presenca.registrada', () => {
+    function getHandler() {
+      const chamada = vi.mocked(eventBus.on).mock.calls.find(([evento]) => evento === 'presenca.registrada')
+      expect(chamada).toBeDefined()
+      return chamada![1] as (data: { presencaId: string; alunoId: string }) => Promise<void>
+    }
+
+    it('cria notificação PRESENCA_REGISTRADA para aluno marcado ausente', async () => {
+      vi.mocked(prisma.presenca.findUnique).mockResolvedValue({
+        status: 'AUSENTE',
+        aluno: { usuarioId: USUARIO_ID },
+        aula: { dataHoraInicio: new Date('2026-07-01T10:00:00.000Z') },
+      } as any)
+
+      const handler = getHandler()
+      await handler({ presencaId: 'presenca-1', alunoId: 'aluno-1' })
+
+      expect(prisma.notificacao.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            usuarioId: USUARIO_ID,
+            tipo: 'PRESENCA_REGISTRADA',
+            mensagem: expect.stringContaining('ausente'),
+          }),
+        }),
+      )
+    })
+
+    it('não lança erro e não notifica quando a presença não existe mais', async () => {
+      vi.mocked(prisma.presenca.findUnique).mockResolvedValue(null)
+      vi.mocked(prisma.notificacao.create).mockClear()
+
+      const handler = getHandler()
+      await expect(handler({ presencaId: 'inexistente', alunoId: 'aluno-1' })).resolves.not.toThrow()
+      expect(prisma.notificacao.create).not.toHaveBeenCalled()
     })
   })
 })

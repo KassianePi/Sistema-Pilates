@@ -14,6 +14,7 @@ export interface Modalidade {
   id: string
   nome: string
   descricao?: string | null
+  valor?: number | null
   ativo: boolean
   criadoEm?: string
   atualizadoEm?: string
@@ -69,6 +70,7 @@ export interface Aluno {
   id: string
   usuarioId: string
   planoId?: string
+  diaVencimento: number
   dataNascimento?: string
   endereco?: string
   cidade?: string
@@ -135,7 +137,7 @@ export interface Mensalidade {
   createdAt: string
   updatedAt: string
   aluno: { id: string; usuario: { nomeCompleto: string } }
-  plano: Pick<Plano, 'id' | 'nome'>
+  plano: Pick<Plano, 'id' | 'nome'> | null
 }
 
 export interface Pagamento {
@@ -198,6 +200,60 @@ export interface Relatorio {
   criadoEm: string
   atualizadoEm: string
   professor?: { id: string; usuario: { nomeCompleto: string } }
+}
+
+export interface AvaliacaoFoto {
+  id: string
+  arquivo: string
+  tipoArquivo: string
+  criadoEm: string
+}
+
+export interface AvaliacaoCorporal {
+  id: string
+  alunoId: string
+  registradoPorId: string
+  dataAvaliacao: string
+  peso: number | string | null
+  altura: number | string | null
+  medidas: Record<string, number> | null
+  queixaPrincipal: string | null
+  historicoMedico: string | null
+  observacoesPostura: string | null
+  observacoesGerais: string | null
+  imc: number | null
+  criadoEm: string
+  atualizadoEm: string
+  fotos: AvaliacaoFoto[]
+}
+
+export interface EvolucaoAula {
+  id: string
+  alunoId: string
+  aulaId: string
+  registradoPorId: string
+  observacao: string
+  criadoEm: string
+  atualizadoEm: string
+  aula?: { id: string; dataHoraInicio: string; sala: string } | null
+  registradoPor?: { id: string; nomeCompleto: string } | null
+}
+
+export type StatusReposicao = 'PENDENTE' | 'AGENDADA' | 'REALIZADA' | 'CANCELADA'
+
+export interface Reposicao {
+  id: string
+  alunoId: string
+  aulaOriginalId: string
+  aulaReposicaoId: string | null
+  motivo: string
+  status: StatusReposicao
+  dataSolicitacao: string
+  criadoEm: string
+  atualizadoEm: string
+  aluno?: { id: string; usuario: { nomeCompleto: string } } | null
+  aulaOriginal?: { id: string; dataHoraInicio: string; sala: string } | null
+  aulaReposicao?: { id: string; dataHoraInicio: string; sala: string; capacidade: number } | null
 }
 
 export interface PaginatedResponse<T> {

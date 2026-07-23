@@ -28,6 +28,9 @@ export const ROLE_PERMISSIONS = {
     presenca: ['create', 'read', 'update', 'delete'],
     termos: ['create', 'read', 'update', 'delete'],
     sistema: ['create', 'read', 'update', 'delete', 'config', 'logs', 'maintenance'],
+    avaliacoes: ['create', 'read', 'update', 'delete'],
+    evolucoes: ['create', 'read', 'update', 'delete'],
+    reposicoes: ['create', 'read', 'update', 'delete'],
   },
 
   PROFESSOR: {
@@ -38,6 +41,9 @@ export const ROLE_PERMISSIONS = {
     presenca: ['create', 'read', 'update'],
     relatorios: ['read', 'create'],
     pagamentos: ['read', 'update', 'refund'],
+    avaliacoes: ['create', 'read', 'update', 'delete'],
+    evolucoes: ['create', 'read', 'update', 'delete'],
+    reposicoes: ['read'],
   },
 
   RECEPCIONISTA: {
@@ -47,6 +53,9 @@ export const ROLE_PERMISSIONS = {
     agenda: ['read', 'create', 'update'],
     presenca: ['create', 'read', 'update'],
     pagamentos: ['read'],
+    avaliacoes: ['read'],
+    evolucoes: ['read'],
+    reposicoes: ['read', 'update'],
   },
 
   FINANCEIRO: {

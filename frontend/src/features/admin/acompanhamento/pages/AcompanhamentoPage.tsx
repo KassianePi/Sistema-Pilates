@@ -9,6 +9,9 @@ import {
   CalendarDays,
   Clock,
   User,
+  Plus,
+  Image as ImageIcon,
+  NotebookPen,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -20,6 +23,9 @@ import { cn } from '@/lib/utils'
 import { useDebounce } from '@/hooks/useDebounce'
 import { useAcompanhamento, useDetalheAluno } from '../hooks/useAcompanhamento'
 import type { RiscoAluno } from '@/services/acompanhamento.service'
+import { useAvaliacoesDoAluno } from '../../avaliacoes/hooks/useAvaliacoes'
+import { AvaliacaoFormModal } from '../../avaliacoes/components/AvaliacaoFormModal'
+import { useEvolucoesDoAluno } from '../../evolucoes/hooks/useEvolucoes'
 
 const RISCO_INFO: Record<RiscoAluno, { label: string; variant: 'destructive' | 'warning' | 'success' }> = {
   EM_RISCO: { label: 'Em risco', variant: 'destructive' },
@@ -41,10 +47,13 @@ export function AcompanhamentoPage() {
   const [filtroRisco, setFiltroRisco] = useState<RiscoAluno | ''>('')
   const [busca, setBusca] = useState('')
   const [alunoSelecionado, setAlunoSelecionado] = useState<string | null>(null)
+  const [modalAvaliacaoAberto, setModalAvaliacaoAberto] = useState(false)
   const buscaDebounced = useDebounce(busca, 400)
 
   const { data, isLoading } = useAcompanhamento({ risco: filtroRisco || undefined, busca: buscaDebounced || undefined })
   const { data: detalhe, isLoading: loadingDetalhe } = useDetalheAluno(alunoSelecionado)
+  const { data: avaliacoes } = useAvaliacoesDoAluno(alunoSelecionado)
+  const { data: evolucoes } = useEvolucoesDoAluno(alunoSelecionado)
 
   const alunos = data?.alunos ?? []
   const resumo = data?.resumo
@@ -327,10 +336,80 @@ export function AcompanhamentoPage() {
                   </div>
                 )}
               </div>
+
+              {/* Avaliações corporais */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-cinza-forte flex items-center gap-1.5">
+                    <HeartPulse className="w-4 h-4" /> Avaliações corporais
+                  </h3>
+                  <Button variant="outline" size="sm" onClick={() => setModalAvaliacaoAberto(true)}>
+                    <Plus className="w-3.5 h-3.5 mr-1" /> Nova avaliação
+                  </Button>
+                </div>
+                {!avaliacoes || avaliacoes.avaliacoes.length === 0 ? (
+                  <p className="text-sm text-cinza-medio">Nenhuma avaliação registrada.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {avaliacoes.avaliacoes.map((a) => (
+                      <div key={a.id} className="rounded-lg border border-bege-cartao p-3 text-sm">
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-cinza-forte">{formatarData(a.dataAvaliacao)}</span>
+                          <span className="flex items-center gap-2 text-cinza-texto">
+                            {a.peso != null && <span>{Number(a.peso)} kg</span>}
+                            {a.altura != null && <span>{Number(a.altura)} m</span>}
+                            {a.imc != null && <Badge variant="outline">IMC {a.imc}</Badge>}
+                          </span>
+                        </div>
+                        {a.queixaPrincipal && (
+                          <p className="text-cinza-texto mt-1">
+                            <strong className="text-cinza-forte">Queixa:</strong> {a.queixaPrincipal}
+                          </p>
+                        )}
+                        {a.fotos.length > 0 && (
+                          <p className="text-xs text-cinza-medio mt-1 flex items-center gap-1">
+                            <ImageIcon className="w-3 h-3" /> {a.fotos.length} foto(s)
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Timeline de evolução */}
+              <div>
+                <h3 className="text-sm font-semibold text-cinza-forte mb-2 flex items-center gap-1.5">
+                  <NotebookPen className="w-4 h-4" /> Evolução por aula
+                </h3>
+                {!evolucoes || evolucoes.evolucoes.length === 0 ? (
+                  <p className="text-sm text-cinza-medio">Nenhuma nota de evolução registrada.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {evolucoes.evolucoes.map((e) => (
+                      <div key={e.id} className="rounded-lg border border-bege-cartao p-3 text-sm">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="font-medium text-cinza-forte">
+                            {e.aula ? formatarDataHora(e.aula.dataHoraInicio) : '—'}
+                          </span>
+                          {e.registradoPor && (
+                            <span className="text-xs text-cinza-medio">{e.registradoPor.nomeCompleto}</span>
+                          )}
+                        </div>
+                        <p className="text-cinza-texto mt-1">{e.observacao}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      {modalAvaliacaoAberto && alunoSelecionado && (
+        <AvaliacaoFormModal alunoId={alunoSelecionado} onClose={() => setModalAvaliacaoAberto(false)} />
+      )}
     </div>
   )
 }

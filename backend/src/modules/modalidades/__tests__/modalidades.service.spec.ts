@@ -46,6 +46,23 @@ describe('ModalidadesService', () => {
       await expect(service.criar({ nome: '' })).rejects.toThrow()
       expect(mockRepo.create).not.toHaveBeenCalled()
     })
+
+    it('cria modalidade com valor informado', async () => {
+      mockRepo.findByNome.mockResolvedValue(null)
+      mockRepo.create.mockResolvedValue({ id: 'mod-2', nome: 'Fisioterapia', valor: 150, ativo: true })
+
+      const result = await service.criar({ nome: 'Fisioterapia', valor: 150 })
+
+      expect(mockRepo.create).toHaveBeenCalledWith(expect.objectContaining({ nome: 'Fisioterapia', valor: 150 }))
+      expect(result.valor).toBe(150)
+    })
+
+    it('rejeita valor negativo ou zero', async () => {
+      mockRepo.findByNome.mockResolvedValue(null)
+      await expect(service.criar({ nome: 'Fisioterapia', valor: -10 })).rejects.toThrow()
+      await expect(service.criar({ nome: 'Fisioterapia', valor: 0 })).rejects.toThrow()
+      expect(mockRepo.create).not.toHaveBeenCalled()
+    })
   })
 
   describe('atualizar', () => {

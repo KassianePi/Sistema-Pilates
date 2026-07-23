@@ -4,6 +4,11 @@ export interface ConfiguracaoStudio {
   tipoChavePix: string | null
   nomeRecebedor: string | null
   qrCodeBase64: string | null
+  usarPixAutomatico: boolean
+  geracaoAutomaticaAtiva: boolean
+  diasAntesGeracao: number
+  maximoMensalidadesFuturas: number
+  cronGeracaoMensalidades: string
   criadoEm: Date
   atualizadoEm: Date
 }
@@ -13,4 +18,9 @@ export interface UpsertConfiguracaoData {
   tipoChavePix?: string | null
   nomeRecebedor?: string | null
   qrCodeBase64?: string | null
+  usarPixAutomatico?: boolean
+  geracaoAutomaticaAtiva?: boolean
+  diasAntesGeracao?: number
+  maximoMensalidadesFuturas?: number
+  cronGeracaoMensalidades?: string
 }

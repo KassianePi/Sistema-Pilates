@@ -82,6 +82,9 @@ const AlunoNotificacoesPage = lazy(() =>
 const AlunoTermosPage = lazy(() =>
   import('@/features/aluno/termos/pages/AlunoTermosPage').then((m) => ({ default: m.AlunoTermosPage })),
 )
+const AlunoAvaliacoesPage = lazy(() =>
+  import('@/features/aluno/avaliacoes/pages/AlunoAvaliacoesPage').then((m) => ({ default: m.AlunoAvaliacoesPage })),
+)
 
 function PageLoader() {
   return (
@@ -318,6 +321,14 @@ export default function App() {
                     element={
                       <Suspense fallback={<PageLoader />}>
                         <AlunoTermosPage />
+                      </Suspense>
+                    }
+                  />
+                  <Route
+                    path="/aluno/avaliacoes"
+                    element={
+                      <Suspense fallback={<PageLoader />}>
+                        <AlunoAvaliacoesPage />
                       </Suspense>
                     }
                   />

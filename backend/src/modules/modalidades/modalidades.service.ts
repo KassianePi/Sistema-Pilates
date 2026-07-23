@@ -8,11 +8,13 @@ import type { Modalidade } from './modalidades.types'
 const criarSchema = z.object({
   nome: z.string().min(1).max(100),
   descricao: z.string().max(255).optional().nullable(),
+  valor: z.number().positive().max(99999.99).optional().nullable(),
 })
 
 const atualizarSchema = z.object({
   nome: z.string().min(1).max(100).optional(),
   descricao: z.string().max(255).optional().nullable(),
+  valor: z.number().positive().max(99999.99).optional().nullable(),
   ativo: z.boolean().optional(),
 })
 
@@ -29,7 +31,7 @@ export class ModalidadesService {
     return m
   }
 
-  async criar(data: { nome: string; descricao?: string | null }): Promise<Modalidade> {
+  async criar(data: { nome: string; descricao?: string | null; valor?: number | null }): Promise<Modalidade> {
     const validado = criarSchema.parse(data)
     const existente = await this.repository.findByNome(validado.nome)
     if (existente) throw AppError.conflict(`Modalidade "${validado.nome}" já existe`)
@@ -45,7 +47,7 @@ export class ModalidadesService {
 
   async atualizar(
     id: string,
-    data: { nome?: string; descricao?: string | null; ativo?: boolean },
+    data: { nome?: string; descricao?: string | null; valor?: number | null; ativo?: boolean },
   ): Promise<Modalidade> {
     await this.buscarPorId(id)
     const validado = atualizarSchema.parse(data)
@@ -98,6 +100,7 @@ export async function seedModalidades(): Promise<void> {
     { nome: 'Aparelhos', descricao: 'Pilates com equipamentos de mola' },
     { nome: 'Reformer', descricao: 'Pilates na máquina Reformer' },
     { nome: 'Cadillac', descricao: 'Pilates na mesa Cadillac' },
+    { nome: 'Fisioterapia', descricao: 'Atendimento fisioterapêutico individualizado' },
   ]
   for (const p of padroes) {
     await service.criar(p).catch(() => {

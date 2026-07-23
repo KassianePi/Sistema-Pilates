@@ -27,12 +27,17 @@ function ModalModalidade({ modalidade, onClose }: { modalidade?: Modalidade | nu
   const isEditing = !!modalidade
   const [nome, setNome] = useState(modalidade?.nome ?? '')
   const [descricao, setDescricao] = useState(modalidade?.descricao ?? '')
+  const [valor, setValor] = useState<number | undefined>(modalidade?.valor ?? undefined)
 
   const mutation = useMutation({
     mutationFn: () =>
       isEditing
-        ? modalidadesService.atualizar(modalidade!.id, { nome: nome.trim(), descricao: descricao.trim() || null })
-        : modalidadesService.criar({ nome: nome.trim(), descricao: descricao.trim() || null }),
+        ? modalidadesService.atualizar(modalidade!.id, {
+            nome: nome.trim(),
+            descricao: descricao.trim() || null,
+            valor: valor ?? null,
+          })
+        : modalidadesService.criar({ nome: nome.trim(), descricao: descricao.trim() || null, valor: valor ?? null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['modalidades'] })
       queryClient.invalidateQueries({ queryKey: ['modalidades-ativas'] })
@@ -68,6 +73,19 @@ function ModalModalidade({ modalidade, onClose }: { modalidade?: Modalidade | nu
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
               placeholder="Breve descrição da modalidade..."
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label>
+              Valor <span className="text-cinza-medio text-xs">(opcional, apenas informativo)</span>
+            </Label>
+            <Input
+              type="number"
+              step="0.01"
+              min="0"
+              value={valor ?? ''}
+              onChange={(e) => setValor(e.target.value === '' ? undefined : Number(e.target.value))}
+              placeholder="0,00"
             />
           </div>
           <DialogFooter>
@@ -160,6 +178,11 @@ export function ModalidadesPage() {
                       <Badge variant={m.ativo ? 'success' : 'outline'}>{m.ativo ? 'Ativa' : 'Inativa'}</Badge>
                     </div>
                     {m.descricao && <p className="text-xs text-cinza-texto truncate">{m.descricao}</p>}
+                    {m.valor != null && (
+                      <p className="text-xs text-cinza-texto">
+                        {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(m.valor)}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <Button

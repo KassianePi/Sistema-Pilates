@@ -37,8 +37,11 @@ import type { StatusEstorno } from '@/services/estornos.service'
 function formatarValor(v: number) {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v)
 }
+// Datas de mensalidade (vencimento, mesReferencia, dataPagamento) chegam da API
+// como meia-noite UTC — é um dia de calendário, não um instante. Sem fixar
+// timeZone: 'UTC', o navegador converte pro fuso local e exibe o dia anterior.
 function formatarData(d: string) {
-  return new Date(d).toLocaleDateString('pt-BR')
+  return new Date(d).toLocaleDateString('pt-BR', { timeZone: 'UTC' })
 }
 
 const STATUS_MENSALIDADE: Record<

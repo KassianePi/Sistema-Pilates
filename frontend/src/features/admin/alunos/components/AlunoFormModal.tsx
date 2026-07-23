@@ -27,6 +27,7 @@ const createSchema = z.object({
     .or(z.literal('')),
   planoId: z.string().optional(),
   dataInicio: z.string().min(1, 'Informe a data de início'),
+  diaVencimento: z.coerce.number().int().min(1).max(31).optional(),
   dataNascimento: z.string().optional(),
   cidade: z.string().optional(),
   estado: z.string().length(2, 'Use a sigla do estado (ex: SP)').optional().or(z.literal('')),
@@ -42,6 +43,7 @@ const editSchema = z.object({
     .optional()
     .or(z.literal('')),
   planoId: z.string().optional(),
+  diaVencimento: z.coerce.number().int().min(1).max(31).optional(),
   dataNascimento: z.string().optional(),
   cidade: z.string().optional(),
   estado: z.string().length(2, 'Use a sigla do estado (ex: SP)').optional().or(z.literal('')),
@@ -110,6 +112,7 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
         senha: '',
         telefone: aluno.usuario.telefone ?? '',
         planoId: aluno.planoId ?? '',
+        diaVencimento: aluno.diaVencimento,
         dataNascimento: aluno.dataNascimento ? aluno.dataNascimento.split('T')[0] : '',
         cidade: aluno.cidade ?? '',
         estado: aluno.estado ?? '',
@@ -311,6 +314,24 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
                     ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Dia de vencimento — usado pela geração automática de mensalidades */}
+            <div className="space-y-1.5">
+              <Label htmlFor="diaVencimento">Dia de vencimento</Label>
+              <Input
+                id="diaVencimento"
+                type="number"
+                min={1}
+                max={31}
+                placeholder={isEditing ? undefined : 'Dia da data de início'}
+                {...register('diaVencimento' as never)}
+              />
+              {(errors as { diaVencimento?: { message?: string } }).diaVencimento && (
+                <p className="text-xs text-rosa-vibrante">
+                  {(errors as { diaVencimento?: { message?: string } }).diaVencimento?.message}
+                </p>
+              )}
             </div>
 
             {/* Data de nascimento */}

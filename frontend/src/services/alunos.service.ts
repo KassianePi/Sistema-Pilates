@@ -9,6 +9,7 @@ export interface CreateAlunoDTO {
   telefone?: string
   planoId?: string
   dataInicio: string
+  diaVencimento?: number
   dataNascimento?: string
   endereco?: string
   cidade?: string
@@ -24,6 +25,7 @@ export interface UpdateAlunoDTO {
   senha?: string
   telefone?: string
   planoId?: string
+  diaVencimento?: number
   dataNascimento?: string
   endereco?: string
   cidade?: string

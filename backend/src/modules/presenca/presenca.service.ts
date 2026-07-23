@@ -1,6 +1,6 @@
 import { PresencaRepository } from './presenca.repository'
 import { AppError, ValidationError } from '../../shared/errors'
-import { logInfo } from '../../shared/utils'
+import { logInfo, parseDataLocal } from '../../shared/utils'
 import { createPresencaSchema, updatePresencaSchema, listPresencasSchema } from '../../shared/schemas'
 import { PRESENCA_ERRORS } from './presenca.constants'
 import { prisma } from '../../database/prisma.client'
@@ -34,7 +34,7 @@ export class PresencaService {
       alunoId: validado.alunoId,
       aulaId: validado.aulaId,
       status: validado.status as any,
-      dataRegistro: validado.dataRegistro ? new Date(validado.dataRegistro) : new Date(),
+      dataRegistro: validado.dataRegistro ? parseDataLocal(validado.dataRegistro) : new Date(),
     })
 
     eventBus.emit('presenca.registrada', { presencaId: presenca.id, alunoId: presenca.alunoId })
@@ -62,8 +62,8 @@ export class PresencaService {
       alunoId: validado.alunoId,
       aulaId: validado.aulaId,
       status: validado.status,
-      dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
-      dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,
+      dataInicio: validado.dataInicio ? parseDataLocal(validado.dataInicio) : undefined,
+      dataFim: validado.dataFim ? parseDataLocal(validado.dataFim) : undefined,
       page: validado.page,
       limit: validado.limit,
     })
@@ -104,9 +104,10 @@ export class PresencaService {
     }
 
     const agora = new Date()
-    await prisma.$transaction(async (tx) => {
+    const registros = await prisma.$transaction(async (tx) => {
+      const criados = []
       for (const item of presencas) {
-        await tx.presenca.upsert({
+        const registro = await tx.presenca.upsert({
           where: { alunoId_aulaId: { alunoId: item.alunoId, aulaId } },
           update: { status: item.status as any },
           create: {
@@ -116,11 +117,16 @@ export class PresencaService {
             dataRegistro: agora,
           },
         })
+        criados.push(registro)
       }
       await tx.aula.update({ where: { id: aulaId }, data: { status: 'REALIZADA' } })
+      return criados
     })
 
     eventBus.emit('aula.realizada', { aulaId, totalPresentes: presencas.filter((p) => p.status === 'PRESENTE').length })
+    for (const registro of registros) {
+      eventBus.emit('presenca.registrada', { presencaId: registro.id, alunoId: registro.alunoId })
+    }
     logInfo('Presenças registradas em lote', { aulaId, total: presencas.length })
     return { registros: presencas.length, aulaStatus: 'REALIZADA' }
   }

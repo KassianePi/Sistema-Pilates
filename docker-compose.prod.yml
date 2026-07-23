@@ -60,6 +60,9 @@ services:
       PORT: 3000
       # Migrations já foram aplicadas pelo serviço "migrate" — evita execução concorrente.
       SKIP_MIGRATE: "1"
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY}
+      MP_WEBHOOK_SECRET: ${MP_WEBHOOK_SECRET}
     # Sem "ports:" — o backend só é alcançável pela rede interna (via Nginx).
     depends_on:
       mysql:

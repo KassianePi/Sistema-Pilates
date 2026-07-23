@@ -1,6 +1,6 @@
 import { AgendaRepository } from './agenda.repository'
 import { AppError, ValidationError } from '../../shared/errors'
-import { logInfo } from '../../shared/utils'
+import { logInfo, parseDataLocal } from '../../shared/utils'
 import {
   createAulaSchema,
   updateAulaSchema,
@@ -88,8 +88,8 @@ export class AgendaService {
       tipo: validado.tipo,
       categoria: validado.categoria,
       modalidadeId: validado.modalidadeId,
-      dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
-      dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,
+      dataInicio: validado.dataInicio ? parseDataLocal(validado.dataInicio) : undefined,
+      dataFim: validado.dataFim ? parseDataLocal(validado.dataFim) : undefined,
       page: validado.page,
       limit: validado.limit,
     })

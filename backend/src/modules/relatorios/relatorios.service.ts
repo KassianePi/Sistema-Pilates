@@ -1,6 +1,6 @@
 import { RelatoriosRepository } from './relatorios.repository'
 import { AppError, ValidationError } from '../../shared/errors'
-import { logInfo } from '../../shared/utils'
+import { logInfo, parseDataLocal } from '../../shared/utils'
 import { createRelatorioSchema, listRelatoriosSchema } from '../../shared/schemas'
 import { prisma } from '../../database/prisma.client'
 import { gerarExcel } from './relatorios.excel'
@@ -22,8 +22,8 @@ export class RelatoriosService {
     const professor = await prisma.professor.findUnique({ where: { id: validado.professorId } })
     if (!professor) throw ValidationError.forField('professorId', 'Professor não encontrado')
 
-    const inicio = new Date(validado.dataPeriodoInicio)
-    const fim = new Date(validado.dataPeriodoFim)
+    const inicio = parseDataLocal(validado.dataPeriodoInicio)
+    const fim = parseDataLocal(validado.dataPeriodoFim)
 
     const conteudo = await this.gerarConteudo(validado.tipo as any, { inicio, fim, professorId: validado.professorId })
 
@@ -103,8 +103,8 @@ export class RelatoriosService {
     const { relatorios, total } = await this.repository.findAll({
       professorId: validado.professorId,
       tipo: validado.tipo,
-      dataInicio: validado.dataInicio ? new Date(validado.dataInicio) : undefined,
-      dataFim: validado.dataFim ? new Date(validado.dataFim) : undefined,
+      dataInicio: validado.dataInicio ? parseDataLocal(validado.dataInicio) : undefined,
+      dataFim: validado.dataFim ? parseDataLocal(validado.dataFim) : undefined,
       page: validado.page,
       limit: validado.limit,
     })
@@ -135,8 +135,8 @@ export class RelatoriosService {
     const professor = await prisma.professor.findUnique({ where: { id: validado.professorId } })
     if (!professor) throw ValidationError.forField('professorId', 'Professor não encontrado')
 
-    const inicio = new Date(validado.dataPeriodoInicio)
-    const fim = new Date(validado.dataPeriodoFim)
+    const inicio = parseDataLocal(validado.dataPeriodoInicio)
+    const fim = parseDataLocal(validado.dataPeriodoFim)
     const conteudo = await this.gerarConteudo(validado.tipo as any, { inicio, fim, professorId: validado.professorId })
 
     const relatorioTemp: Relatorio = {

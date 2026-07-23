@@ -25,6 +25,11 @@ import { estornosRoutes } from './modules/estornos/estornos.routes'
 import { modalidadesRoutes } from './modules/modalidades/modalidades.routes'
 import { termosRoutes } from './modules/termos/termos.routes'
 import { auditoriaRoutes } from './modules/auditoria/auditoria.routes'
+import { avaliacoesRoutes } from './modules/avaliacoes/avaliacoes.routes'
+import { evolucoesRoutes } from './modules/evolucoes/evolucoes.routes'
+import { reposicoesRoutes } from './modules/reposicoes/reposicoes.routes'
+import { pagamentosPixRoutes, pagamentosPixWebhookRoutes } from './modules/pagamentos-pix/pagamentos-pix.routes'
+import { mensalidadesAutomaticasRoutes } from './modules/mensalidades-automaticas/mensalidades-automaticas.routes'
 
 // Inicializa listeners de eventos dos módulos
 import './modules/notificacoes/notificacoes.service'
@@ -112,6 +117,10 @@ export async function createApp() {
           { name: 'Auditoria', description: 'Logs de auditoria' },
           { name: 'Configuração', description: 'Configurações gerais do studio' },
           { name: 'Acompanhamento', description: 'Acompanhamento de risco/evasão de alunos' },
+          { name: 'Avaliações', description: 'Avaliação corporal dos alunos' },
+          { name: 'Evolução', description: 'Evolução do aluno registrada por aula' },
+          { name: 'Reposições', description: 'Reposição de aulas perdidas, dentro do mesmo mês' },
+          { name: 'Pagamentos PIX', description: 'Cobrança PIX automatizada via Mercado Pago' },
         ],
         components: {
           securitySchemes: {
@@ -318,6 +327,29 @@ export async function createApp() {
     await app.register(modalidadesRoutes)
     await app.register(termosRoutes)
     await app.register(auditoriaRoutes)
+    await app.register(avaliacoesRoutes)
+    await app.register(evolucoesRoutes)
+    await app.register(reposicoesRoutes)
+    await app.register(pagamentosPixRoutes)
+    await app.register(mensalidadesAutomaticasRoutes)
+
+    // Webhook do Mercado Pago — rota pública (sem authenticateToken), com
+    // rate-limit próprio para não virar vetor de abuso, mesmo padrão do
+    // grupo de login. A segurança real é a validação de assinatura
+    // (x-signature) feita dentro do controller, não RBAC.
+    await app.register(async (instance) => {
+      await instance.register(fastifyRateLimit, {
+        max: isDevelopment ? 1000 : 60,
+        timeWindow: '1 minute',
+        keyGenerator: (request) => `${request.ip}-mp-webhook`,
+        errorResponseBuilder: () => ({
+          success: false,
+          message: 'Muitas notificações recebidas. Tente novamente em instantes.',
+          code: 'RATE_LIMIT_EXCEEDED',
+        }),
+      })
+      await instance.register(pagamentosPixWebhookRoutes)
+    })
 
     logInfo('✅ Aplicação Fastify configurada com sucesso')
     return app

@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PresencaService } from '../presenca.service'
+import { prisma } from '../../../database/prisma.client'
+import { eventBus } from '../../../events/event-bus'
 
 vi.mock('../../../database/prisma.client', () => ({
   prisma: {
     aluno: { findUnique: vi.fn().mockResolvedValue({ id: 'aluno-1' }) },
     aula: { findUnique: vi.fn().mockResolvedValue({ id: 'aula-1', status: 'AGENDADA' }) },
+    inscricaoAula: { findMany: vi.fn() },
+    $transaction: vi.fn(),
   },
 }))
 
@@ -50,6 +54,35 @@ describe('PresencaService', () => {
     it('deve lançar 404 se não existe', async () => {
       mockRepo.findById.mockResolvedValue(null)
       await expect(service.buscarPorId('inexistente')).rejects.toThrow('Presença')
+    })
+  })
+
+  describe('registrarBatch', () => {
+    beforeEach(() => {
+      vi.mocked(eventBus.emit).mockClear()
+      vi.mocked(prisma.inscricaoAula.findMany).mockResolvedValue([{ alunoId: ALUNO_ID } as any])
+      vi.mocked(prisma.$transaction).mockImplementation((async (cb: any) =>
+        cb({
+          presenca: {
+            upsert: vi.fn().mockResolvedValue({ id: 'presenca-1', alunoId: ALUNO_ID, aulaId: AULA_ID }),
+          },
+          aula: { update: vi.fn() },
+        })) as any)
+    })
+
+    it('deve emitir presenca.registrada para cada aluno além de aula.realizada', async () => {
+      await service.registrarBatch(AULA_ID, [{ alunoId: ALUNO_ID, status: 'PRESENTE' }])
+
+      expect(eventBus.emit).toHaveBeenCalledWith('aula.realizada', { aulaId: AULA_ID, totalPresentes: 1 })
+      expect(eventBus.emit).toHaveBeenCalledWith('presenca.registrada', {
+        presencaId: 'presenca-1',
+        alunoId: ALUNO_ID,
+      })
+    })
+
+    it('deve lançar erro se aluno não estiver matriculado na aula', async () => {
+      vi.mocked(prisma.inscricaoAula.findMany).mockResolvedValue([])
+      await expect(service.registrarBatch(AULA_ID, [{ alunoId: ALUNO_ID, status: 'PRESENTE' }])).rejects.toThrow()
     })
   })
 })

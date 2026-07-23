@@ -30,3 +30,24 @@ export interface ComprovanteAluno {
   atualizadoEm?: string | null
   mensalidade?: { plano?: { nome?: string | null } | null } | null
 }
+
+/** Status de uma cobrança PIX (Mercado Pago), espelha o enum `StatusCobrancaPix` do backend. */
+export type StatusCobrancaPix = 'PENDENTE' | 'APROVADO' | 'REJEITADO' | 'CANCELADO' | 'EXPIRADO'
+
+/**
+ * Estado de interface derivado para o fluxo de pagamento PIX (ver
+ * `mapearEstadoPagamentoPix`). Não é o mesmo que `StatusCobrancaPix`: inclui
+ * estados que não existem no backend (LOADING, NO_CHARGE, GENERATING, ERROR)
+ * e isola qualquer status novo do gateway (ex.: reembolso/chargeback) numa
+ * única função de mapeamento, sem impactar os componentes.
+ */
+export type PagamentoPixState =
+  | 'LOADING'
+  | 'NO_CHARGE'
+  | 'GENERATING'
+  | 'PENDING'
+  | 'APPROVED'
+  | 'REJECTED'
+  | 'CANCELED'
+  | 'EXPIRED'
+  | 'ERROR'

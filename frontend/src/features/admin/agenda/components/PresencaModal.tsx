@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { CheckSquare2, Square, Users } from 'lucide-react'
+import { CheckSquare2, Square, Users, NotebookPen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Badge } from '@/components/ui/badge'
 import { useRegistrarPresencasBatch, useInscricoes } from '../hooks/useAgenda'
+import { EvolucaoNotaModal } from '../../evolucoes/components/EvolucaoNotaModal'
 import { formatarData } from '@/lib/datetime'
 import type { Aula } from '@/types/domain.types'
 
@@ -14,6 +15,7 @@ interface Props {
 
 export function PresencaModal({ aula, onClose }: Props) {
   const [presentes, setPresentes] = useState<Set<string>>(new Set())
+  const [notaAluno, setNotaAluno] = useState<{ id: string; nome: string } | null>(null)
   const { data: inscritos } = useInscricoes(aula?.id ?? null)
   const registrarBatch = useRegistrarPresencasBatch()
 
@@ -88,31 +90,41 @@ export function PresencaModal({ aula, onClose }: Props) {
             alunos.map((aluno) => {
               const marcado = presentes.has(aluno.id)
               return (
-                <button
+                <div
                   key={aluno.id}
-                  type="button"
-                  onClick={() => toggle(aluno.id)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                  className={`w-full flex items-center gap-2 px-4 py-3 transition-colors ${
                     marcado ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-bege-suave'
                   }`}
                 >
-                  {marcado ? (
-                    <CheckSquare2 className="w-5 h-5 text-green-600 flex-shrink-0" />
-                  ) : (
-                    <Square className="w-5 h-5 text-cinza-medio flex-shrink-0" />
-                  )}
-                  <div className="min-w-0">
-                    <p className={`text-sm font-medium truncate ${marcado ? 'text-green-800' : 'text-cinza-forte'}`}>
-                      {aluno.usuario.nomeCompleto}
-                    </p>
-                    {aluno.planoAtual && <p className="text-xs text-cinza-medio truncate">{aluno.planoAtual.nome}</p>}
-                  </div>
-                  {marcado && (
-                    <Badge variant="success" className="ml-auto flex-shrink-0">
-                      Presente
-                    </Badge>
-                  )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => toggle(aluno.id)}
+                    className="flex-1 flex items-center gap-3 text-left min-w-0"
+                  >
+                    {marcado ? (
+                      <CheckSquare2 className="w-5 h-5 text-green-600 flex-shrink-0" />
+                    ) : (
+                      <Square className="w-5 h-5 text-cinza-medio flex-shrink-0" />
+                    )}
+                    <div className="min-w-0">
+                      <p className={`text-sm font-medium truncate ${marcado ? 'text-green-800' : 'text-cinza-forte'}`}>
+                        {aluno.usuario.nomeCompleto}
+                      </p>
+                      {aluno.planoAtual && (
+                        <p className="text-xs text-cinza-medio truncate">{aluno.planoAtual.nome}</p>
+                      )}
+                    </div>
+                    {marcado && <Badge variant="success">Presente</Badge>}
+                  </button>
+                  <button
+                    type="button"
+                    title="Registrar evolução desta aula"
+                    onClick={() => setNotaAluno({ id: aluno.id, nome: aluno.usuario.nomeCompleto })}
+                    className="p-1.5 rounded-md text-cinza-medio hover:text-roxo-profundo hover:bg-white flex-shrink-0"
+                  >
+                    <NotebookPen className="w-4 h-4" />
+                  </button>
+                </div>
               )
             })
           )}
@@ -132,6 +144,15 @@ export function PresencaModal({ aula, onClose }: Props) {
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      {notaAluno && aula && (
+        <EvolucaoNotaModal
+          alunoId={notaAluno.id}
+          alunoNome={notaAluno.nome}
+          aulaId={aula.id}
+          onClose={() => setNotaAluno(null)}
+        />
+      )}
     </Dialog>
   )
 }

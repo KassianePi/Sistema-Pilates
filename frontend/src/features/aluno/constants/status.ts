@@ -12,9 +12,17 @@ import {
   RotateCcw,
   FileCheck,
   Loader2,
+  TimerOff,
 } from 'lucide-react'
-import type { StatusAula, StatusMensalidade, StatusComprovante, StatusPresenca } from '@/types/domain.types'
+import type {
+  StatusAula,
+  StatusMensalidade,
+  StatusComprovante,
+  StatusPresenca,
+  StatusReposicao,
+} from '@/types/domain.types'
 import type { StatusEstorno } from '@/services/estornos.service'
+import type { StatusCobrancaPix } from '../utils/tipos'
 
 export type BadgeVariant = 'success' | 'warning' | 'destructive' | 'outline' | 'secondary'
 
@@ -69,6 +77,21 @@ export const STATUS_CONFIG = {
       Icon: MinusCircle,
     },
   } satisfies Record<StatusPresenca, StatusMeta>,
+
+  reposicao: {
+    PENDENTE: { label: 'Em análise', variant: 'warning', Icon: Loader2 },
+    AGENDADA: { label: 'Agendada', variant: 'success', Icon: CalendarClock },
+    REALIZADA: { label: 'Realizada', variant: 'success', Icon: CheckCircle2 },
+    CANCELADA: { label: 'Cancelada', variant: 'outline', Icon: XCircle },
+  } satisfies Record<StatusReposicao, StatusMeta>,
+
+  pixCobranca: {
+    PENDENTE: { label: 'Aguardando pagamento', variant: 'warning', Icon: Loader2 },
+    APROVADO: { label: 'Aprovado', variant: 'success', Icon: CheckCircle2 },
+    REJEITADO: { label: 'Recusado', variant: 'destructive', Icon: XCircle },
+    CANCELADO: { label: 'Cancelado', variant: 'outline', Icon: Ban },
+    EXPIRADO: { label: 'Expirado', variant: 'outline', Icon: TimerOff },
+  } satisfies Record<StatusCobrancaPix, StatusMeta>,
 } as const
 
 export type StatusDomain = keyof typeof STATUS_CONFIG

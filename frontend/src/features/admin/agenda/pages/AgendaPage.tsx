@@ -13,6 +13,9 @@ import {
   Ban,
   Trash2,
   UserPlus,
+  CalendarPlus,
+  Check,
+  XCircle,
 } from 'lucide-react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -33,8 +36,10 @@ import { MatriculaModal } from '../components/MatriculaModal'
 import { useAulas, useCancelarAula, useSuspenderAula, useReagendarAula, useExcluirAula } from '../hooks/useAgenda'
 import { useAlunos } from '@/features/admin/alunos/hooks/useAlunos'
 import { useCreateMensalidade } from '@/features/admin/financeiro/hooks/useFinanceiro'
+import { useReposicoesAdmin, useCancelarReposicaoAdmin } from '@/features/admin/reposicoes/hooks/useReposicoesAdmin'
+import { AgendarReposicaoModal } from '@/features/admin/reposicoes/components/AgendarReposicaoModal'
 import { formatarData } from '@/lib/datetime'
-import type { Aula, StatusAula } from '@/types/domain.types'
+import type { Aula, StatusAula, Reposicao } from '@/types/domain.types'
 
 type AcaoJustificada = 'cancelar' | 'suspender' | 'excluir'
 
@@ -71,6 +76,10 @@ export function AgendaPage() {
   const [aulaMatricula, setAulaMatricula] = useState<Aula | null>(null)
   const [modalAvulso, setModalAvulso] = useState(false)
   const [aulaPresenca, setAulaPresenca] = useState<Aula | null>(null)
+  const [reposicaoAgendando, setReposicaoAgendando] = useState<Reposicao | null>(null)
+
+  const { data: reposicoesPendentes } = useReposicoesAdmin('PENDENTE')
+  const cancelarReposicao = useCancelarReposicaoAdmin()
 
   const { data, isLoading } = useAulas({
     data: filtroData || undefined,
@@ -152,6 +161,46 @@ export function AgendaPage() {
           </Button>
         </div>
       </div>
+
+      {reposicoesPendentes && reposicoesPendentes.reposicoes.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2 text-base font-semibold text-cinza-forte">
+              <CalendarPlus className="w-4 h-4 text-rosa-vibrante" /> Reposições pendentes (
+              {reposicoesPendentes.reposicoes.length})
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ul className="divide-y divide-bege-cartao">
+              {reposicoesPendentes.reposicoes.map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-3 px-4 py-3 flex-wrap">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-cinza-forte">{r.aluno?.usuario.nomeCompleto ?? '—'}</p>
+                    <p className="text-xs text-cinza-texto">
+                      Aula de {r.aulaOriginal ? formatarData(r.aulaOriginal.dataHoraInicio.slice(0, 10)) : '—'} ·{' '}
+                      {r.motivo}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button size="sm" onClick={() => setReposicaoAgendando(r)}>
+                      <Check className="w-3.5 h-3.5 mr-1" /> Agendar
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      title="Cancelar solicitação"
+                      onClick={() => cancelarReposicao.mutate(r.id)}
+                      className="hover:text-red-600 hover:bg-red-50"
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader className="pb-3">
@@ -455,6 +504,10 @@ export function AgendaPage() {
       )}
 
       {aulaMatricula && <MatriculaModal aula={aulaMatricula} onClose={() => setAulaMatricula(null)} />}
+
+      {reposicaoAgendando && (
+        <AgendarReposicaoModal reposicao={reposicaoAgendando} onClose={() => setReposicaoAgendando(null)} />
+      )}
     </div>
   )
 }

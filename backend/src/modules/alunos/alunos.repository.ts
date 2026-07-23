@@ -95,6 +95,7 @@ export class AlunosRepository {
             usuarioId: usuario.id,
             planoId: data.planoId || null,
             dataInicio: data.dataInicio,
+            diaVencimento: data.diaVencimento ?? data.dataInicio.getDate(),
             dataNascimento: data.dataNascimento || null,
             endereco: data.endereco || null,
             cidade: data.cidade || null,
@@ -151,6 +152,7 @@ export class AlunosRepository {
             usuarioId: usuario.id,
             planoId: data.planoId || null,
             dataInicio: data.dataInicio,
+            diaVencimento: data.diaVencimento ?? data.dataInicio.getDate(),
             dataNascimento: data.dataNascimento || null,
             endereco: data.endereco || null,
             cidade: data.cidade || null,
@@ -218,6 +220,7 @@ export class AlunosRepository {
           where: { id },
           data: {
             ...(data.planoId !== undefined && { planoId: data.planoId }),
+            ...(data.diaVencimento !== undefined && { diaVencimento: data.diaVencimento }),
             ...(data.dataNascimento !== undefined && {
               dataNascimento: data.dataNascimento,
             }),

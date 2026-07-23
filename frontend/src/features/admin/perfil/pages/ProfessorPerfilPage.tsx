@@ -14,6 +14,7 @@ import { configuracaoService } from '@/services/configuracao.service'
 import type { ConfiguracaoStudio } from '@/services/configuracao.service'
 import { useAuth } from '@/hooks/useAuth'
 import type { AdminUser } from '@/types/auth.types'
+import { SecaoGeracaoAutomatica } from '../components/SecaoGeracaoAutomatica'
 
 const perfilSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter ao menos 3 caracteres'),
@@ -30,6 +31,7 @@ const pixSchema = z.object({
   chavePix: z.string().max(255).optional().or(z.literal('')),
   tipoChavePix: z.enum(['CPF', 'EMAIL', 'CELULAR', 'ALEATORIA']).optional(),
   nomeRecebedor: z.string().max(255).optional().or(z.literal('')),
+  usarPixAutomatico: z.boolean().optional(),
 })
 
 type PerfilForm = z.infer<typeof perfilSchema>
@@ -63,6 +65,7 @@ function SecaoPix() {
         chavePix: config.chavePix ?? '',
         tipoChavePix: config.tipoChavePix ?? undefined,
         nomeRecebedor: config.nomeRecebedor ?? '',
+        usarPixAutomatico: config.usarPixAutomatico ?? true,
       })
       if (config.qrCodeBase64) {
         setPreview(config.qrCodeBase64)
@@ -108,6 +111,7 @@ function SecaoPix() {
       tipoChavePix: values.tipoChavePix ?? null,
       nomeRecebedor: values.nomeRecebedor?.trim() || null,
       qrCodeBase64: qrBase64,
+      usarPixAutomatico: values.usarPixAutomatico ?? true,
     })
   }
 
@@ -125,6 +129,21 @@ function SecaoPix() {
       <p className="text-xs text-cinza-texto">
         Estas informações serão exibidas no portal do aluno quando houver mensalidade pendente.
       </p>
+
+      <label className="flex items-start gap-2.5 bg-lilas-claro/30 border border-lilas-medio/20 rounded-lg p-3 cursor-pointer">
+        <input
+          type="checkbox"
+          {...register('usarPixAutomatico')}
+          className="mt-0.5 w-4 h-4 rounded border-cinza-medio/50 text-roxo-profundo focus:ring-roxo-profundo/30"
+        />
+        <span className="text-sm">
+          <span className="block font-medium text-cinza-forte">Usar cobrança PIX automática (Mercado Pago)</span>
+          <span className="block text-xs text-cinza-texto mt-0.5">
+            Com isso ligado, o aluno gera e paga o PIX pela própria tela, com confirmação automática. Desligando,
+            o portal do aluno volta a mostrar a chave PIX estática abaixo e o envio manual de comprovante.
+          </span>
+        </span>
+      </label>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
@@ -358,6 +377,7 @@ export function ProfessorPerfilPage() {
       </form>
 
       {isAdmin && <SecaoPix />}
+      {isAdmin && <SecaoGeracaoAutomatica />}
     </div>
   )
 }

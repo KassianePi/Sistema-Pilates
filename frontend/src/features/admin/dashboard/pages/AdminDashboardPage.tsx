@@ -183,7 +183,7 @@ export function AdminDashboardPage() {
                     <div>
                       <p className="text-sm font-medium text-cinza-forte">{p.mensalidade.aluno.usuario.nomeCompleto}</p>
                       <p className="text-xs text-cinza-medio">
-                        {p.mensalidade.plano.nome} · {formatarData(p.dataPagamento)}
+                        {p.mensalidade.plano?.nome ?? 'Avulso'} · {formatarData(p.dataPagamento)}
                       </p>
                     </div>
                     <span className="text-sm font-semibold text-green-700">{formatarValor(p.valor)}</span>

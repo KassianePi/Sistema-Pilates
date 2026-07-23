@@ -34,7 +34,7 @@ export class ModalidadesRepository {
     }
   }
 
-  async create(data: { nome: string; descricao?: string | null }): Promise<Modalidade> {
+  async create(data: { nome: string; descricao?: string | null; valor?: number | null }): Promise<Modalidade> {
     try {
       return prisma.modalidade.create({ data }) as any
     } catch (error) {
@@ -43,7 +43,10 @@ export class ModalidadesRepository {
     }
   }
 
-  async update(id: string, data: { nome?: string; descricao?: string | null; ativo?: boolean }): Promise<Modalidade> {
+  async update(
+    id: string,
+    data: { nome?: string; descricao?: string | null; valor?: number | null; ativo?: boolean },
+  ): Promise<Modalidade> {
     try {
       return prisma.modalidade.update({ where: { id }, data }) as any
     } catch (error) {
