@@ -22,9 +22,9 @@ const baseParams = { isLoading: false, isGenerating: false, isError: false, coun
 
 describe('mapearEstadoPagamentoPix', () => {
   it('GENERATING tem prioridade sobre qualquer outro estado', () => {
-    expect(
-      mapearEstadoPagamentoPix({ ...baseParams, pagamento: null, isGenerating: true, isLoading: true }),
-    ).toBe('GENERATING')
+    expect(mapearEstadoPagamentoPix({ ...baseParams, pagamento: null, isGenerating: true, isLoading: true })).toBe(
+      'GENERATING',
+    )
   })
 
   it('LOADING quando a query inicial ainda não resolveu', () => {

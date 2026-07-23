@@ -47,7 +47,8 @@ describe('FinanceiroService', () => {
     const MENS_ID = '11111111-1111-1111-1111-111111111111'
 
     it('deve registrar pagamento sem depender de caixa aberto', async () => {
-      const { mensalidadesAutomaticasService } = await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
+      const { mensalidadesAutomaticasService } =
+        await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
       mockRepo.findMensalidadeById.mockResolvedValue({
         id: MENS_ID,
         status: 'PENDENTE',
@@ -74,7 +75,8 @@ describe('FinanceiroService', () => {
     })
 
     it('não deve gerar a próxima mensalidade quando o pagamento é só parcial', async () => {
-      const { mensalidadesAutomaticasService } = await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
+      const { mensalidadesAutomaticasService } =
+        await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
       mockRepo.findMensalidadeById.mockResolvedValue({
         id: MENS_ID,
         status: 'PENDENTE',
@@ -146,13 +148,15 @@ describe('FinanceiroService', () => {
         'pagamento.realizado',
         expect.objectContaining({ pagamentoId: 'pag-1', alunoId: 'aluno-1', valor: 100 }),
       )
-      const { mensalidadesAutomaticasService } = await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
+      const { mensalidadesAutomaticasService } =
+        await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
       expect(mensalidadesAutomaticasService.gerarProximaAposPagamento).toHaveBeenCalledWith(MENS_ID)
     })
 
     it('é idempotente: não emite evento nem duplica quando já processado antes', async () => {
       const { eventBus } = await import('../../../events/event-bus')
-      const { mensalidadesAutomaticasService } = await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
+      const { mensalidadesAutomaticasService } =
+        await import('../../mensalidades-automaticas/mensalidades-automaticas.service')
       mockRepo.findMensalidadeById.mockResolvedValue({ id: MENS_ID, alunoId: 'aluno-1', status: 'PAGO' })
       mockRepo.baixarComPagamentoAutomatico.mockResolvedValue({ processado: false, pagamento: null })
 

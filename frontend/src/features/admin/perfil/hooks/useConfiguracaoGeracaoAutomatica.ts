@@ -18,8 +18,9 @@ export function useConfiguracaoGeracaoAutomatica() {
   })
 
   const mutation = useMutation({
-    mutationFn: (dados: Pick<ConfiguracaoStudio, 'geracaoAutomaticaAtiva' | 'diasAntesGeracao' | 'maximoMensalidadesFuturas'>) =>
-      configuracaoService.salvar(dados),
+    mutationFn: (
+      dados: Pick<ConfiguracaoStudio, 'geracaoAutomaticaAtiva' | 'diasAntesGeracao' | 'maximoMensalidadesFuturas'>,
+    ) => configuracaoService.salvar(dados),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['configuracao-studio'] })
       toast.success('Configurações de geração automática salvas.')

@@ -59,7 +59,10 @@ describe('PagamentoPixCard', () => {
     server.use(
       http.get(BASE_URL, () => HttpResponse.json({ success: true, data: cobrancaFake() })),
       http.post(`${BASE_URL}/sincronizar`, () =>
-        HttpResponse.json({ success: true, data: cobrancaFake({ status: 'APROVADO', dataAprovacao: new Date().toISOString() }) }),
+        HttpResponse.json({
+          success: true,
+          data: cobrancaFake({ status: 'APROVADO', dataAprovacao: new Date().toISOString() }),
+        }),
       ),
     )
     const onVerDetalhes = vi.fn()
@@ -89,14 +92,14 @@ describe('PagamentoPixCard', () => {
   it('erro ao consultar: mostra mensagem de erro e permite tentar novamente', async () => {
     server.use(
       http.get(BASE_URL, () => HttpResponse.json({ success: false, message: 'Erro' }, { status: 500 })),
-      http.post(`${BASE_URL}/sincronizar`, () => HttpResponse.json({ success: false, message: 'Erro' }, { status: 500 })),
+      http.post(`${BASE_URL}/sincronizar`, () =>
+        HttpResponse.json({ success: false, message: 'Erro' }, { status: 500 }),
+      ),
     )
 
     renderWithProviders(<PagamentoPixCard mensalidadeId={MENSALIDADE_ID} onVerDetalhes={() => {}} />)
 
-    await waitFor(() =>
-      expect(screen.getByText('Não foi possível consultar o pagamento')).toBeInTheDocument(),
-    )
+    await waitFor(() => expect(screen.getByText('Não foi possível consultar o pagamento')).toBeInTheDocument())
     expect(screen.getByRole('button', { name: /Tentar novamente/ })).toBeInTheDocument()
   })
 })

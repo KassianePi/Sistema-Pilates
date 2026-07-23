@@ -2,7 +2,15 @@ import type { OrigemExecucaoJob, StatusExecucaoJob } from '@prisma/client'
 import { MensalidadesAutomaticasRepository } from './mensalidades-automaticas.repository'
 import { ConfiguracaoRepository } from '../configuracao/configuracao.repository'
 import { eventBus } from '../../events/event-bus'
-import { logInfo, logWarn, logError, inicioDoMes, adicionarMeses, construirDataComDia, subtrairDias } from '../../shared/utils'
+import {
+  logInfo,
+  logWarn,
+  logError,
+  inicioDoMes,
+  adicionarMeses,
+  construirDataComDia,
+  subtrairDias,
+} from '../../shared/utils'
 import { MESES_POR_TIPO_PLANO, LOCK_CHAVE, LOCK_TTL_MS, TAMANHO_LOTE } from './mensalidades-automaticas.constants'
 import type {
   AlunoElegivel,
@@ -22,11 +30,7 @@ interface ResultadoProcessamentoAluno {
   motivo?: MotivoIgnorado
 }
 
-function calcularStatus(
-  errosCount: number,
-  mensalidadesCriadas: number,
-  alunosIgnorados: number,
-): StatusExecucaoJob {
+function calcularStatus(errosCount: number, mensalidadesCriadas: number, alunosIgnorados: number): StatusExecucaoJob {
   if (errosCount === 0) return 'SUCESSO'
   if (mensalidadesCriadas > 0 || alunosIgnorados > 0) return 'PARCIAL'
   return 'ERRO'
@@ -96,7 +100,10 @@ export class MensalidadesAutomaticasService {
           try {
             const resultado = await this.processarAluno(
               aluno,
-              { diasAntesGeracao: config.diasAntesGeracao, maximoMensalidadesFuturas: config.maximoMensalidadesFuturas },
+              {
+                diasAntesGeracao: config.diasAntesGeracao,
+                maximoMensalidadesFuturas: config.maximoMensalidadesFuturas,
+              },
               hoje,
               competenciaAtual,
               mapaFuturas,
@@ -134,7 +141,13 @@ export class MensalidadesAutomaticasService {
       const status = calcularStatus(erros.length, mensalidadesCriadas, alunosIgnorados)
 
       if (!dryRun && execucaoId) {
-        await this.repository.finalizarExecucao(execucaoId, { status, detalhesIgnorados, erros, finalizadoEm, duracaoMs })
+        await this.repository.finalizarExecucao(execucaoId, {
+          status,
+          detalhesIgnorados,
+          erros,
+          finalizadoEm,
+          duracaoMs,
+        })
         eventBus.emit('mensalidade-automatica.execucao-finalizada', {
           execucaoId,
           origem,

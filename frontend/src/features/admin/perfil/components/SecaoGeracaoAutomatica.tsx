@@ -28,7 +28,11 @@ import {
 const schema = z.object({
   geracaoAutomaticaAtiva: z.boolean().optional(),
   diasAntesGeracao: z.coerce.number().int().min(DIAS_ANTES_GERACAO_MIN).max(DIAS_ANTES_GERACAO_MAX),
-  maximoMensalidadesFuturas: z.coerce.number().int().min(MAXIMO_MENSALIDADES_FUTURAS_MIN).max(MAXIMO_MENSALIDADES_FUTURAS_MAX),
+  maximoMensalidadesFuturas: z.coerce
+    .number()
+    .int()
+    .min(MAXIMO_MENSALIDADES_FUTURAS_MIN)
+    .max(MAXIMO_MENSALIDADES_FUTURAS_MAX),
 })
 type FormValues = z.infer<typeof schema>
 
@@ -91,8 +95,8 @@ export function SecaoGeracaoAutomatica() {
           <span className="text-sm">
             <span className="block font-medium text-cinza-forte">Gerar mensalidades automaticamente</span>
             <span className="block text-xs text-cinza-texto mt-0.5">
-              Desligado, nenhuma mensalidade é gerada automaticamente — nem pelo job agendado, nem pelo botão
-              "Executar agora" abaixo.
+              Desligado, nenhuma mensalidade é gerada automaticamente — nem pelo job agendado, nem pelo botão "Executar
+              agora" abaixo.
             </span>
           </span>
         </label>
@@ -156,8 +160,8 @@ export function SecaoGeracaoAutomatica() {
               />
             </div>
             <p className="text-xs text-cinza-texto">
-              {progresso?.alunosAnalisados}/{progresso?.totalAlunosElegiveis} analisados · {progresso?.mensalidadesCriadas}{' '}
-              criadas
+              {progresso?.alunosAnalisados}/{progresso?.totalAlunosElegiveis} analisados ·{' '}
+              {progresso?.mensalidadesCriadas} criadas
             </p>
           </div>
         )}

@@ -191,9 +191,7 @@ export function AlunoPresencaPage() {
               <ul className="divide-y divide-bege-cartao -my-2">
                 {evolucoes.evolucoes.map((e) => (
                   <li key={e.id} className="py-3">
-                    <p className="text-xs text-cinza-medio">
-                      {e.aula ? formatarDataHora(e.aula.dataHoraInicio) : '—'}
-                    </p>
+                    <p className="text-xs text-cinza-medio">{e.aula ? formatarDataHora(e.aula.dataHoraInicio) : '—'}</p>
                     <p className="text-sm text-cinza-texto mt-1">{e.observacao}</p>
                   </li>
                 ))}

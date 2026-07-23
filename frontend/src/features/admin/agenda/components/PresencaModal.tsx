@@ -110,9 +110,7 @@ export function PresencaModal({ aula, onClose }: Props) {
                       <p className={`text-sm font-medium truncate ${marcado ? 'text-green-800' : 'text-cinza-forte'}`}>
                         {aluno.usuario.nomeCompleto}
                       </p>
-                      {aluno.planoAtual && (
-                        <p className="text-xs text-cinza-medio truncate">{aluno.planoAtual.nome}</p>
-                      )}
+                      {aluno.planoAtual && <p className="text-xs text-cinza-medio truncate">{aluno.planoAtual.nome}</p>}
                     </div>
                     {marcado && <Badge variant="success">Presente</Badge>}
                   </button>

@@ -33,7 +33,9 @@ export async function iniciarJobMensalidadesAutomaticas(): Promise<void> {
     () => {
       mensalidadesAutomaticasService
         .executarGeracao('CRON')
-        .catch((err) => logWarn('Job geração automática de mensalidades: erro na execução agendada', { error: String(err) }))
+        .catch((err) =>
+          logWarn('Job geração automática de mensalidades: erro na execução agendada', { error: String(err) }),
+        )
     },
     { timezone: TIMEZONE },
   )

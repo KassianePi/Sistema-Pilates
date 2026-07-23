@@ -1,6 +1,9 @@
 import { api } from './api'
 import type { ApiResponse } from '@/types/domain.types'
-import type { ExecucaoEmAndamento, ResumoExecucaoMensalidades } from '@/features/admin/perfil/types/geracaoAutomatica.types'
+import type {
+  ExecucaoEmAndamento,
+  ResumoExecucaoMensalidades,
+} from '@/features/admin/perfil/types/geracaoAutomatica.types'
 
 export const mensalidadesAutomaticasService = {
   /** Dispara a geração automática de mensalidades manualmente (mesma lógica do job agendado). */

@@ -1,6 +1,11 @@
 export type OrigemExecucaoJob = 'CRON' | 'MANUAL'
 export type StatusExecucaoJob = 'EM_ANDAMENTO' | 'SUCESSO' | 'PARCIAL' | 'ERRO'
-export type MotivoIgnorado = 'SEM_PLANO' | 'SEM_BASELINE' | 'AINDA_NAO_ELEGIVEL' | 'LIMITE_FUTURAS_ATINGIDO' | 'JA_EXISTENTE'
+export type MotivoIgnorado =
+  | 'SEM_PLANO'
+  | 'SEM_BASELINE'
+  | 'AINDA_NAO_ELEGIVEL'
+  | 'LIMITE_FUTURAS_ATINGIDO'
+  | 'JA_EXISTENTE'
 
 export interface DetalheIgnorado {
   alunoId: string

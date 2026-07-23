@@ -287,7 +287,10 @@ describe('PagamentosPixService', () => {
       const result = await service.sincronizarCobranca(ALUNO_ID, MENSALIDADE_ID)
 
       expect(mockGateway.buscarPagamento).toHaveBeenCalledWith('ORD123')
-      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith('cobranca-1', expect.objectContaining({ status: 'PENDENTE' }))
+      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith(
+        'cobranca-1',
+        expect.objectContaining({ status: 'PENDENTE' }),
+      )
       expect(result?.status).toBe('PENDENTE')
     })
 
@@ -313,7 +316,10 @@ describe('PagamentosPixService', () => {
 
       const result = await service.sincronizarCobranca(ALUNO_ID, MENSALIDADE_ID)
 
-      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith('cobranca-1', expect.objectContaining({ status: 'EXPIRADO' }))
+      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith(
+        'cobranca-1',
+        expect.objectContaining({ status: 'EXPIRADO' }),
+      )
       expect(result?.status).toBe('EXPIRADO')
     })
 
@@ -339,7 +345,10 @@ describe('PagamentosPixService', () => {
 
       const result = await service.sincronizarCobranca(ALUNO_ID, MENSALIDADE_ID)
 
-      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith('cobranca-1', expect.objectContaining({ status: 'REJEITADO' }))
+      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith(
+        'cobranca-1',
+        expect.objectContaining({ status: 'REJEITADO' }),
+      )
       expect(result?.status).toBe('REJEITADO')
     })
 
@@ -401,21 +410,22 @@ describe('PagamentosPixService', () => {
           dataExpiracao: new Date(Date.now() - 60_000),
         },
       ])
-      mockGateway.buscarPagamento
-        .mockRejectedValueOnce(new Error('falha ao consultar ORD1'))
-        .mockResolvedValueOnce({
-          externalPaymentId: 'ORD2',
-          status: 'action_required',
-          statusDetail: 'waiting_transfer',
-          valor: 50,
-          externalReference: 'x',
-          dataAprovacao: null,
-        })
+      mockGateway.buscarPagamento.mockRejectedValueOnce(new Error('falha ao consultar ORD1')).mockResolvedValueOnce({
+        externalPaymentId: 'ORD2',
+        status: 'action_required',
+        statusDetail: 'waiting_transfer',
+        valor: 50,
+        externalReference: 'x',
+        dataAprovacao: null,
+      })
       mockRepo.atualizarStatus.mockResolvedValue({ id: 'cobranca-2', status: 'EXPIRADO' })
 
       await service.processarCobrancasExpiradas()
 
-      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith('cobranca-2', expect.objectContaining({ status: 'EXPIRADO' }))
+      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith(
+        'cobranca-2',
+        expect.objectContaining({ status: 'EXPIRADO' }),
+      )
       expect(mockRepo.atualizarStatus).toHaveBeenCalledTimes(1)
     })
 
@@ -481,7 +491,10 @@ describe('PagamentosPixService', () => {
 
       await service.processarWebhook(webhookInput)
 
-      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith('cobranca-1', expect.objectContaining({ status: 'APROVADO' }))
+      expect(mockRepo.atualizarStatus).toHaveBeenCalledWith(
+        'cobranca-1',
+        expect.objectContaining({ status: 'APROVADO' }),
+      )
       expect(financeiroService.baixarMensalidadePorGateway).toHaveBeenCalledWith(
         expect.objectContaining({ mensalidadeId: MENSALIDADE_ID, valor: 100 }),
       )

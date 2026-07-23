@@ -139,8 +139,8 @@ function SecaoPix() {
         <span className="text-sm">
           <span className="block font-medium text-cinza-forte">Usar cobrança PIX automática (Mercado Pago)</span>
           <span className="block text-xs text-cinza-texto mt-0.5">
-            Com isso ligado, o aluno gera e paga o PIX pela própria tela, com confirmação automática. Desligando,
-            o portal do aluno volta a mostrar a chave PIX estática abaixo e o envio manual de comprovante.
+            Com isso ligado, o aluno gera e paga o PIX pela própria tela, com confirmação automática. Desligando, o
+            portal do aluno volta a mostrar a chave PIX estática abaixo e o envio manual de comprovante.
           </span>
         </span>
       </label>

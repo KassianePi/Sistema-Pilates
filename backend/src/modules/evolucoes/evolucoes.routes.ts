@@ -23,20 +23,8 @@ export async function evolucoesRoutes(fastify: FastifyInstance) {
 
   // Rotas admin/staff
   fastify.get('/api/v1/evolucoes', { onRequest: [authenticateToken, authorize('evolucoes', 'read')] }, listar)
-  fastify.get(
-    '/api/v1/evolucoes/:id',
-    { onRequest: [authenticateToken, authorize('evolucoes', 'read')] },
-    buscarPorId,
-  )
+  fastify.get('/api/v1/evolucoes/:id', { onRequest: [authenticateToken, authorize('evolucoes', 'read')] }, buscarPorId)
   fastify.post('/api/v1/evolucoes', { onRequest: [authenticateToken, authorize('evolucoes', 'create')] }, criar)
-  fastify.put(
-    '/api/v1/evolucoes/:id',
-    { onRequest: [authenticateToken, authorize('evolucoes', 'update')] },
-    atualizar,
-  )
-  fastify.delete(
-    '/api/v1/evolucoes/:id',
-    { onRequest: [authenticateToken, authorize('evolucoes', 'delete')] },
-    excluir,
-  )
+  fastify.put('/api/v1/evolucoes/:id', { onRequest: [authenticateToken, authorize('evolucoes', 'update')] }, atualizar)
+  fastify.delete('/api/v1/evolucoes/:id', { onRequest: [authenticateToken, authorize('evolucoes', 'delete')] }, excluir)
 }

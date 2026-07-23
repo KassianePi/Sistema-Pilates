@@ -33,7 +33,12 @@ describe('MensalidadesAutomaticasRepository (integração)', () => {
       // Simula um lock já expirado (travado no passado).
       await prisma.jobLock.upsert({
         where: { chave },
-        create: { chave, travadoEm: new Date(Date.now() - 120_000), expiraEm: new Date(Date.now() - 60_000), origem: 'CRON' },
+        create: {
+          chave,
+          travadoEm: new Date(Date.now() - 120_000),
+          expiraEm: new Date(Date.now() - 60_000),
+          origem: 'CRON',
+        },
         update: { travadoEm: new Date(Date.now() - 120_000), expiraEm: new Date(Date.now() - 60_000) },
       })
 

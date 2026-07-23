@@ -10,7 +10,8 @@ export const PAGAMENTOS_PIX_ERRORS = {
   MENSALIDADE_NAO_PERTENCE_ALUNO: 'Esta mensalidade não pertence a este aluno',
   MENSALIDADE_JA_PAGA: 'Esta mensalidade já está paga',
   COBRANCA_NOT_FOUND: 'Cobrança PIX não encontrada',
-  FORA_DA_JANELA_COBRANCA: 'Ainda não é possível gerar o QR Code para esta mensalidade — aguarde ficar mais perto do vencimento',
+  FORA_DA_JANELA_COBRANCA:
+    'Ainda não é possível gerar o QR Code para esta mensalidade — aguarde ficar mais perto do vencimento',
 } as const
 
 export const EXPIRACAO_COBRANCA_MINUTOS = 30
