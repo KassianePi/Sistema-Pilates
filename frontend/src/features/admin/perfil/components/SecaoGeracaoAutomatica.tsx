@@ -46,7 +46,7 @@ export function SecaoGeracaoAutomatica() {
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
-  } = useForm<FormValues>({ resolver: zodResolver(schema) })
+  } = useForm({ resolver: zodResolver(schema) })
 
   useEffect(() => {
     if (config) {

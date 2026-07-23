@@ -100,7 +100,7 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
     watch,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<CreateForm | EditForm>({
+  } = useForm({
     resolver: zodResolver(isEditing ? editSchema : createSchema),
   })
 
