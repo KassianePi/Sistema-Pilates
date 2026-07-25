@@ -1,20 +1,19 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Alunos Routes', () => {
@@ -22,7 +21,7 @@ describe('Alunos Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/alunos',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: {
         email: 'aluno-sem-nome@teste.local',
         cpf: '99988877766',
@@ -40,7 +39,7 @@ describe('Alunos Routes', () => {
     const criado = await fastify.inject({
       method: 'POST',
       url: '/api/v1/alunos',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: {
         email: `aluno-update-${Date.now()}@teste.local`,
         nomeCompleto: 'Aluno Para Atualizar',
@@ -54,7 +53,7 @@ describe('Alunos Routes', () => {
     const response = await fastify.inject({
       method: 'PUT',
       url: `/api/v1/alunos/${id}`,
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { email: 'nao-e-um-email' },
     })
 
@@ -65,7 +64,7 @@ describe('Alunos Routes', () => {
     const response = await fastify.inject({
       method: 'PATCH',
       url: '/api/v1/alunos/00000000-0000-0000-0000-000000000000/status',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { ativo: 'não-é-booleano' },
     })
 

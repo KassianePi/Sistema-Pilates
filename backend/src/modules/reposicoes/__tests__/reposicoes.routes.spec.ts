@@ -1,20 +1,21 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let professorToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: professorToken } = await criarUsuarioComToken('PROFESSOR'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Reposições Routes', () => {
@@ -32,7 +33,7 @@ describe('Reposições Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/aluno/reposicoes',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { aulaOriginalId: '00000000-0000-0000-0000-000000000000', motivo: 'Fiquei doente' },
     })
 
@@ -43,7 +44,7 @@ describe('Reposições Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/reposicoes',
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR')}` },
+      headers: { authorization: `Bearer ${professorToken}` },
     })
 
     expect(response.statusCode).toBe(200)
@@ -53,7 +54,7 @@ describe('Reposições Routes', () => {
     const response = await fastify.inject({
       method: 'PATCH',
       url: '/api/v1/reposicoes/00000000-0000-0000-0000-000000000000/agendar',
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR')}` },
+      headers: { authorization: `Bearer ${professorToken}` },
       payload: { aulaReposicaoId: '00000000-0000-0000-0000-000000000000' },
     })
 
@@ -64,7 +65,7 @@ describe('Reposições Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/reposicoes/00000000-0000-0000-0000-000000000000',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     expect(response.statusCode).toBe(404)

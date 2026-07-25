@@ -12,6 +12,19 @@ import { FastifyRequest, FastifyReply } from 'fastify'
 import { extractTokenFromHeader, verifyAccessToken, TokenPayload } from '../utils/jwt'
 import { UnauthorizedError } from '../errors/UnauthorizedError'
 import { logDebug, logWarn } from '../utils/logger'
+import { prisma } from '../../database/prisma.client'
+
+/**
+ * Confirma no banco que o usuário do token ainda existe e está ATIVO.
+ *
+ * O access token é um JWT stateless (só assinatura + expiração) — sem essa
+ * checagem, um aluno excluído ou inativado continuaria autenticando
+ * normalmente com um token já emitido até ele expirar (até 15 min).
+ */
+async function usuarioAindaAtivo(usuarioId: string): Promise<boolean> {
+  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { status: true } })
+  return usuario?.status === 'ATIVO'
+}
 
 /**
  * Estende FastifyRequest para incluir usuário autenticado
@@ -56,6 +69,14 @@ export async function authenticateToken(request: FastifyRequest, reply: FastifyR
 
     // Validar e decodificar token
     const payload = verifyAccessToken(token)
+
+    if (!(await usuarioAindaAtivo(payload.usuarioId))) {
+      logWarn('Token válido para usuário excluído/inativo — acesso negado', {
+        requestId: request.id,
+        usuarioId: payload.usuarioId,
+      })
+      throw UnauthorizedError.tokenInvalid('Usuário não encontrado ou inativo')
+    }
 
     // Adicionar dados ao request para uso posterior
     request.usuarioId = payload.usuarioId
@@ -117,6 +138,14 @@ export async function optionalAuth(request: FastifyRequest, reply: FastifyReply)
 
     const token = extractTokenFromHeader(authHeader)
     const payload = verifyAccessToken(token)
+
+    if (!(await usuarioAindaAtivo(payload.usuarioId))) {
+      logDebug('Token opcional de usuário excluído/inativo (ignorado)', {
+        requestId: request.id,
+        usuarioId: payload.usuarioId,
+      })
+      return
+    }
 
     request.usuarioId = payload.usuarioId
     request.funcao = payload.funcao

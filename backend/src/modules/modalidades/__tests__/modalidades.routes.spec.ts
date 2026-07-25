@@ -1,20 +1,25 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let recepcionistaToken: string
+let financeiroToken: string
+let professorToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: recepcionistaToken } = await criarUsuarioComToken('RECEPCIONISTA'))
+  ;({ accessToken: financeiroToken } = await criarUsuarioComToken('FINANCEIRO'))
+  ;({ accessToken: professorToken } = await criarUsuarioComToken('PROFESSOR'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Modalidades Routes', () => {
@@ -22,7 +27,7 @@ describe('Modalidades Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/modalidades',
-      headers: { authorization: `Bearer ${tokenFor('RECEPCIONISTA')}` },
+      headers: { authorization: `Bearer ${recepcionistaToken}` },
     })
 
     expect(response.statusCode).toBe(200)
@@ -40,7 +45,7 @@ describe('Modalidades Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/modalidades',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { nome: nomeUnico, descricao: 'Criada via teste automatizado' },
     })
 
@@ -53,7 +58,7 @@ describe('Modalidades Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/modalidades',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { nome: '' },
     })
 
@@ -64,7 +69,7 @@ describe('Modalidades Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/modalidades',
-      headers: { authorization: `Bearer ${tokenFor('FINANCEIRO')}` },
+      headers: { authorization: `Bearer ${financeiroToken}` },
       payload: { nome: 'Outra Modalidade' },
     })
 
@@ -75,14 +80,13 @@ describe('Modalidades Routes', () => {
     const response = await fastify.inject({
       method: 'DELETE',
       url: '/api/v1/modalidades/00000000-0000-0000-0000-000000000000',
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR')}` },
+      headers: { authorization: `Bearer ${professorToken}` },
     })
 
     expect(response.statusCode).toBe(403)
   })
 
   it('fluxo completo: cria, tenta renomear para nome duplicado, exclui', async () => {
-    const adminToken = tokenFor('ADMIN')
     const nomeA = `Modalidade A ${Date.now()}`
     const nomeB = `Modalidade B ${Date.now()}`
 

@@ -1,34 +1,27 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-// Notificacao.usuarioId tem FK real para Usuario — usamos usuários seedados
-// de verdade (não IDs fabricados) para as rotas que de fato criam registros.
+// Notificacao.usuarioId tem FK real para Usuario — usamos usuários criados de
+// verdade (não IDs fabricados) para as rotas que de fato criam registros.
+let adminToken: string
 let adminUsuarioId: string
-let professoraUsuarioId: string
-
-function tokenFor(
-  funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO',
-  usuarioId = 'usuario-fake-id',
-) {
-  return generateTokens({ usuarioId, email: 'teste@pilates.local', funcao }).accessToken
-}
-
-async function loginAndGetUsuarioId(email: string, senha: string): Promise<string> {
-  const response = await fastify.inject({ method: 'POST', url: '/api/v1/auth/login', payload: { email, senha } })
-  return JSON.parse(response.body).data.usuarioId
-}
+let professorToken: string
+let professorUsuarioId: string
+let alunoToken: string
 
 beforeAll(async () => {
   fastify = await build()
-  adminUsuarioId = await loginAndGetUsuarioId('admin@pilates.local', 'admin123')
-  professoraUsuarioId = await loginAndGetUsuarioId('professora@pilates.local', 'prof123')
+  ;({ accessToken: adminToken, usuarioId: adminUsuarioId } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: professorToken, usuarioId: professorUsuarioId } = await criarUsuarioComToken('PROFESSOR'))
+  ;({ accessToken: alunoToken } = await criarUsuarioComToken('ALUNO'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Notificacoes Routes', () => {
@@ -38,11 +31,10 @@ describe('Notificacoes Routes', () => {
   })
 
   it('GET /api/v1/notificacoes permite qualquer usuário autenticado', async () => {
-    // usuarioId precisa ter formato de UUID — listNotificacoesSchema valida isso
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/notificacoes',
-      headers: { authorization: `Bearer ${tokenFor('ALUNO', '00000000-0000-0000-0000-000000000000')}` },
+      headers: { authorization: `Bearer ${alunoToken}` },
     })
 
     expect(response.statusCode).toBe(200)
@@ -55,7 +47,7 @@ describe('Notificacoes Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/notificacoes',
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR')}` },
+      headers: { authorization: `Bearer ${professorToken}` },
       payload: { usuarioId: 'algum-id', tipo: 'MENSAGEM_ADMIN', titulo: 'Oi', mensagem: 'Teste' },
     })
 
@@ -63,12 +55,12 @@ describe('Notificacoes Routes', () => {
   })
 
   it('PATCH /api/v1/notificacoes/:id/ler de uma notificação de outro usuário retorna 400 (não 500)', async () => {
-    // Cria a notificação para a professora e tenta marcar como lida autenticado como admin
+    // Cria a notificação para o professor e tenta marcar como lida autenticado como admin
     const createResponse = await fastify.inject({
       method: 'POST',
       url: '/api/v1/notificacoes',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN', adminUsuarioId)}` },
-      payload: { usuarioId: professoraUsuarioId, tipo: 'MENSAGEM_ADMIN', titulo: 'Oi', mensagem: 'Teste' },
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { usuarioId: professorUsuarioId, tipo: 'MENSAGEM_ADMIN', titulo: 'Oi', mensagem: 'Teste' },
     })
     expect(createResponse.statusCode).toBe(201)
     const created = JSON.parse(createResponse.body).data
@@ -76,7 +68,7 @@ describe('Notificacoes Routes', () => {
     const response = await fastify.inject({
       method: 'PATCH',
       url: `/api/v1/notificacoes/${created.id}/ler`,
-      headers: { authorization: `Bearer ${tokenFor('ADMIN', adminUsuarioId)}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     expect(response.statusCode).toBe(400)
@@ -88,15 +80,15 @@ describe('Notificacoes Routes', () => {
     const createResponse = await fastify.inject({
       method: 'POST',
       url: '/api/v1/notificacoes',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN', adminUsuarioId)}` },
-      payload: { usuarioId: professoraUsuarioId, tipo: 'MENSAGEM_ADMIN', titulo: 'Oi', mensagem: 'Teste' },
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { usuarioId: professorUsuarioId, tipo: 'MENSAGEM_ADMIN', titulo: 'Oi', mensagem: 'Teste' },
     })
     const created = JSON.parse(createResponse.body).data
 
     const response = await fastify.inject({
       method: 'PATCH',
       url: `/api/v1/notificacoes/${created.id}/ler`,
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR', professoraUsuarioId)}` },
+      headers: { authorization: `Bearer ${professorToken}` },
     })
 
     expect(response.statusCode).toBe(200)

@@ -1,20 +1,23 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let financeiroToken: string
+let recepcionistaToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: financeiroToken } = await criarUsuarioComToken('FINANCEIRO'))
+  ;({ accessToken: recepcionistaToken } = await criarUsuarioComToken('RECEPCIONISTA'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Relatorios Routes', () => {
@@ -27,7 +30,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/relatorios',
-      headers: { authorization: `Bearer ${tokenFor('RECEPCIONISTA')}` },
+      headers: { authorization: `Bearer ${recepcionistaToken}` },
     })
     expect(response.statusCode).toBe(403)
   })
@@ -36,7 +39,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/relatorios',
-      headers: { authorization: `Bearer ${tokenFor('FINANCEIRO')}` },
+      headers: { authorization: `Bearer ${financeiroToken}` },
     })
 
     expect(response.statusCode).toBe(200)
@@ -50,7 +53,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/relatorios?tipo=TIPO_QUE_NAO_EXISTE',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     expect(response.statusCode).toBe(400)
@@ -60,7 +63,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/relatorios/00000000-0000-0000-0000-000000000000',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     expect(response.statusCode).toBe(404)
@@ -70,7 +73,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/relatorios/gerar',
-      headers: { authorization: `Bearer ${tokenFor('RECEPCIONISTA')}` },
+      headers: { authorization: `Bearer ${recepcionistaToken}` },
       payload: {
         professorId: '00000000-0000-0000-0000-000000000000',
         tipo: 'FREQUENCIA',
@@ -87,7 +90,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/relatorios/gerar',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: {
         professorId: '00000000-0000-0000-0000-000000000000',
         tipo: 'FREQUENCIA',
@@ -106,7 +109,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/relatorios/gerar',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: {
         professorId: '00000000-0000-0000-0000-000000000000',
         tipo: 'FREQUENCIA',
@@ -124,7 +127,7 @@ describe('Relatorios Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/relatorios/exportar-direto',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: {
         professorId: '00000000-0000-0000-0000-000000000000',
         tipo: 'FREQUENCIA',

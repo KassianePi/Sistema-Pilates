@@ -1,22 +1,20 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
 let alunoId: string
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
 
   const alunoResp = await fastify.inject({
     method: 'POST',
     url: '/api/v1/alunos',
-    headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+    headers: { authorization: `Bearer ${adminToken}` },
     payload: {
       email: `aluno-financeiro-${Date.now()}@teste.local`,
       nomeCompleto: 'Aluno Financeiro Teste',
@@ -30,6 +28,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Financeiro Routes', () => {
@@ -37,7 +36,7 @@ describe('Financeiro Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/mensalidades',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: {
         alunoId,
         tipo: 'AVULSO',
@@ -55,7 +54,7 @@ describe('Financeiro Routes', () => {
     const criada = await fastify.inject({
       method: 'POST',
       url: '/api/v1/mensalidades',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: {
         alunoId,
         tipo: 'AVULSO',
@@ -69,7 +68,7 @@ describe('Financeiro Routes', () => {
     const response = await fastify.inject({
       method: 'PUT',
       url: `/api/v1/mensalidades/${id}`,
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { valor: 'não-é-número' },
     })
 
@@ -80,7 +79,7 @@ describe('Financeiro Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/pagamentos',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { valor: 100, metodo: 'PIX' },
     })
 

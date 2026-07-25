@@ -1,20 +1,23 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let financeiroToken: string
+let alunoToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: financeiroToken } = await criarUsuarioComToken('FINANCEIRO'))
+  ;({ accessToken: alunoToken } = await criarUsuarioComToken('ALUNO'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Mensalidades Automáticas Routes', () => {
@@ -27,7 +30,7 @@ describe('Mensalidades Automáticas Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/mensalidades/gerar-automatico',
-      headers: { authorization: `Bearer ${tokenFor('FINANCEIRO')}` },
+      headers: { authorization: `Bearer ${financeiroToken}` },
     })
     expect(response.statusCode).toBe(403)
   })
@@ -41,7 +44,7 @@ describe('Mensalidades Automáticas Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/mensalidades/gerar-automatico/status',
-      headers: { authorization: `Bearer ${tokenFor('ALUNO')}` },
+      headers: { authorization: `Bearer ${alunoToken}` },
     })
     expect(response.statusCode).toBe(403)
   })
@@ -55,7 +58,7 @@ describe('Mensalidades Automáticas Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/mensalidades/gerar-automatico?dryRun=true',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
     expect(response.statusCode).toBe(200)
     const body = JSON.parse(response.body)
@@ -67,7 +70,7 @@ describe('Mensalidades Automáticas Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/mensalidades/gerar-automatico/status',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
     expect(response.statusCode).toBe(200)
   })

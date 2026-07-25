@@ -1,23 +1,25 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
 let alunoId: string
 let aulaId: string
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let professorToken: string
+let financeiroToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: professorToken } = await criarUsuarioComToken('PROFESSOR'))
+  ;({ accessToken: financeiroToken } = await criarUsuarioComToken('FINANCEIRO'))
 
   const professorResp = await fastify.inject({
     method: 'POST',
     url: '/api/v1/professores',
-    headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+    headers: { authorization: `Bearer ${adminToken}` },
     payload: {
       nomeCompleto: 'Professor Evolução Teste',
       email: `professor-evolucao-${Date.now()}@teste.local`,
@@ -30,7 +32,7 @@ beforeAll(async () => {
   const aulaResp = await fastify.inject({
     method: 'POST',
     url: '/api/v1/aulas',
-    headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+    headers: { authorization: `Bearer ${adminToken}` },
     payload: { professorId, dataHoraInicio: '2026-07-01T10:00:00.000Z', sala: 'Sala 1' },
   })
   aulaId = JSON.parse(aulaResp.body).data.id
@@ -38,7 +40,7 @@ beforeAll(async () => {
   const alunoResp = await fastify.inject({
     method: 'POST',
     url: '/api/v1/alunos',
-    headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+    headers: { authorization: `Bearer ${adminToken}` },
     payload: {
       email: `aluno-evolucao-${Date.now()}@teste.local`,
       nomeCompleto: 'Aluno Evolução Teste',
@@ -52,6 +54,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Evolução Routes', () => {
@@ -59,7 +62,7 @@ describe('Evolução Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/evolucoes',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { alunoId, aulaId },
     })
 
@@ -72,7 +75,7 @@ describe('Evolução Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/evolucoes',
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR')}` },
+      headers: { authorization: `Bearer ${professorToken}` },
       payload: { alunoId, aulaId, observacao: 'Aluno progrediu bem na aula de hoje.' },
     })
 
@@ -95,7 +98,7 @@ describe('Evolução Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/evolucoes',
-      headers: { authorization: `Bearer ${tokenFor('FINANCEIRO')}` },
+      headers: { authorization: `Bearer ${financeiroToken}` },
       payload: { alunoId, aulaId, observacao: 'Nota' },
     })
 
@@ -106,7 +109,7 @@ describe('Evolução Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/evolucoes/00000000-0000-0000-0000-000000000000',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     expect(response.statusCode).toBe(404)

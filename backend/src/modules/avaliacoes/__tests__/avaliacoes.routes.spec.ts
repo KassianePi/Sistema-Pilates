@@ -1,22 +1,22 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
 let alunoId: string
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let financeiroToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: financeiroToken } = await criarUsuarioComToken('FINANCEIRO'))
 
   const alunoResp = await fastify.inject({
     method: 'POST',
     url: '/api/v1/alunos',
-    headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+    headers: { authorization: `Bearer ${adminToken}` },
     payload: {
       email: `aluno-avaliacao-${Date.now()}@teste.local`,
       nomeCompleto: 'Aluno Avaliação Teste',
@@ -30,6 +30,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Avaliações Routes', () => {
@@ -37,7 +38,7 @@ describe('Avaliações Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/avaliacoes',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { dataAvaliacao: '2026-07-01' },
     })
 
@@ -50,7 +51,7 @@ describe('Avaliações Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/avaliacoes',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { alunoId, dataAvaliacao: '2026-07-01', peso: 70, altura: 1.75 },
     })
 
@@ -74,7 +75,7 @@ describe('Avaliações Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/avaliacoes',
-      headers: { authorization: `Bearer ${tokenFor('FINANCEIRO')}` },
+      headers: { authorization: `Bearer ${financeiroToken}` },
       payload: { alunoId, dataAvaliacao: '2026-07-01' },
     })
 
@@ -85,7 +86,7 @@ describe('Avaliações Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/avaliacoes/00000000-0000-0000-0000-000000000000',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     expect(response.statusCode).toBe(404)

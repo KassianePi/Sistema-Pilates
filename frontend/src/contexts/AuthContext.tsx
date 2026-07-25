@@ -2,6 +2,7 @@ import { createContext, useState, useCallback, useEffect } from 'react'
 import type { ReactNode } from 'react'
 import type { AdminUser, AlunoUser } from '@/types/auth.types'
 import { setAccessToken, setRefreshToken, getStoredRefreshToken, api } from '@/services/api'
+import { queryClient } from '@/lib/queryClient'
 
 const STORAGE_USER = 'pilates_user'
 const STORAGE_USER_TYPE = 'pilates_user_type'
@@ -60,6 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginAdmin = useCallback(async (email: string, senha: string): Promise<AdminUser> => {
     const { data } = await api.post('/auth/login', { email, senha })
     const payload = data.data
+    // Garante que nenhum dado em cache de uma sessão anterior (outro admin ou
+    // aluno no mesmo navegador) vaze para esta sessão.
+    queryClient.clear()
     setAccessToken(payload.accessToken)
     setRefreshToken(payload.refreshToken)
     const userData: AdminUser = {
@@ -78,6 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginAluno = useCallback(async (email: string, senha: string) => {
     const { data } = await api.post('/auth/aluno/login', { email, senha })
     const payload = data.data
+    // Mesma razão do loginAdmin: nunca reaproveitar cache de outra sessão.
+    queryClient.clear()
     setAccessToken(payload.accessToken)
     setRefreshToken(payload.refreshToken)
     const userData: AlunoUser = { id: payload.usuarioId, nome: payload.nome, email: payload.email }
@@ -97,6 +103,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(STORAGE_USER_TYPE)
       setUser(null)
       setUserType(null)
+      // Essencial: sem isso, o próximo usuário a logar neste navegador (outro
+      // aluno, ou um admin) vê por até staleTime os dados em cache da sessão
+      // que acabou de sair — inclusive notificações e dados financeiros.
+      queryClient.clear()
     }
   }, [])
 

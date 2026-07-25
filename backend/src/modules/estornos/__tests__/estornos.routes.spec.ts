@@ -5,20 +5,25 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let professorToken: string
+let alunoToken: string
+let recepcionistaToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: professorToken } = await criarUsuarioComToken('PROFESSOR'))
+  ;({ accessToken: alunoToken } = await criarUsuarioComToken('ALUNO'))
+  ;({ accessToken: recepcionistaToken } = await criarUsuarioComToken('RECEPCIONISTA'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Estornos Routes — RBAC', () => {
@@ -26,7 +31,7 @@ describe('Estornos Routes — RBAC', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/estornos',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { mensalidadeId: '11111111-1111-1111-1111-111111111111' },
     })
 
@@ -48,7 +53,7 @@ describe('Estornos Routes — RBAC', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/estornos',
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR')}` },
+      headers: { authorization: `Bearer ${professorToken}` },
     })
 
     expect(response.statusCode).not.toBe(401)
@@ -59,7 +64,7 @@ describe('Estornos Routes — RBAC', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/estornos',
-      headers: { authorization: `Bearer ${tokenFor('ALUNO')}` },
+      headers: { authorization: `Bearer ${alunoToken}` },
     })
 
     expect(response.statusCode).toBe(403)
@@ -69,7 +74,7 @@ describe('Estornos Routes — RBAC', () => {
     const response = await fastify.inject({
       method: 'PATCH',
       url: '/api/v1/estornos/11111111-1111-1111-1111-111111111111/aprovar',
-      headers: { authorization: `Bearer ${tokenFor('RECEPCIONISTA')}` },
+      headers: { authorization: `Bearer ${recepcionistaToken}` },
     })
 
     expect(response.statusCode).toBe(403)
@@ -79,7 +84,7 @@ describe('Estornos Routes — RBAC', () => {
     const response = await fastify.inject({
       method: 'PATCH',
       url: '/api/v1/estornos/11111111-1111-1111-1111-111111111111/aprovar',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     // ADMIN tem a permissão — a resposta pode ser 404 (estorno fake não existe),

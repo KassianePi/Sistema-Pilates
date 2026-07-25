@@ -2,10 +2,14 @@
  * Testes do middleware de autenticação
  */
 
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { authenticateToken, optionalAuth, requireRole } from '../auth.middleware'
 import { UnauthorizedError } from '../../errors/UnauthorizedError'
 import { generateTokens } from '../../utils/jwt'
+
+vi.mock('../../../database/prisma.client', () => ({
+  prisma: { usuario: { findUnique: vi.fn() } },
+}))
 
 /**
  * Mock de FastifyRequest
@@ -28,6 +32,12 @@ function mockReply() {
 }
 
 describe('Auth Middleware', () => {
+  beforeEach(async () => {
+    vi.clearAllMocks()
+    const { prisma } = await import('../../../database/prisma.client')
+    vi.mocked(prisma.usuario.findUnique).mockResolvedValue({ status: 'ATIVO' } as any)
+  })
+
   describe('authenticateToken', () => {
     it('deve extrair e validar token válido', async () => {
       const { accessToken } = generateTokens({
@@ -73,6 +83,30 @@ describe('Auth Middleware', () => {
 
       await expect(authenticateToken(request as any, reply as any)).rejects.toThrow(UnauthorizedError)
     })
+
+    it('deve rejeitar token válido de usuário excluído (não encontrado no banco)', async () => {
+      const { prisma } = await import('../../../database/prisma.client')
+      vi.mocked(prisma.usuario.findUnique).mockResolvedValue(null)
+
+      const { accessToken } = generateTokens({ usuarioId: 'excluido-1', email: 'x@pilates.local', funcao: 'ALUNO' })
+      const request = mockRequest({ headers: { authorization: `Bearer ${accessToken}` } })
+      const reply = mockReply()
+
+      await expect(authenticateToken(request as any, reply as any)).rejects.toThrow(UnauthorizedError)
+      expect(request.usuarioId).toBeUndefined()
+    })
+
+    it('deve rejeitar token válido de usuário inativado', async () => {
+      const { prisma } = await import('../../../database/prisma.client')
+      vi.mocked(prisma.usuario.findUnique).mockResolvedValue({ status: 'INATIVO' } as any)
+
+      const { accessToken } = generateTokens({ usuarioId: 'inativo-1', email: 'y@pilates.local', funcao: 'ALUNO' })
+      const request = mockRequest({ headers: { authorization: `Bearer ${accessToken}` } })
+      const reply = mockReply()
+
+      await expect(authenticateToken(request as any, reply as any)).rejects.toThrow(UnauthorizedError)
+      expect(request.usuarioId).toBeUndefined()
+    })
   })
 
   describe('optionalAuth', () => {
@@ -107,6 +141,18 @@ describe('Auth Middleware', () => {
 
       expect(request.usuarioId).toBe('456')
       expect(request.funcao).toBe('ADMIN')
+    })
+
+    it('ignora silenciosamente token válido de usuário excluído/inativo', async () => {
+      const { prisma } = await import('../../../database/prisma.client')
+      vi.mocked(prisma.usuario.findUnique).mockResolvedValue(null)
+
+      const { accessToken } = generateTokens({ usuarioId: '789', email: 'z@pilates.local', funcao: 'ALUNO' })
+      const request = mockRequest({ headers: { authorization: `Bearer ${accessToken}` } })
+      const reply = mockReply()
+
+      await expect(optionalAuth(request as any, reply as any)).resolves.toBeUndefined()
+      expect(request.usuarioId).toBeUndefined()
     })
   })
 

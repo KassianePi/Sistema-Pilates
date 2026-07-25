@@ -1,20 +1,23 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let recepcionistaToken: string
+let alunoToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: recepcionistaToken } = await criarUsuarioComToken('RECEPCIONISTA'))
+  ;({ accessToken: alunoToken } = await criarUsuarioComToken('ALUNO'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Configuracao Routes', () => {
@@ -22,7 +25,7 @@ describe('Configuracao Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/configuracao',
-      headers: { authorization: `Bearer ${tokenFor('ALUNO')}` },
+      headers: { authorization: `Bearer ${alunoToken}` },
     })
 
     expect(response.statusCode).toBe(200)
@@ -39,7 +42,7 @@ describe('Configuracao Routes', () => {
     const response = await fastify.inject({
       method: 'PUT',
       url: '/api/v1/configuracao',
-      headers: { authorization: `Bearer ${tokenFor('RECEPCIONISTA')}` },
+      headers: { authorization: `Bearer ${recepcionistaToken}` },
       payload: { tipoChavePix: 'EMAIL' },
     })
 
@@ -50,7 +53,7 @@ describe('Configuracao Routes', () => {
     const response = await fastify.inject({
       method: 'PUT',
       url: '/api/v1/configuracao',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { tipoChavePix: 'BITCOIN' },
     })
 
@@ -63,7 +66,7 @@ describe('Configuracao Routes', () => {
     const response = await fastify.inject({
       method: 'PUT',
       url: '/api/v1/configuracao',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
       payload: { chavePix: 'studio@pilates.local', tipoChavePix: 'EMAIL', nomeRecebedor: 'Studio Pilates' },
     })
 

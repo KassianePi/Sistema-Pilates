@@ -1,20 +1,23 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { build } from '../../../app'
 import type { FastifyInstance } from 'fastify'
-import { generateTokens } from '../../../shared/utils/jwt'
+import { criarUsuarioComToken, limparUsuariosDeTeste } from '../../../test/route-auth.helper'
 
 let fastify: FastifyInstance
-
-function tokenFor(funcao: 'ADMIN' | 'PROFESSOR' | 'RECEPCIONISTA' | 'FINANCEIRO' | 'ALUNO') {
-  return generateTokens({ usuarioId: 'usuario-fake-id', email: 'teste@pilates.local', funcao }).accessToken
-}
+let adminToken: string
+let professorToken: string
+let alunoToken: string
 
 beforeAll(async () => {
   fastify = await build()
+  ;({ accessToken: adminToken } = await criarUsuarioComToken('ADMIN'))
+  ;({ accessToken: professorToken } = await criarUsuarioComToken('PROFESSOR'))
+  ;({ accessToken: alunoToken } = await criarUsuarioComToken('ALUNO'))
 })
 
 afterAll(async () => {
   await fastify.close()
+  await limparUsuariosDeTeste()
 })
 
 describe('Pagamentos PIX Routes', () => {
@@ -31,7 +34,7 @@ describe('Pagamentos PIX Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/aluno/mensalidades/00000000-0000-0000-0000-000000000000/pix',
-      headers: { authorization: `Bearer ${tokenFor('ADMIN')}` },
+      headers: { authorization: `Bearer ${adminToken}` },
     })
 
     expect(response.statusCode).toBe(403)
@@ -50,7 +53,7 @@ describe('Pagamentos PIX Routes', () => {
     const response = await fastify.inject({
       method: 'GET',
       url: '/api/v1/aluno/mensalidades/00000000-0000-0000-0000-000000000000/pix',
-      headers: { authorization: `Bearer ${tokenFor('PROFESSOR')}` },
+      headers: { authorization: `Bearer ${professorToken}` },
     })
 
     expect(response.statusCode).toBe(403)
@@ -60,7 +63,7 @@ describe('Pagamentos PIX Routes', () => {
     const response = await fastify.inject({
       method: 'POST',
       url: '/api/v1/aluno/mensalidades/00000000-0000-0000-0000-000000000000/pix',
-      headers: { authorization: `Bearer ${tokenFor('ALUNO')}` },
+      headers: { authorization: `Bearer ${alunoToken}` },
     })
 
     expect(response.statusCode).toBe(403)
