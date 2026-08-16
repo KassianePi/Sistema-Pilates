@@ -1278,6 +1278,24 @@ O pacote compartilhado aponta para `.ts` fonte no `package.json` — funciona co
 
 > Risco conhecido: se o `Dockerfile` for alterado no futuro sem entender esse passo, o build pode voltar a quebrar silenciosamente só em produção (não em dev/testes). Está comentado no próprio `Dockerfile`.
 
+## Comprovante de matrícula deixou de ser obrigatório no cadastro com plano
+
+**Decisão**: cadastro de aluno com plano (`AlunosService.criar` → `AlunosRepository.createWithMatricula`) não exige mais upload de comprovante de pagamento. Cria `Usuario` (ATIVO) + `Aluno` (ATIVO) + primeira `Mensalidade` (PENDENTE) atomicamente, sem `ComprovantePagemento` nenhum. O aluno acessa o Portal imediatamente após o cadastro e paga a primeira mensalidade pelo fluxo padrão já existente (PIX via Mercado Pago, `pagamentos-pix.service.ts` → `solicitarCobranca`) — ou, alternativamente, pelo upload manual de comprovante em Financeiro > Comprovantes, exatamente como qualquer outra mensalidade. Após a confirmação (webhook ou sincronização manual do PIX), a mensalidade é atualizada para PAGO automaticamente, sem aprovação manual do admin.
+
+**Por quê**: o comprovante obrigatório na matrícula era um processo manual paralelo ao fluxo de cobrança já existente — depois da aprovação manual, a mensalidade podia continuar aparecendo como em aberto no Portal, gerando cobrança duplicada para o aluno. O fluxo genérico de PIX/comprovantes (`pagamentos-pix.service.ts`, `financeiro.controller.ts`) já era agnóstico de mensalidade e cobre esse caso sem nenhuma alteração — a exigência na matrícula era só uma trava a mais, sem necessidade real.
+
+**Efeito colateral**: `AlunosRepository.createWithMatricula` não recebe mais o campo `comprovante` nem retorna `comprovanteId`. O campo `comprovante` foi removido de `createAlunoSchema` (`packages/shared/schemas/aluno.schema.ts`) e do formulário de cadastro (`AlunoFormModal.tsx`). O fluxo genérico de comprovante manual (upload para qualquer mensalidade já existente, com aprovação em Financeiro > Comprovantes) não foi alterado e continua disponível como alternativa ao PIX.
+
+## Login do aluno por CPF (não e-mail) — e-mail passou a ser opcional no cadastro
+
+**Decisão**: `email` deixou de ser obrigatório em `createAlunoSchema` (`packages/shared/schemas/aluno.schema.ts`) e no formulário de cadastro (`AlunoFormModal.tsx`). O login do Portal do Aluno (`POST /api/v1/auth/aluno/login`) passou a autenticar por CPF + senha em vez de e-mail + senha (`loginAlunoSchema`, `AuthService.loginPorCpf`, `AuthRepository.findByCpf`).
+
+**Por quê**: nem todo aluno tem e-mail, mas CPF já é obrigatório e único para todos. Exigir e-mail só para viabilizar login era uma barreira de cadastro sem necessidade real, já que a coluna `email` do `Usuario` é `UNIQUE` e não pode ficar `null`.
+
+**Como funciona**: quando o cadastro não informa e-mail, `AlunosService.criar` gera um e-mail sintético a partir do CPF (`emailSintetico(cpf)` → `<cpf>@sememail.pilates.local`, em `alunos.constants.ts`) só para satisfazer a constraint `UNIQUE` do banco — nunca é exibido nem usado para contato. A checagem de duplicidade roda apenas sobre e-mail real informado pelo usuário; o sintético não passa por ela (é derivado do CPF, que já é checado como único). No frontend, `isEmailSintetico()` (`frontend/src/lib/formatters.ts`) detecta o sufixo `@sememail.pilates.local` para ocultar o valor sintético na UI (`AlunosPage.tsx`, `AlunoPerfilPage.tsx`, exibido como `—`/vazio em vez do e-mail fake). Login de staff (admin/instrutor) continua por e-mail — só o login do aluno (`loginAluno`/`loginPorCpf`) mudou para CPF; ambos compartilham a lógica pós-busca (`AuthService.autenticar`, checagem de status + senha + geração de tokens).
+
+**Efeito colateral**: `EMAIL_SINTETICO_DOMINIO` (backend) e `EMAIL_SINTETICO_SUFFIX` (frontend) precisam ficar em sincronia manual — estão comentados cruzando a referência um ao outro, mas não há teste ou constante compartilhada garantindo isso automaticamente.
+
 ---
 
 # 40. Deploy em Produção

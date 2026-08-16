@@ -35,6 +35,31 @@ export const loginSchema = z.object({
 export type LoginDTO = z.infer<typeof loginSchema>
 
 /**
+ * Schema para login do aluno — por CPF, não por e-mail (nem todo aluno tem
+ * e-mail; CPF já é obrigatório e único para todo aluno).
+ *
+ * @example
+ * const data = { cpf: '12345678901', senha: 'senha123' }
+ * const validated = loginAlunoSchema.parse(data)
+ */
+export const loginAlunoSchema = z.object({
+  cpf: z
+    .string({
+      required_error: 'CPF é obrigatório',
+    })
+    .regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
+
+  senha: z
+    .string({
+      required_error: 'Senha é obrigatória',
+    })
+    .min(6, 'Senha deve ter no mínimo 6 caracteres')
+    .max(128, 'Senha muito longa'),
+})
+
+export type LoginAlunoDTO = z.infer<typeof loginAlunoSchema>
+
+/**
  * Schema para registrar novo usuário
  *
  * @example

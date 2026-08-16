@@ -3,7 +3,7 @@ import type { Aluno, ApiResponse, PaginatedResponse } from '@/types/domain.types
 
 export interface CreateAlunoDTO {
   nomeCompleto: string
-  email: string
+  email?: string
   cpf: string
   senha: string
   telefone?: string
@@ -16,7 +16,6 @@ export interface CreateAlunoDTO {
   estado?: string
   cep?: string
   observacoes?: string
-  comprovante?: { arquivo: string; nomeArquivo: string; tipoArquivo: string } | null
 }
 
 export interface UpdateAlunoDTO {

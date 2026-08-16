@@ -116,8 +116,10 @@ export class AlunosRepository {
   }
 
   /**
-   * Cria aluno + primeira mensalidade + comprovante de matrícula de forma atômica.
-   * Usado no cadastro com plano, onde o comprovante de pagamento é obrigatório.
+   * Cria aluno + primeira mensalidade de forma atômica. Usado no cadastro com
+   * plano — a mensalidade nasce PENDENTE e é paga depois pelo fluxo padrão
+   * (PIX ou upload manual de comprovante em Financeiro > Comprovantes),
+   * igual a qualquer outra mensalidade.
    */
   async createWithMatricula(
     data: CreateAlunoData,
@@ -126,13 +128,8 @@ export class AlunosRepository {
       valor: number
       mesReferencia: Date
       dataVencimento: Date
-      comprovante: {
-        arquivo: string
-        nomeArquivo: string
-        tipoArquivo: string
-      }
     },
-  ): Promise<{ aluno: Aluno; mensalidadeId: string; comprovanteId: string }> {
+  ): Promise<{ aluno: Aluno; mensalidadeId: string }> {
     try {
       logDebug('Criando aluno com matrícula', { email: data.email })
       return await prisma.$transaction(async (tx) => {
@@ -174,21 +171,9 @@ export class AlunosRepository {
             status: 'PENDENTE' as any,
           },
         })
-        const comprovante = await tx.comprovantePagemento.create({
-          data: {
-            mensalidadeId: mensalidade.id,
-            alunoId: aluno.id,
-            arquivo: matricula.comprovante.arquivo,
-            nomeArquivo: matricula.comprovante.nomeArquivo,
-            tipoArquivo: matricula.comprovante.tipoArquivo,
-            dataEnvio: new Date(),
-            status: 'PENDENTE' as any,
-          },
-        })
         return {
           aluno: aluno as any,
           mensalidadeId: mensalidade.id,
-          comprovanteId: comprovante.id,
         }
       })
     } catch (error) {

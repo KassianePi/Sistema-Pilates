@@ -13,7 +13,7 @@ interface AuthContextValue {
   isAuthenticated: boolean
   isLoading: boolean
   loginAdmin: (email: string, senha: string) => Promise<AdminUser>
-  loginAluno: (email: string, senha: string) => Promise<void>
+  loginAluno: (cpf: string, senha: string) => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -79,8 +79,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return userData
   }, [])
 
-  const loginAluno = useCallback(async (email: string, senha: string) => {
-    const { data } = await api.post('/auth/aluno/login', { email, senha })
+  const loginAluno = useCallback(async (cpf: string, senha: string) => {
+    const { data } = await api.post('/auth/aluno/login', { cpf, senha })
     const payload = data.data
     // Mesma razão do loginAdmin: nunca reaproveitar cache de outra sessão.
     queryClient.clear()

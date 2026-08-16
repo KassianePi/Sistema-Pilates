@@ -1,9 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { Upload, FileCheck } from 'lucide-react'
-import { toast } from 'sonner'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,7 +15,7 @@ import type { Aluno } from '@/types/domain.types'
 // Schemas de validação — os campos mascarados armazenam dígitos limpos
 const createSchema = z.object({
   nomeCompleto: z.string().min(3, 'Nome deve ter pelo menos 3 caracteres'),
-  email: z.string().email('E-mail inválido'),
+  email: z.string().email('E-mail inválido').optional().or(z.literal('')),
   cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
   senha: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
   telefone: z
@@ -66,32 +64,6 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
   const { data: planosData } = usePlanos({ limite: 100 })
   const planos = planosData?.data ?? []
 
-  // Comprovante de matrícula (apenas no cadastro com plano)
-  const [comprovante, setComprovante] = useState<{ arquivo: string; nomeArquivo: string; tipoArquivo: string } | null>(
-    null,
-  )
-  const [comprovanteErro, setComprovanteErro] = useState<string | null>(null)
-
-  function handleComprovante(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    const tiposPermitidos = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-    if (!tiposPermitidos.includes(file.type)) {
-      toast.error('Tipo inválido. Use JPG, PNG, WEBP ou PDF.')
-      return
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Arquivo muito grande. Máximo 5MB.')
-      return
-    }
-    const reader = new FileReader()
-    reader.onload = () => {
-      setComprovante({ arquivo: reader.result as string, nomeArquivo: file.name, tipoArquivo: file.type })
-      setComprovanteErro(null)
-    }
-    reader.readAsDataURL(file)
-  }
-
   const {
     register,
     handleSubmit,
@@ -132,18 +104,10 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
         estado: '',
       })
     }
-    setComprovante(null)
-    setComprovanteErro(null)
   }, [aluno, reset, open])
 
   async function onSubmit(values: CreateForm | EditForm) {
     const temPlano = !!(values.planoId && values.planoId.trim())
-
-    // No cadastro com plano, o comprovante de matrícula é obrigatório
-    if (!isEditing && temPlano && !comprovante) {
-      setComprovanteErro('Anexe o comprovante de pagamento para finalizar a matrícula.')
-      return
-    }
 
     // Normaliza valores antes de enviar à API
     const payload = {
@@ -158,10 +122,7 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
     if (isEditing && aluno) {
       await updateAluno.mutateAsync({ id: aluno.id, dto: payload as EditForm })
     } else {
-      await createAluno.mutateAsync({
-        ...(payload as CreateForm),
-        comprovante: temPlano ? comprovante : null,
-      })
+      await createAluno.mutateAsync(payload as CreateForm)
     }
     onClose()
   }
@@ -186,10 +147,11 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
 
             {!isEditing && (
               <>
-                {/* E-mail */}
+                {/* E-mail — opcional: nem todo aluno tem e-mail, login é por CPF */}
                 <div className="space-y-1.5">
-                  <Label htmlFor="email">E-mail *</Label>
+                  <Label htmlFor="email">E-mail</Label>
                   <Input id="email" type="email" {...register('email' as never)} placeholder="email@exemplo.com" />
+                  <p className="text-xs text-cinza-medio">Opcional — deixe em branco se o aluno não tiver e-mail.</p>
                   {(errors as { email?: { message?: string } }).email && (
                     <p className="text-xs text-rosa-vibrante">
                       {(errors as { email?: { message?: string } }).email?.message}
@@ -384,30 +346,6 @@ export function AlunoFormModal({ open, onClose, aluno }: Props) {
               </div>
             )}
           </div>
-
-          {/* Comprovante de matrícula — obrigatório no cadastro quando há plano */}
-          {!isEditing && !!planoIdValue && (
-            <div className="space-y-1.5 rounded-lg border border-lilas-medio/30 bg-lilas-claro/30 p-4">
-              <Label className="flex items-center gap-2 text-roxo-profundo">
-                <Upload className="w-4 h-4" /> Comprovante de pagamento *
-              </Label>
-              <p className="text-xs text-cinza-texto">
-                Anexe o comprovante do pagamento da primeira mensalidade. O cadastro só é concluído com o comprovante.
-              </p>
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp,application/pdf"
-                onChange={handleComprovante}
-                className="block w-full text-sm text-cinza-texto file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-bege-cartao file:text-xs file:font-medium file:bg-branco-puro hover:file:bg-bege-cartao/50 cursor-pointer"
-              />
-              {comprovante && (
-                <p className="text-xs text-green-700 flex items-center gap-1">
-                  <FileCheck className="w-3.5 h-3.5" /> {comprovante.nomeArquivo}
-                </p>
-              )}
-              {comprovanteErro && <p className="text-xs text-rosa-vibrante">{comprovanteErro}</p>}
-            </div>
-          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>

@@ -82,9 +82,9 @@ export async function authLoginRoutes(fastify: FastifyInstance) {
       schema: {
         body: {
           type: 'object',
-          required: ['email', 'senha'],
+          required: ['cpf', 'senha'],
           properties: {
-            email: { type: 'string', format: 'email' },
+            cpf: { type: 'string', pattern: '^\\d{11}$' },
             senha: { type: 'string', minLength: 6 },
           },
         },

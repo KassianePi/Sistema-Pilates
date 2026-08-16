@@ -1,7 +1,9 @@
 import { z } from 'zod'
 
 export const createAlunoSchema = z.object({
-  email: z.string({ required_error: 'Email é obrigatório' }).email().toLowerCase().trim(),
+  // Opcional — nem todo aluno tem e-mail (login do aluno é por CPF). Quando
+  // não informado, o backend gera um e-mail sintético a partir do CPF.
+  email: z.string().email('E-mail inválido').toLowerCase().trim().optional(),
   nomeCompleto: z.string({ required_error: 'Nome é obrigatório' }).min(3).max(255).trim(),
   cpf: z.string({ required_error: 'CPF é obrigatório' }).regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
   telefone: z.string().regex(/^\d{10,11}$/).optional().nullable(),
@@ -15,12 +17,6 @@ export const createAlunoSchema = z.object({
   estado: z.string().regex(/^[A-Z]{2}$/, 'UF inválida').optional().nullable(),
   cep: z.string().regex(/^\d{5}-?\d{3}$/).optional().nullable(),
   observacoes: z.string().max(2000).optional().nullable(),
-  // Comprovante de matrícula — obrigatório quando há plano (validado no service)
-  comprovante: z.object({
-    arquivo: z.string().min(1, 'Arquivo é obrigatório'),
-    nomeArquivo: z.string().min(1).max(255),
-    tipoArquivo: z.string().min(1).max(100),
-  }).optional().nullable(),
 })
 export type CreateAlunoDTO = z.infer<typeof createAlunoSchema>
 

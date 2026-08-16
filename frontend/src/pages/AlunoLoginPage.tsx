@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useForm } from 'react-hook-form'
+import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Eye, EyeOff, Dumbbell, KeyRound } from 'lucide-react'
@@ -10,9 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useAuth } from '@/hooks/useAuth'
+import { formatCPF, onlyDigits } from '@/lib/formatters'
 
 const loginSchema = z.object({
-  email: z.string().email('E-mail inválido'),
+  cpf: z.string().regex(/^\d{11}$/, 'CPF deve ter 11 dígitos'),
   senha: z.string().min(6, 'Senha deve ter ao menos 6 caracteres'),
 })
 
@@ -27,15 +28,16 @@ export function AlunoLoginPage() {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors, isSubmitting },
-  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema) })
+  } = useForm<LoginForm>({ resolver: zodResolver(loginSchema), defaultValues: { cpf: '', senha: '' } })
 
   async function onSubmit(data: LoginForm) {
     try {
-      await loginAluno(data.email, data.senha)
+      await loginAluno(data.cpf, data.senha)
       navigate('/aluno/dashboard')
     } catch {
-      toast.error('E-mail ou senha incorretos.')
+      toast.error('CPF ou senha incorretos.')
     }
   }
 
@@ -99,9 +101,22 @@ export function AlunoLoginPage() {
           {/* Formulário */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-2">
-              <Label htmlFor="email">E-mail</Label>
-              <Input id="email" type="email" placeholder="seu@email.com" autoComplete="email" {...register('email')} />
-              {errors.email && <p className="text-rosa-vibrante text-xs mt-1">{errors.email.message}</p>}
+              <Label htmlFor="cpf">CPF</Label>
+              <Controller
+                name="cpf"
+                control={control}
+                render={({ field: { onChange, value } }) => (
+                  <Input
+                    id="cpf"
+                    placeholder="000.000.000-00"
+                    maxLength={14}
+                    autoComplete="username"
+                    value={formatCPF(value ?? '')}
+                    onChange={(e) => onChange(onlyDigits(e.target.value))}
+                  />
+                )}
+              />
+              {errors.cpf && <p className="text-rosa-vibrante text-xs mt-1">{errors.cpf.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -163,8 +178,8 @@ export function AlunoLoginPage() {
           <div className="space-y-3 mt-1 text-sm text-cinza-texto">
             <p>Por segurança, a redefinição de senha é feita pelo studio.</p>
             <p>
-              Entre em contato com a recepção (pessoalmente ou pelo WhatsApp), informe o e-mail cadastrado e o studio
-              definirá uma nova senha para você.
+              Entre em contato com a recepção (pessoalmente ou pelo WhatsApp), informe seu CPF e o studio definirá uma
+              nova senha para você.
             </p>
             <Button className="w-full" onClick={() => setShowReset(false)}>
               Entendi

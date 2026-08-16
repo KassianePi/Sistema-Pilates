@@ -28,3 +28,14 @@ export function formatCEP(value: string): string {
   if (d.length <= 5) return d
   return `${d.slice(0, 5)}-${d.slice(5)}`
 }
+
+/**
+ * Detecta e-mail sintético gerado automaticamente para aluno sem e-mail real
+ * (login do aluno é por CPF — ver `AlunoLoginPage.tsx`). Mantido em
+ * sincronia com `EMAIL_SINTETICO_DOMINIO` em
+ * `backend/src/modules/alunos/alunos.constants.ts`.
+ */
+const EMAIL_SINTETICO_SUFFIX = '@sememail.pilates.local'
+export function isEmailSintetico(email?: string | null): boolean {
+  return !!email && email.toLowerCase().endsWith(EMAIL_SINTETICO_SUFFIX)
+}

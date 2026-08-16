@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { AlunoFormModal } from '../components/AlunoFormModal'
 import { useAlunos, useDeleteAluno, useAlterarStatusAluno } from '../hooks/useAlunos'
+import { isEmailSintetico } from '@/lib/formatters'
 import type { Aluno } from '@/types/domain.types'
 import { useDebounce } from '@/hooks/useDebounce'
 
@@ -118,7 +119,9 @@ export function AlunosPage() {
                 {alunos.map((aluno) => (
                   <TableRow key={aluno.id}>
                     <TableCell className="font-medium">{aluno.usuario.nomeCompleto}</TableCell>
-                    <TableCell className="text-cinza-texto">{aluno.usuario.email}</TableCell>
+                    <TableCell className="text-cinza-texto">
+                      {isEmailSintetico(aluno.usuario.email) ? '—' : aluno.usuario.email}
+                    </TableCell>
                     <TableCell className="text-cinza-texto">{aluno.usuario.telefone ?? '—'}</TableCell>
                     <TableCell>
                       {aluno.planoAtual ? (

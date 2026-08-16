@@ -25,6 +25,7 @@ import { PageHeader } from '../../components/PageHeader'
 import { LoadingState } from '../../components/LoadingState'
 import { useAlunoPerfil, useAtualizarPerfil } from '../../hooks/useAlunoPerfil'
 import { formatarData, primeiroNome } from '../../utils/format'
+import { isEmailSintetico } from '@/lib/formatters'
 
 const STATUS_MATRICULA: Record<string, { label: string; variant: 'success' | 'warning' | 'destructive' | 'outline' }> =
   {
@@ -133,7 +134,7 @@ export function AlunoPerfilPage() {
                   inputMode="numeric"
                 />
               </div>
-              <Campo icon={Mail} label="E-mail" value={perfil.email} />
+              <Campo icon={Mail} label="E-mail" value={isEmailSintetico(perfil.email) ? undefined : perfil.email} />
               <div className="flex gap-2 justify-end pt-1">
                 <Button variant="outline" size="sm" onClick={() => setEditando(false)} disabled={atualizar.isPending}>
                   <X className="w-3.5 h-3.5 mr-1" /> Cancelar
@@ -146,7 +147,7 @@ export function AlunoPerfilPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Campo icon={User} label="Nome completo" value={perfil.nome} />
-              <Campo icon={Mail} label="E-mail" value={perfil.email} />
+              <Campo icon={Mail} label="E-mail" value={isEmailSintetico(perfil.email) ? undefined : perfil.email} />
               <Campo icon={Phone} label="Telefone" value={perfil.telefone} />
               <Campo icon={IdCard} label="CPF" value={perfil.cpf} />
             </div>

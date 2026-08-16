@@ -42,6 +42,33 @@ export class AuthRepository {
   }
 
   /**
+   * Busca usuário por CPF — usado no login do aluno (por CPF, não e-mail).
+   *
+   * @param cpf - CPF do usuário (apenas dígitos)
+   * @returns Usuário encontrado ou undefined
+   */
+  async findByCpf(cpf: string): Promise<Usuario | null> {
+    try {
+      logDebug('Buscando usuário por CPF', { cpf })
+
+      const usuario = await prisma.usuario.findUnique({
+        where: { cpf },
+      })
+
+      if (usuario) {
+        logDebug('✅ Usuário encontrado', { cpf, usuarioId: usuario.id })
+      } else {
+        logDebug('❌ Usuário não encontrado', { cpf })
+      }
+
+      return usuario
+    } catch (error) {
+      logError('Erro ao buscar usuário por CPF', error as Error, { cpf })
+      throw AppError.internal('Erro ao buscar usuário')
+    }
+  }
+
+  /**
    * Busca usuário por ID
    *
    * @param id - ID do usuário

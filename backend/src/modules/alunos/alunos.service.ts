@@ -3,21 +3,18 @@ import { AppError, ValidationError } from '../../shared/errors'
 import { logInfo, inicioDoMes, parseDataLocal } from '../../shared/utils'
 import { hashPassword } from '../../shared/utils/hash'
 import { createAlunoSchema, updateAlunoSchema, listAlunosSchema } from '../../shared/schemas'
-import { ALUNOS_ERRORS } from './alunos.constants'
+import { ALUNOS_ERRORS, emailSintetico } from './alunos.constants'
 import { prisma } from '../../database/prisma.client'
 import { registrarLog } from '../auditoria/auditoria.service'
 import { notificacoesService } from '../notificacoes/notificacoes.service'
 import type { Aluno, UpdateAlunoData } from './alunos.types'
-
-const TIPOS_COMPROVANTE_PERMITIDOS = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf']
-const COMPROVANTE_MAX_BYTES = 5 * 1024 * 1024
 
 export class AlunosService {
   constructor(private repository: AlunosRepository) {}
 
   async criar(
     data: {
-      email: string
+      email?: string | null
       nomeCompleto: string
       cpf: string
       telefone?: string | null
@@ -31,14 +28,21 @@ export class AlunosService {
       estado?: string | null
       cep?: string | null
       observacoes?: string | null
-      comprovante?: { arquivo: string; nomeArquivo: string; tipoArquivo: string } | null
     },
     realizadoPorId?: string,
   ): Promise<Aluno> {
     const validado = createAlunoSchema.parse(data)
 
-    const emailExistente = await prisma.usuario.findUnique({ where: { email: validado.email } })
-    if (emailExistente) throw ValidationError.forField('email', ALUNOS_ERRORS.EMAIL_DUPLICADO)
+    // Nem todo aluno tem e-mail (login do aluno é por CPF) — quando ausente,
+    // gera um sintético a partir do CPF só para satisfazer a coluna única do
+    // banco. A checagem de duplicidade só faz sentido para e-mail real: o
+    // sintético é derivado do CPF, que já é checado como único logo abaixo.
+    const emailFinal = validado.email ?? emailSintetico(validado.cpf)
+
+    if (validado.email) {
+      const emailExistente = await prisma.usuario.findUnique({ where: { email: validado.email } })
+      if (emailExistente) throw ValidationError.forField('email', ALUNOS_ERRORS.EMAIL_DUPLICADO)
+    }
 
     const cpfExistente = await prisma.usuario.findUnique({ where: { cpf: validado.cpf } })
     if (cpfExistente) throw ValidationError.forField('cpf', ALUNOS_ERRORS.CPF_DUPLICADO)
@@ -51,20 +55,12 @@ export class AlunosService {
 
     const senhaHash = await hashPassword(validado.senha)
 
-    // Cadastro com plano exige comprovante de matrícula → fluxo atômico (aluno + mensalidade + comprovante)
+    // Cadastro com plano → fluxo atômico (aluno + primeira mensalidade PENDENTE)
     if (validado.planoId && plano) {
-      if (!validado.comprovante) {
-        throw ValidationError.forField(
-          'comprovante',
-          'O comprovante de pagamento é obrigatório para matrícula com plano.',
-        )
-      }
-      this.validarComprovante(validado.comprovante)
-
       const dataInicio = parseDataLocal(validado.dataInicio)
-      const { aluno, comprovanteId } = await this.repository.createWithMatricula(
+      const { aluno } = await this.repository.createWithMatricula(
         {
-          email: validado.email,
+          email: emailFinal,
           nomeCompleto: validado.nomeCompleto,
           cpf: validado.cpf,
           telefone: validado.telefone,
@@ -88,11 +84,10 @@ export class AlunosService {
           // reconhecer esta como a mensalidade "base" da competência.
           mesReferencia: inicioDoMes(dataInicio),
           dataVencimento: dataInicio,
-          comprovante: validado.comprovante,
         },
       )
 
-      logInfo('Aluno criado com matrícula + comprovante', { id: aluno.id, comprovanteId })
+      logInfo('Aluno criado com matrícula', { id: aluno.id })
       await registrarLog({
         usuarioId: realizadoPorId ?? aluno.usuarioId,
         acao: 'CREATE',
@@ -101,8 +96,8 @@ export class AlunosService {
       })
       await notificacoesService
         .notificarAdmins(
-          'Nova matrícula com comprovante',
-          `O aluno ${validado.nomeCompleto} foi cadastrado e enviou comprovante de pagamento. Acesse Financeiro > Comprovantes para analisar.`,
+          'Novo aluno matriculado',
+          `O aluno ${validado.nomeCompleto} foi cadastrado no plano e a primeira mensalidade já está disponível para pagamento.`,
         )
         .catch(() => {
           /* silencioso */
@@ -112,7 +107,7 @@ export class AlunosService {
 
     // Cadastro sem plano — fluxo simples
     const aluno = await this.repository.create({
-      email: validado.email,
+      email: emailFinal,
       nomeCompleto: validado.nomeCompleto,
       cpf: validado.cpf,
       telefone: validado.telefone,
@@ -136,16 +131,6 @@ export class AlunosService {
       entidadeId: aluno.id,
     })
     return aluno
-  }
-
-  private validarComprovante(comprovante: { arquivo: string; tipoArquivo: string }) {
-    if (!TIPOS_COMPROVANTE_PERMITIDOS.includes(comprovante.tipoArquivo)) {
-      throw ValidationError.forField('comprovante', 'Tipo de arquivo não permitido. Use JPG, PNG, WEBP ou PDF.')
-    }
-    const tamanhoEstimado = Math.round((comprovante.arquivo.length * 3) / 4)
-    if (tamanhoEstimado > COMPROVANTE_MAX_BYTES) {
-      throw ValidationError.forField('comprovante', 'Arquivo muito grande. Tamanho máximo: 5 MB.')
-    }
   }
 
   async buscarPorId(id: string): Promise<Aluno> {

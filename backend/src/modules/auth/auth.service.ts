@@ -13,7 +13,7 @@ import { hashPassword, verifyPassword, generateRandomPassword } from '../../shar
 import { generateAccessToken, generateRefreshToken, generateTokens, verifyRefreshToken } from '../../shared/utils/jwt'
 import { UnauthorizedError, ValidationError } from '../../shared/errors'
 import { logInfo, logWarn, logDebug } from '../../shared/utils'
-import { loginSchema, registerSchema, setupSchema, criarUsuarioSchema } from '../../shared/schemas'
+import { loginSchema, loginAlunoSchema, registerSchema, setupSchema, criarUsuarioSchema } from '../../shared/schemas'
 import { AUTH_ERRORS } from './auth.constants'
 import { registrarLog } from '../auditoria/auditoria.service'
 import { AppError } from '../../shared/errors'
@@ -45,62 +45,9 @@ export class AuthService {
 
       logDebug('Login iniciado', { email: emailValidado })
 
-      // Buscar usuário
       const usuario = await this.repository.findByEmail(emailValidado)
 
-      if (!usuario) {
-        logWarn('Tentativa de login com email não cadastrado', {
-          email: emailValidado,
-          ip: 'unknown', // será preenchido pelo middleware
-        })
-        throw UnauthorizedError.invalidCredentials()
-      }
-
-      // Verificar se usuário está ativo
-      if (usuario.status !== 'ATIVO') {
-        logWarn('Tentativa de login com usuário inativo', {
-          email: emailValidado,
-          usuarioId: usuario.id,
-          status: usuario.status,
-        })
-        throw UnauthorizedError.insufficientPermission(AUTH_ERRORS.USER_INACTIVE)
-      }
-
-      // Validar senha
-      const senhaCorreta = await verifyPassword(senhaValidada, usuario.senhaHash)
-
-      if (!senhaCorreta) {
-        logWarn('Tentativa de login com senha incorreta', {
-          email: emailValidado,
-          usuarioId: usuario.id,
-        })
-        throw UnauthorizedError.invalidCredentials()
-      }
-
-      // Gerar tokens
-      const { accessToken, refreshToken, expiresIn } = generateTokens({
-        usuarioId: usuario.id,
-        email: usuario.email,
-        funcao: usuario.funcao,
-      })
-
-      logInfo('✅ Login realizado com sucesso', {
-        usuarioId: usuario.id,
-        email: usuario.email,
-        funcao: usuario.funcao,
-      })
-
-      await registrarLog({ usuarioId: usuario.id, acao: 'LOGIN', entidade: 'Usuario', entidadeId: usuario.id })
-
-      return {
-        usuarioId: usuario.id,
-        email: usuario.email,
-        nome: usuario.nomeCompleto,
-        funcao: usuario.funcao,
-        accessToken,
-        refreshToken,
-        expiresIn,
-      }
+      return await this.autenticar(usuario, senhaValidada, { email: emailValidado })
     } catch (error) {
       if (error instanceof UnauthorizedError || error instanceof ValidationError) {
         throw error
@@ -116,6 +63,107 @@ export class AuthService {
       })
 
       throw UnauthorizedError.invalidCredentials()
+    }
+  }
+
+  /**
+   * Login do aluno — por CPF, não por e-mail (nem todo aluno tem e-mail).
+   * Compartilha toda a lógica pós-busca com `login()` via `autenticar()`.
+   *
+   * @param cpf - CPF do aluno (apenas dígitos)
+   * @param senha - Senha em texto plano
+   * @returns LoginResponse com tokens
+   * @throws UnauthorizedError se credenciais inválidas
+   * @throws ValidationError se entrada inválida
+   */
+  async loginPorCpf(cpf: string, senha: string): Promise<LoginResponse> {
+    try {
+      const { cpf: cpfValidado, senha: senhaValidada } = loginAlunoSchema.parse({ cpf, senha })
+
+      logDebug('Login por CPF iniciado', { cpf: cpfValidado })
+
+      const usuario = await this.repository.findByCpf(cpfValidado)
+
+      return await this.autenticar(usuario, senhaValidada, { cpf: cpfValidado })
+    } catch (error) {
+      if (error instanceof UnauthorizedError || error instanceof ValidationError) {
+        throw error
+      }
+
+      if (error instanceof Error && error.name === 'ZodError') {
+        throw ValidationError.fromZod(error)
+      }
+
+      logWarn('Erro durante login por CPF', {
+        cpf,
+        error: error instanceof Error ? error.message : String(error),
+      })
+
+      throw UnauthorizedError.invalidCredentials()
+    }
+  }
+
+  /**
+   * Lógica comum pós-busca, compartilhada por `login()` (e-mail, staff) e
+   * `loginPorCpf()` (CPF, aluno): checa status, valida senha, gera tokens.
+   */
+  private async autenticar(
+    usuario: Usuario | null,
+    senhaValidada: string,
+    contextoLog: Record<string, string>,
+  ): Promise<LoginResponse> {
+    if (!usuario) {
+      logWarn('Tentativa de login com identificador não cadastrado', {
+        ...contextoLog,
+        ip: 'unknown', // será preenchido pelo middleware
+      })
+      throw UnauthorizedError.invalidCredentials()
+    }
+
+    // Verificar se usuário está ativo
+    if (usuario.status !== 'ATIVO') {
+      logWarn('Tentativa de login com usuário inativo', {
+        ...contextoLog,
+        usuarioId: usuario.id,
+        status: usuario.status,
+      })
+      throw UnauthorizedError.insufficientPermission(AUTH_ERRORS.USER_INACTIVE)
+    }
+
+    // Validar senha
+    const senhaCorreta = await verifyPassword(senhaValidada, usuario.senhaHash)
+
+    if (!senhaCorreta) {
+      logWarn('Tentativa de login com senha incorreta', {
+        ...contextoLog,
+        usuarioId: usuario.id,
+      })
+      throw UnauthorizedError.invalidCredentials()
+    }
+
+    // Gerar tokens
+    const { accessToken, refreshToken, expiresIn } = generateTokens({
+      usuarioId: usuario.id,
+      email: usuario.email,
+      funcao: usuario.funcao,
+    })
+
+    logInfo('✅ Login realizado com sucesso', {
+      usuarioId: usuario.id,
+      email: usuario.email,
+      funcao: usuario.funcao,
+    })
+
+    await registrarLog({ usuarioId: usuario.id, acao: 'LOGIN', entidade: 'Usuario', entidadeId: usuario.id })
+
+    return {
+      usuarioId: usuario.id,
+      email: usuario.email,
+      nome: usuario.nomeCompleto,
+      funcao: usuario.funcao,
+      accessToken,
+      refreshToken,
+      expiresIn,
     }
   }
 

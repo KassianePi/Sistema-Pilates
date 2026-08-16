@@ -26,6 +26,40 @@ class MockAuthRepository {
     return null
   }
 
+  async findByCpf(cpf: string) {
+    if (cpf === '12345678901') {
+      return {
+        id: 'user-123',
+        email: 'existing@pilates.local',
+        nomeCompleto: 'Existing User',
+        cpf: '12345678901',
+        telefone: null,
+        senhaHash: await fakeSenhaHash(),
+        funcao: 'ALUNO' as const,
+        status: 'ATIVO' as const,
+        ultimoAcessoEm: null,
+        criadoEm: new Date(),
+        atualizadoEm: new Date(),
+      }
+    }
+    if (cpf === '99988877766') {
+      return {
+        id: 'user-inativo',
+        email: 'inativo@pilates.local',
+        nomeCompleto: 'Aluno Inativo',
+        cpf: '99988877766',
+        telefone: null,
+        senhaHash: await fakeSenhaHash(),
+        funcao: 'ALUNO' as const,
+        status: 'INATIVO' as const,
+        ultimoAcessoEm: null,
+        criadoEm: new Date(),
+        atualizadoEm: new Date(),
+      }
+    }
+    return null
+  }
+
   async findById(id: string) {
     if (id === 'user-123') {
       return {
@@ -116,6 +150,36 @@ describe('AuthService', () => {
     it('deve converter email para minúsculas', async () => {
       const result = await service.login('EXISTING@PILATES.LOCAL', 'senha123')
       expect(result.email).toBe('existing@pilates.local')
+    })
+  })
+
+  describe('loginPorCpf', () => {
+    it('deve fazer login com CPF e senha corretos', async () => {
+      const result = await service.loginPorCpf('12345678901', 'senha123')
+      expect(result.usuarioId).toBe('user-123')
+      expect(result.funcao).toBe('ALUNO')
+      expect(result.accessToken).toBeDefined()
+      expect(result.refreshToken).toBeDefined()
+    })
+
+    it('deve lançar erro com senha incorreta', async () => {
+      await expect(service.loginPorCpf('12345678901', 'senhaErrada')).rejects.toThrow(UnauthorizedError)
+    })
+
+    it('deve lançar erro com CPF não cadastrado', async () => {
+      await expect(service.loginPorCpf('00000000000', 'senha123')).rejects.toThrow(UnauthorizedError)
+    })
+
+    it('deve rejeitar CPF com formato inválido', async () => {
+      await expect(service.loginPorCpf('123', 'senha123')).rejects.toThrow(ValidationError)
+    })
+
+    it('deve rejeitar senha muito curta', async () => {
+      await expect(service.loginPorCpf('12345678901', '12345')).rejects.toThrow(ValidationError)
+    })
+
+    it('deve lançar erro para usuário inativo', async () => {
+      await expect(service.loginPorCpf('99988877766', 'senha123')).rejects.toThrow(UnauthorizedError)
     })
   })
 

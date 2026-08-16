@@ -15,6 +15,7 @@ import { authService } from './auth.service'
 import { ValidationError, UnauthorizedError, AppError } from '../../shared/errors'
 import {
   loginSchema,
+  loginAlunoSchema,
   registerSchema,
   refreshTokenSchema,
   changePasswordSchema,
@@ -108,20 +109,21 @@ export async function login(request: FastifyRequest, reply: FastifyReply) {
 /**
  * POST /api/v1/auth/aluno/login
  *
- * Login exclusivo para alunos — rejeita qualquer outra funcao
+ * Login exclusivo para alunos — por CPF (não e-mail, nem todo aluno tem
+ * e-mail cadastrado) — rejeita qualquer outra funcao
  */
 export async function loginAluno(request: FastifyRequest, reply: FastifyReply) {
   try {
-    const { email, senha } = loginSchema.parse(request.body)
-    logDebug('Controller: login do aluno iniciado', { email })
+    const { cpf, senha } = loginAlunoSchema.parse(request.body)
+    logDebug('Controller: login do aluno iniciado', { cpf })
 
-    const resultado = await authService.login(email, senha)
+    const resultado = await authService.loginPorCpf(cpf, senha)
 
     if (resultado.funcao !== 'ALUNO') {
-      logWarn('Tentativa de acesso ao portal do aluno com conta não-aluno', { email, funcao: resultado.funcao })
+      logWarn('Tentativa de acesso ao portal do aluno com conta não-aluno', { cpf, funcao: resultado.funcao })
       return reply.code(401).send({
         success: false,
-        message: 'E-mail ou senha incorretos.',
+        message: 'CPF ou senha incorretos.',
         code: 'INVALID_CREDENTIALS',
       })
     }
