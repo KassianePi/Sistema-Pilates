@@ -65,7 +65,10 @@ describe('AlunoLoginPage', () => {
   it('mostra erro quando as credenciais estão incorretas', async () => {
     server.use(
       http.post('/api/v1/auth/aluno/login', () =>
-        HttpResponse.json({ success: false, message: 'CPF ou senha incorretos.', code: 'INVALID_CREDENTIALS' }, { status: 401 }),
+        HttpResponse.json(
+          { success: false, message: 'CPF ou senha incorretos.', code: 'INVALID_CREDENTIALS' },
+          { status: 401 },
+        ),
       ),
     )
 

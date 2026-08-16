@@ -7,7 +7,9 @@ const PLANO_ID = '11111111-1111-1111-1111-111111111111'
 vi.mock('../../../database/prisma.client', () => ({
   prisma: {
     usuario: { findUnique: vi.fn().mockResolvedValue(null) },
-    plano: { findUnique: vi.fn().mockResolvedValue({ id: '11111111-1111-1111-1111-111111111111', nome: 'Mensal', preco: 100 }) },
+    plano: {
+      findUnique: vi.fn().mockResolvedValue({ id: '11111111-1111-1111-1111-111111111111', nome: 'Mensal', preco: 100 }),
+    },
   },
 }))
 
